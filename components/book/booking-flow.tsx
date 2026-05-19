@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   useTransition,
+  type ReactNode,
   type RefObject,
 } from "react";
 
@@ -1128,7 +1129,20 @@ function Step4({
           />
           <SummaryRow
             label="Contact"
-            value={`${state.phone} · ${state.email}`}
+            value={
+              state.phone || state.email ? (
+                <span className="inline-flex flex-col items-end gap-1">
+                  {state.phone ? <span>{state.phone}</span> : null}
+                  {state.email ? (
+                    <span className="break-all font-normal text-text/80">
+                      {state.email}
+                    </span>
+                  ) : null}
+                </span>
+              ) : (
+                "—"
+              )
+            }
           />
           <SummaryRow
             label="Detailer"
@@ -1222,14 +1236,14 @@ function Step4Bullet({ num, label }: { num: string; label: string }) {
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
+function SummaryRow({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex items-center justify-between border-b border-white/5 py-2.5 text-[13px] last:border-b-0">
-      <dt className="font-mono text-[10px] uppercase tracking-[0.1em] text-white/80">
+    <div className="flex items-start justify-between gap-4 border-b border-white/5 py-2.5 text-[13px] last:border-b-0">
+      <dt className="shrink-0 pt-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white/80">
         {label}
       </dt>
-      <dd className="max-w-[60%] text-right font-semibold">
-        {value || "—"}
+      <dd className="min-w-0 flex-1 text-right font-semibold leading-snug break-words">
+        {value ?? "—"}
       </dd>
     </div>
   );
