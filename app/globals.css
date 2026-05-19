@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+/* ────────────────────────────────────────────────────────────
+   LEMONHEADS BRAND TOKENS
+   Tailwind v4 reads these as `--color-*`, `--font-*`, etc.
+   so you can write `bg-bk`, `text-y`, `font-display`, etc.
+─────────────────────────────────────────────────────────────*/
+@theme {
+  --color-bk: #080808;
+  --color-dk: #0e0e0e;
+  --color-card: #111318;
+  --color-card2: #161820;
+  --color-text: #edeae0;
+  --color-muted: #666666;
+  --color-y: #f0c93a;
+  --color-y2: #ffe066;
+  --color-border-faint: rgba(255, 255, 255, 0.07);
+
+  --font-display: var(--font-bebas), sans-serif;
+  --font-sans: var(--font-syne), sans-serif;
+  --font-mono: var(--font-jetbrains), monospace;
+
+  --radius-card: 10px;
+
+  --animate-fade-up: fadeUp 0.8s ease both;
+  --animate-scan: scan 4s ease-in-out infinite;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scan {
+  0% {
+    top: 20%;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    top: 80%;
+    opacity: 0;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   BASE STYLES
+─────────────────────────────────────────────────────────────*/
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-bk);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--color-y);
+  color: #000;
+}
+
+/* Custom focus ring that matches the brand */
+:focus-visible {
+  outline: 2px solid var(--color-y);
+  outline-offset: 2px;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
+/* Hide number input spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* ────────────────────────────────────────────────────────────
+   FILM GRAIN OVERLAY (rendered globally via <Grain />)
+─────────────────────────────────────────────────────────────*/
+.lh-grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.4;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px;
+}
+
+/* Animated scan line accent (used in hero) */
+.lh-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(240, 201, 58, 0.3),
+    transparent
+  );
+  animation: var(--animate-scan);
+  pointer-events: none;
+}

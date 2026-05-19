@@ -1,0 +1,2719 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lemonhead's Mobile Detail</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --y:#F0C93A;--y2:#FFE066;--bk:#080808;--dk:#0E0E0E;--card:#111318;
+  --card2:#161820;--text:#EDEAE0;--muted:#666;--border:rgba(255,255,255,.07);
+  --r:10px;--nav:68px;
+  --grain:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bk);
+  color:var(--text);
+  font-family:'Syne',sans-serif;
+  font-size:16px;
+  line-height:1.6;
+  overflow-x:hidden;
+  cursor:default;
+}
+
+/* ── GRAIN OVERLAY ── */
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:var(--grain);
+  background-repeat:repeat;
+  background-size:256px;
+  pointer-events:none;
+  z-index:9999;
+  opacity:.4;
+  mix-blend-mode:overlay;
+}
+
+/* ── PAGE TOGGLE ── */
+.page{display:none}.page.active{display:block}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;
+  height:var(--nav);
+  background:rgba(8,8,8,.97);
+  backdrop-filter:blur(20px) saturate(180%);
+  border-bottom:1px solid rgba(240,201,58,.12);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 5%;z-index:1000;
+}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none;cursor:pointer}
+.nav-logo img{height:28px;width:auto;border-radius:0;object-fit:contain}
+.nav-logo-text{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--y);letter-spacing:.08em;line-height:1}
+.nav-logo-sub{font-size:9px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
+.nav-links{display:flex;align-items:center;gap:28px;list-style:none}
+.nav-links a{
+  text-decoration:none;color:#ffffff;
+  font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;
+  transition:color .2s;cursor:pointer;font-family:'JetBrains Mono',monospace;
+}
+.nav-links a:hover{color:var(--y)}
+
+.nav-book{
+  background:var(--y)!important;color:#000!important;
+  padding:9px 22px;border-radius:4px;
+  font-weight:700!important;letter-spacing:.12em!important;
+  transition:background .15s,transform .1s,box-shadow .15s!important;
+  font-family:'JetBrains Mono',monospace!important;
+  box-shadow:0 0 0 0 rgba(240,201,58,0);
+}
+.nav-book:hover{
+  background:#fff!important;
+  box-shadow:0 0 30px rgba(240,201,58,.3)!important;
+  transform:translateY(-1px)!important;
+}
+
+/* ── DESKTOP MORE DROPDOWN ── */
+.nav-more{position:relative;display:flex;align-items:center}
+.nav-more-btn{
+  display:flex;align-items:center;gap:7px;
+  background:none;border:none;cursor:pointer;
+  color:#ffffff;font-size:11px;font-weight:600;
+  letter-spacing:.15em;text-transform:uppercase;
+  font-family:'JetBrains Mono',monospace;
+  transition:color .2s;padding:0;
+}
+.nav-more-btn:hover{color:var(--y)}
+.nav-more-btn:hover .nav-more-icon span{background:var(--y)}
+.nav-more-icon{display:flex;flex-direction:column;gap:4px}
+.nav-more-icon span{display:block;width:16px;height:1.5px;background:#fff;border-radius:2px;transition:background .2s}
+.nav-more-dropdown{
+  position:absolute;top:100%;right:0;
+  padding-top:16px;
+  background:transparent;
+  min-width:200px;display:none;flex-direction:column;
+  z-index:1001;
+}
+.nav-more:hover .nav-more-dropdown{display:flex}
+.nav-more-dropdown-inner{
+  background:rgba(8,8,8,.98);
+  border:1px solid rgba(240,201,58,.15);
+  display:flex;flex-direction:column;
+  box-shadow:0 12px 40px rgba(0,0,0,.6);
+  backdrop-filter:blur(20px);
+}
+.nav-more-dropdown a{
+  text-decoration:none;color:rgba(237,234,224,.7);
+  font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;
+  padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.05);
+  cursor:pointer;transition:color .15s,background .15s;
+  font-family:'JetBrains Mono',monospace;display:block;
+}
+.nav-more-dropdown a:last-child{border-bottom:none}
+.nav-more-dropdown a:hover{color:var(--y);background:rgba(240,201,58,.04)}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px;background:none;border:none}
+.hamburger span{display:block;width:24px;height:1.5px;background:var(--y);border-radius:2px;transition:all .3s}
+.hamburger.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
+.mobile-menu{
+  display:none;position:fixed;top:var(--nav);left:0;right:0;
+  background:rgba(8,8,8,.97);border-bottom:1px solid rgba(240,201,58,.1);
+  padding:20px 5% 28px;z-index:1000;flex-direction:column;gap:4px;
+  margin-top:0;box-shadow:0 8px 32px rgba(0,0,0,.6);
+}
+.mobile-menu.open{display:flex}
+.mobile-menu a{
+  text-decoration:none;color:var(--text);font-size:14px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;padding:12px 0;
+  border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;transition:color .2s;
+  font-family:'JetBrains Mono',monospace;
+}
+.mobile-menu a:hover{color:var(--y)}
+.m-book{
+  margin-top:16px!important;background:var(--y)!important;color:#000!important;
+  text-align:center;padding:14px!important;border-radius:4px;
+  font-weight:700!important;font-size:13px;letter-spacing:.15em!important;
+}
+
+/* ── HERO ── */ 
+.hero{
+  min-height:100svh;
+  padding:calc(var(--nav) + 60px) 5% 80px;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+}
+/* Diagonal accent line */
+.hero::after{
+  content:'';
+  position:absolute;
+  top:0;right:0;
+  width:45%;height:100%;
+  background:linear-gradient(135deg, transparent 50%, rgba(240,201,58,.03) 50%);
+  pointer-events:none;
+}
+.hero-bg{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 40% 60% at 80% 30%, rgba(240,201,58,.06) 0%, transparent 65%),
+    radial-gradient(ellipse 20% 30% at 20% 80%, rgba(240,201,58,.03) 0%, transparent 50%);
+  pointer-events:none;
+}
+/* Animated scan line */
+.hero-scan{
+  position:absolute;left:0;right:0;height:1px;
+  background:linear-gradient(90deg, transparent, rgba(240,201,58,.3), transparent);
+  animation:scan 4s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes scan{
+  0%{top:20%;opacity:0}
+  20%{opacity:1}
+  80%{opacity:1}
+  100%{top:80%;opacity:0}
+}
+.hero-label{
+  display:inline-flex;align-items:center;gap:10px;
+  background:rgba(240,201,58,.08);
+  border:1px solid rgba(240,201,58,.2);
+  color:var(--y);font-size:10px;font-weight:500;
+  letter-spacing:.25em;text-transform:uppercase;
+  padding:7px 16px;border-radius:2px;margin-bottom:32px;width:fit-content;
+  font-family:'JetBrains Mono',monospace;
+  animation:fadeUp .8s ease both;
+}
+.hero-label::before{content:'▶';font-size:8px;opacity:.6}
+.hero h1{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(72px,12vw,160px);
+  line-height:.88;letter-spacing:.01em;
+  animation:fadeUp .8s .1s ease both;
+  position:relative;
+}
+.hero h1 span{
+  color:var(--y);
+  text-shadow:0 0 80px rgba(240,201,58,.25);
+  display:inline-block;
+}
+/* Underline accent on "YOU" */
+.hero h1 span::after{
+  content:'';
+  display:block;
+  height:3px;
+  background:var(--y);
+  width:100%;
+  margin-top:-8px;
+}
+.hero-sub{
+  font-size:clamp(14px,1.6vw,17px);color:rgba(237,234,224,.5);
+  max-width:440px;margin:28px 0 0;line-height:1.8;
+  font-weight:400;
+  animation:fadeUp .8s .2s ease both;
+}
+.hero-app-row{
+  display:flex;align-items:center;gap:32px;margin-top:44px;flex-wrap:nowrap;
+  animation:fadeUp .8s .3s ease both;
+}
+.hero-app-row .hero-ctas{margin-top:0;flex-shrink:0}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap}
+.app-dl{display:flex;flex-direction:row;align-items:center;gap:12px}
+.app-dl-label{
+  font-size:15px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--y);font-family:'JetBrains Mono',monospace;
+  text-shadow:0 0 18px rgba(240,201,58,.5);
+}
+.app-dl-btn{
+  display:inline-flex;align-items:center;gap:16px;
+  background:rgba(240,201,58,.1);
+  border:1.5px solid rgba(240,201,58,.5);
+  border-radius:10px;padding:16px 28px;text-decoration:none;color:var(--text);
+  transition:background .2s,border-color .2s,transform .15s,box-shadow .2s;width:fit-content;
+  box-shadow:0 0 24px rgba(240,201,58,.12);
+}
+.app-dl-btn:hover{background:rgba(240,201,58,.18);border-color:rgba(240,201,58,.75);transform:translateY(-2px);box-shadow:0 0 40px rgba(240,201,58,.25)}
+.app-dl-icon{width:40px;height:40px;flex-shrink:0;color:var(--y)}
+.app-dl-icon svg{width:100%;height:100%}
+.app-dl-text-sub{font-size:11px;color:rgba(237,234,224,.6);letter-spacing:.12em;text-transform:uppercase;line-height:1;font-family:'JetBrains Mono',monospace}
+.app-dl-text-main{font-size:22px;font-weight:700;line-height:1.3;margin-top:4px}
+.app-divider{width:1px;height:48px;background:rgba(255,255,255,.08);flex-shrink:0}
+
+.hero-stats{
+  display:flex;gap:48px;margin-top:72px;padding-top:48px;
+  border-top:1px solid rgba(255,255,255,.06);flex-wrap:wrap;
+  animation:fadeUp .8s .4s ease both;
+  position:relative;
+}
+.hero-stats::before{
+  content:'';position:absolute;top:-1px;left:0;width:60px;height:1px;
+  background:var(--y);
+}
+.stat-num{
+  font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--y);
+  line-height:1;letter-spacing:.02em;
+}
+.stat-label{font-size:10px;color:var(--muted);letter-spacing:.15em;margin-top:6px;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
+
+/* ── BUTTONS ── */
+.btn-primary{
+  background:var(--y);color:#000;font-weight:700;font-size:11px;
+  letter-spacing:.18em;text-transform:uppercase;
+  padding:16px 32px;border-radius:3px;
+  text-decoration:none;border:none;cursor:pointer;
+  transition:background .15s,transform .1s,box-shadow .2s;
+  display:inline-block;font-family:'JetBrains Mono',monospace;
+  position:relative;overflow:hidden;
+}
+.btn-primary::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.15) 0%,transparent 60%);
+  pointer-events:none;
+}
+.btn-primary:hover{background:#fff;transform:translateY(-2px);box-shadow:0 8px 32px rgba(240,201,58,.25)}
+.btn-outline{
+  border:1px solid rgba(240,201,58,.3);color:var(--y);
+  font-weight:600;font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  padding:16px 32px;border-radius:3px;text-decoration:none;
+  background:transparent;cursor:pointer;
+  transition:background .15s,border-color .15s,transform .1s;
+  font-family:'JetBrains Mono',monospace;
+}
+.btn-outline:hover{background:rgba(240,201,58,.06);border-color:var(--y);transform:translateY(-1px)}
+
+/* ── SECTIONS ── */
+section{padding:100px 5%}
+.section-label{
+  font-size:9px;font-weight:500;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--y);margin-bottom:16px;display:flex;align-items:center;gap:10px;
+  font-family:'JetBrains Mono',monospace;
+}
+.section-label::before{content:'//';opacity:.5}
+.section-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(44px,6.5vw,80px);
+  line-height:.95;letter-spacing:.02em;margin-bottom:16px;
+}
+
+/* ── HOW IT WORKS ── */
+.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:60px;background:var(--border)}
+.step-card{
+  background:var(--bk);padding:40px 36px;position:relative;overflow:hidden;
+  transition:background .3s;
+}
+.step-card:hover{background:var(--card)}
+.step-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--y),transparent);
+  transform:scaleX(0);transform-origin:left;
+  transition:transform .4s ease;
+}
+.step-card:hover::before{transform:scaleX(1)}
+.step-num{
+  font-family:'Bebas Neue',sans-serif;font-size:96px;
+  color:rgba(240,201,58,.05);position:absolute;top:-16px;right:20px;
+  line-height:1;pointer-events:none;letter-spacing:-.02em;
+}
+.step-icon{
+  width:44px;height:44px;
+  background:rgba(240,201,58,.08);
+  border:1px solid rgba(240,201,58,.15);
+  border-radius:6px;display:flex;align-items:center;justify-content:center;
+  margin-bottom:24px;color:var(--y);
+}
+.step-icon svg{width:20px;height:20px}
+.step-card h3{
+  font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.06em;
+  margin-bottom:12px;
+}
+.step-card p{font-size:13px;color:rgba(237,234,224,.45);line-height:1.8;font-weight:400}
+
+/* ── LOCATIONS ── */
+.locations-section{background:var(--dk)}
+.locations-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-top:60px;background:var(--border)}
+.loc-card{
+  background:var(--dk);padding:32px 24px;text-align:center;
+  text-decoration:none;transition:background .2s;display:block;position:relative;
+  overflow:hidden;
+}
+.loc-card::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:var(--y);transform:scaleX(0);transition:transform .3s ease;
+}
+.loc-card:hover{background:var(--card2)}
+.loc-card:hover::after{transform:scaleX(1)}
+.loc-icon-svg{width:32px;height:32px;color:var(--y);margin:0 auto 16px;opacity:.7}
+.loc-icon-svg svg{width:100%;height:100%}
+.loc-name{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.06em;color:var(--text);margin-bottom:4px}
+.loc-state{font-size:9px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
+
+/* ── PACKAGES ── */
+.packages-section{background:var(--bk)}
+.pkg-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;margin-top:60px;background:transparent}
+.pkg-grid .pkg-card{border:1px solid var(--border)}
+.pkg-card{
+  background:var(--bk);padding:36px 30px;
+  transition:background .3s;position:relative;overflow:hidden;
+}
+.pkg-card:hover{background:var(--card)}
+.pkg-card.featured{background:var(--card);border:none}
+.pkg-card.featured::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg, rgba(240,201,58,.06) 0%, transparent 60%);
+  pointer-events:none;
+}
+.pkg-badge{
+  display:inline-block;background:var(--y);color:#000;
+  font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
+  padding:4px 10px;border-radius:2px;margin-bottom:20px;
+  font-family:'JetBrains Mono',monospace;
+}
+.pkg-name{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:.04em;margin-bottom:8px}
+.pkg-desc{font-size:12px;color:rgba(237,234,224,.45);margin-bottom:28px;line-height:1.7;font-weight:400}
+.pkg-features{list-style:none;margin-bottom:32px}
+.pkg-features li{
+  font-size:12px;padding:9px 0;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  display:flex;align-items:center;gap:10px;color:rgba(237,234,224,.7);
+  font-family:'Syne',sans-serif;
+}
+.pkg-features li::before{
+  content:'';width:4px;height:4px;background:var(--y);
+  border-radius:50%;flex-shrink:0;opacity:.8;
+}
+.pkg-cta{
+  display:block;text-align:center;padding:12px;border-radius:2px;
+  font-weight:700;font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  text-decoration:none;cursor:pointer;
+  background:transparent;color:rgba(237,234,224,.4);
+  border:1px solid rgba(255,255,255,.1);
+  transition:all .2s;font-family:'JetBrains Mono',monospace;
+}
+.pkg-card.featured .pkg-cta{background:var(--y);color:#000;border-color:var(--y)}
+.pkg-cta:hover{background:var(--y);color:#000;border-color:var(--y)}
+
+/* ── GALLERY ── */
+.gallery-section{padding:80px 5%;background:var(--dk)}
+.gallery-grid{
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  grid-template-rows:auto;
+  gap:3px;margin-top:60px;
+}
+.gallery-item{overflow:hidden;border-radius:0;position:relative}
+.gallery-item img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s ease,filter .4s ease;filter:saturate(.8)}
+.gallery-item:hover img{transform:scale(1.06);filter:saturate(1)}
+/* Yellow tint overlay on hover */
+.gallery-item::before{
+  content:'';position:absolute;inset:0;
+  background:rgba(240,201,58,.06);
+  opacity:0;transition:opacity .4s;z-index:1;pointer-events:none;
+}
+.gallery-item:hover::before{opacity:1}
+.gi-1{grid-column:1/8;grid-row:1/2;height:380px}
+.gi-2{grid-column:8/13;grid-row:1/2;height:380px}
+.gi-3{grid-column:1/5;grid-row:2/3;height:260px}
+.gi-4{grid-column:5/9;grid-row:2/3;height:260px}
+.gi-5{grid-column:9/13;grid-row:2/3;height:260px}
+
+/* ── REVIEWS ── */
+.reviews-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1px;margin-top:60px;background:var(--border)}
+.review-card{
+  background:var(--bk);padding:36px 32px;
+  transition:background .2s;
+}
+.review-card:hover{background:var(--card)}
+.stars{color:var(--y);font-size:13px;letter-spacing:3px;margin-bottom:20px;display:flex;gap:2px}
+.review-text{
+  font-size:14px;line-height:1.8;margin-bottom:28px;
+  color:rgba(237,234,224,.7);font-style:italic;font-weight:400;
+  font-family:'Syne',sans-serif;
+}
+.reviewer{display:flex;align-items:center;gap:12px}
+.reviewer-avatar{
+  width:36px;height:36px;background:rgba(240,201,58,.1);
+  border:1px solid rgba(240,201,58,.2);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:var(--y);flex-shrink:0;
+  font-family:'JetBrains Mono',monospace;
+}
+.reviewer-name{font-size:13px;font-weight:700;letter-spacing:.05em}
+.reviewer-loc{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:.1em}
+
+/* ── CONTACT ── */
+.contact-section{background:var(--dk)}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;margin-top:60px;background:var(--border)}
+.contact-card{background:var(--dk);padding:32px 28px;transition:background .2s}
+.contact-card:hover{background:var(--card2)}
+.contact-icon-svg{margin-bottom:16px;width:28px;height:28px;color:var(--y);opacity:.8}
+.contact-icon-svg svg{width:100%;height:100%}
+.contact-label{font-size:9px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px;font-family:'JetBrains Mono',monospace}
+.contact-val{font-size:15px;font-weight:700;color:var(--text);text-decoration:none;display:block}
+.contact-val:hover{color:var(--y)}
+.contact-detail{font-size:11px;color:var(--muted);margin-top:4px;font-family:'JetBrains Mono',monospace}
+
+/* ── FOOTER ── */
+footer{
+  background:#040404;
+  border-top:1px solid var(--border);
+  padding:48px 5% 36px;
+  display:flex;flex-direction:column;gap:36px;
+}
+.footer-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:24px}
+.footer-links{display:flex;gap:28px;flex-wrap:wrap}
+.footer-links a{
+  font-size:10px;color:var(--muted);text-decoration:none;cursor:pointer;
+  transition:color .2s;letter-spacing:.15em;text-transform:uppercase;
+  font-family:'JetBrains Mono',monospace;
+}
+.footer-links a:hover{color:var(--y)}
+.footer-social{display:flex;gap:10px}
+.social-btn{
+  width:34px;height:34px;
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--border);
+  border-radius:4px;display:flex;align-items:center;justify-content:center;
+  text-decoration:none;color:var(--muted);
+  transition:background .2s,border-color .2s,color .2s;
+}
+.social-btn svg{width:14px;height:14px}
+.social-btn:hover{background:rgba(240,201,58,.08);border-color:rgba(240,201,58,.25);color:var(--y)}
+.footer-bottom{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+  padding-top:28px;border-top:1px solid rgba(255,255,255,.04);
+}
+.footer-copy{font-size:10px;color:rgba(102,102,102,.6);font-family:'JetBrains Mono',monospace;letter-spacing:.08em}
+
+/* ── BOOKING PAGE ── */
+.book-hero{padding:calc(var(--nav) + 70px) 5% 48px;text-align:center}
+.book-hero h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(52px,8vw,96px);line-height:.95;letter-spacing:.02em}
+.book-hero h1 span{color:var(--y)}
+.book-hero p{color:rgba(237,234,224,.4);margin-top:14px;font-size:13px;font-family:'JetBrains Mono',monospace;letter-spacing:.08em}
+.book-container{max-width:820px;margin:0 auto;padding:0 5% 100px}
+
+.book-steps{display:flex;justify-content:center;align-items:center;gap:0;margin-bottom:56px;flex-wrap:wrap;gap:8px}
+.book-step{display:flex;align-items:center;gap:8px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(102,102,102,.6);font-family:'JetBrains Mono',monospace}
+.book-step.active{color:var(--y)}
+.book-step.done{color:rgba(240,201,58,.6)}
+.bsn{
+  width:26px;height:26px;border-radius:50%;
+  border:1px solid rgba(102,102,102,.3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;flex-shrink:0;transition:all .3s;
+  font-family:'JetBrains Mono',monospace;
+}
+.book-step.active .bsn{border-color:var(--y);background:var(--y);color:#000}
+.book-step.done .bsn{border-color:rgba(240,201,58,.5);background:rgba(240,201,58,.1);color:var(--y)}
+.sdiv{width:28px;height:1px;background:rgba(255,255,255,.1);margin:0 4px}
+.sdiv.active{background:rgba(240,201,58,.3)}
+
+.form-section{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:8px;padding:36px 32px;margin-bottom:16px;
+  position:relative;overflow:hidden;
+}
+.form-section::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--y),transparent 50%);
+}
+.form-section h2{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.06em;margin-bottom:24px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-row.single{grid-template-columns:1fr}
+.form-group{display:flex;flex-direction:column;gap:8px}
+.form-group label{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#fff;font-family:'JetBrains Mono',monospace}
+.form-group input,.form-group select,.form-group textarea{
+  background:#0D0D0D;border:1px solid rgba(255,255,255,.08);
+  border-radius:4px;padding:13px 14px;color:var(--text);
+  font-size:16px;font-family:'Syne',sans-serif;
+  transition:border-color .2s;outline:none;width:100%;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:rgba(240,201,58,.5);background:#0F0F0F}
+.form-group input::placeholder,.form-group textarea::placeholder{color:rgba(255,255,255,.3)}
+.form-group select option{background:#111}
+.form-group textarea{resize:vertical;min-height:90px}
+
+.service-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:3px;margin-bottom:8px;background:var(--border)}
+.service-card{
+  background:var(--card);padding:22px 18px;cursor:pointer;
+  transition:background .2s;position:relative;
+}
+.service-card:hover{background:var(--card2)}
+.service-card.selected{background:rgba(240,201,58,.06)}
+.service-card.selected::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--y);
+}
+.svc-check{
+  position:absolute;top:14px;right:14px;
+  width:18px;height:18px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.15);
+  transition:all .2s;display:flex;align-items:center;justify-content:center;
+  font-size:10px;color:transparent;
+}
+.service-card.selected .svc-check{background:var(--y);border-color:var(--y);color:#000;font-weight:900}
+.service-icon-svg{margin-bottom:12px;width:28px;height:28px;color:var(--y);opacity:.7}
+.service-icon-svg svg{width:100%;height:100%}
+.service-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.05em;margin-bottom:4px}
+.service-time{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:.08em}
+
+.vehicle-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:3px;margin-bottom:8px;background:var(--border)}
+.vehicle-card{
+  background:var(--card);padding:18px 14px;cursor:pointer;
+  transition:background .2s;text-align:center;position:relative;
+}
+.vehicle-card:hover{background:var(--card2)}
+.vehicle-card.selected{background:rgba(240,201,58,.06)}
+.vehicle-card.selected::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--y)}
+.vehicle-icon-svg{margin:0 auto 10px;width:32px;height:32px;color:var(--y);opacity:.7}
+.vehicle-icon-svg svg{width:100%;height:100%}
+.vehicle-label{font-size:11px;font-weight:700;letter-spacing:.08em;font-family:'JetBrains Mono',monospace}
+
+/* Calendar */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.cal-nav button{
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  border-radius:4px;padding:8px 16px;color:rgba(237,234,224,.6);cursor:pointer;
+  font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:.1em;
+  transition:all .2s;
+}
+.cal-nav button:hover{background:rgba(240,201,58,.08);border-color:rgba(240,201,58,.2);color:var(--y)}
+.cal-month-label{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--text);letter-spacing:.06em}
+.cal-header{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
+.cal-day-label{text-align:center;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(102,102,102,.5);padding:4px;font-family:'JetBrains Mono',monospace}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:16px}
+.cal-day{
+  text-align:center;padding:10px 4px;border-radius:3px;
+  border:1px solid transparent;cursor:pointer;
+  font-size:13px;font-weight:600;transition:all .2s;color:rgba(237,234,224,.7);
+  font-family:'Syne',sans-serif;height:44px;
+  display:flex;align-items:center;justify-content:center;
+}
+.cal-day:hover:not(.disabled){border-color:rgba(240,201,58,.3);color:var(--y);background:rgba(240,201,58,.04)}
+.cal-day.selected{background:var(--y);color:#000;border-color:var(--y);font-weight:700}
+.cal-day.disabled{color:rgba(255,255,255,.15);cursor:not-allowed;border-color:transparent}
+.cal-day.today{border-color:rgba(240,201,58,.2);color:var(--y)}
+
+.time-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px}
+.time-slot{
+  background:rgba(255,255,255,.03);border:1px solid var(--border);
+  border-radius:4px;padding:12px 10px;text-align:center;cursor:pointer;
+  font-size:12px;font-weight:600;transition:all .2s;
+  font-family:'JetBrains Mono',monospace;color:rgba(237,234,224,.6);
+}
+.time-slot:hover:not(.unavailable){border-color:rgba(240,201,58,.3);color:var(--y);background:rgba(240,201,58,.04)}
+.time-slot.selected{background:var(--y);color:#000;border-color:var(--y);font-weight:700}
+.time-slot.unavailable{color:rgba(255,255,255,.15);cursor:not-allowed;border-color:transparent;background:transparent}
+
+.summary-card{
+  background:rgba(240,201,58,.04);border:1px solid rgba(240,201,58,.15);
+  border-radius:6px;padding:24px;
+}
+.summary-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;
+}
+.summary-row:last-child{border-bottom:none;font-size:15px;font-weight:700;color:var(--y);margin-top:4px}
+.summary-label{color:#fff;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.summary-val{font-weight:600;text-align:right;max-width:60%}
+
+.form-nav{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:24px}
+.progress-text{font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:.15em;text-transform:uppercase}
+
+/* Card section */
+.card-section{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:8px;padding:36px 32px;position:relative;overflow:hidden;
+}
+.card-section::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--y),transparent 50%);
+}
+.card-section h2{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.06em;margin-bottom:6px}
+.card-secure{font-size:10px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:16px;font-family:'JetBrains Mono',monospace;letter-spacing:.05em}
+.card-brands{display:flex;gap:6px;margin-bottom:20px}
+.card-brand{
+  background:rgba(255,255,255,.05);border:1px solid var(--border);
+  border-radius:3px;padding:4px 10px;font-size:10px;font-weight:700;
+  color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:.05em;
+}
+.card-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.card-row.single{grid-template-columns:1fr}
+.card-row.thirds{grid-template-columns:2fr 1fr 1fr}
+.card-field{display:flex;flex-direction:column;gap:8px}
+.card-field label{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#fff;font-family:'JetBrains Mono',monospace}
+.card-field input{
+  background:#0D0D0D;border:1px solid rgba(255,255,255,.08);
+  border-radius:4px;padding:13px 14px;color:var(--text);
+  font-size:16px;font-family:'Syne',sans-serif;
+  transition:border-color .2s;outline:none;width:100%;
+}
+.card-field input:focus{border-color:rgba(240,201,58,.5)}
+.card-field input::placeholder{color:rgba(102,102,102,.4)}
+
+/* ── TEAM PAGE ── */
+.team-hero{padding:calc(var(--nav) + 70px) 5% 48px;text-align:center}
+.team-hero h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(52px,8vw,96px);line-height:.95;letter-spacing:.02em}
+.team-hero h1 span{color:var(--y)}
+.team-hero p{color:rgba(237,234,224,.4);margin-top:14px;font-size:13px;font-family:'JetBrains Mono',monospace;letter-spacing:.08em}
+.team-container{max-width:1100px;margin:0 auto;padding:0 5% 100px}
+
+.team-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:2px;
+  background:var(--border);
+  margin-top:8px;
+}
+.team-card{
+  background:var(--card);
+  display:flex;flex-direction:column;
+  align-items:center;
+  text-align:center;
+  padding:48px 28px 40px;
+  position:relative;overflow:hidden;
+  transition:background .25s;
+  cursor:pointer;
+}
+.team-card:hover{background:var(--card2)}
+.team-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--y),transparent);
+  transform:scaleX(0);transform-origin:left;
+  transition:transform .4s ease;
+}
+.team-card:hover::before{transform:scaleX(1)}
+
+.team-photo-wrap{
+  width:120px;height:120px;border-radius:50%;
+  border:2px solid rgba(240,201,58,.2);
+  overflow:hidden;margin-bottom:24px;
+  background:rgba(240,201,58,.05);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;flex-shrink:0;
+  transition:border-color .25s,box-shadow .25s;
+}
+.team-card:hover .team-photo-wrap{
+  border-color:rgba(240,201,58,.55);
+  box-shadow:0 0 28px rgba(240,201,58,.12);
+}
+.team-photo-wrap img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;transition:transform .4s ease,filter .3s}
+.team-card:hover .team-photo-wrap img{transform:scale(1.06);filter:brightness(.9)}
+.team-photo-placeholder{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  color:rgba(240,201,58,.2);
+}
+.team-photo-placeholder svg{width:48px;height:48px}
+
+.team-name{
+  font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.08em;
+  color:var(--text);margin-bottom:8px;line-height:1;
+}
+.team-position{
+  font-size:9px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;
+  color:var(--y);font-family:'JetBrains Mono',monospace;opacity:.8;
+}
+/* "View bio" hint fades in on hover */
+.team-bio-hint{
+  margin-top:14px;
+  font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
+  color:rgba(240,201,58,0);font-family:'JetBrains Mono',monospace;
+  display:flex;align-items:center;gap:6px;
+  transition:color .25s;
+}
+.team-bio-hint::before{
+  content:'';display:inline-block;width:14px;height:1px;
+  background:var(--y);opacity:0;transition:opacity .25s;
+}
+.team-card:hover .team-bio-hint{color:rgba(240,201,58,.65)}
+.team-card:hover .team-bio-hint::before{opacity:1}
+
+.team-empty-note{
+  text-align:center;padding:80px 20px;
+  font-size:12px;color:rgba(102,102,102,.5);
+  font-family:'JetBrains Mono',monospace;letter-spacing:.1em;
+  background:var(--card);border:1px dashed rgba(240,201,58,.1);border-radius:8px;
+}
+.team-empty-note svg{width:36px;height:36px;color:rgba(240,201,58,.15);margin:0 auto 16px;display:block}
+
+@media(max-width:800px){.team-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.team-grid{grid-template-columns:1fr}}
+/* ── END TEAM PAGE ── */
+
+/* ── BIO MODAL ── */
+.bio-overlay{
+  display:none;position:fixed;inset:0;z-index:2000;
+  background:rgba(0,0,0,.75);backdrop-filter:blur(8px);
+  align-items:center;justify-content:center;padding:24px;
+}
+.bio-overlay.open{display:flex}
+.bio-modal{
+  background:var(--card);
+  border:1px solid rgba(240,201,58,.2);
+  border-radius:12px;
+  max-width:420px;width:100%;
+  padding:40px 36px 36px;
+  position:relative;
+  animation:fadeUp .3s ease both;
+}
+.bio-modal::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--y),transparent 60%);
+  border-radius:12px 12px 0 0;
+}
+.bio-close{
+  position:absolute;top:16px;right:16px;
+  background:none;border:none;cursor:pointer;
+  color:rgba(237,234,224,.3);font-size:20px;line-height:1;
+  transition:color .2s;padding:4px;
+}
+.bio-close:hover{color:var(--y)}
+.bio-photo{
+  width:80px;height:80px;border-radius:50%;
+  border:2px solid rgba(240,201,58,.3);
+  object-fit:cover;display:block;margin:0 auto 20px;
+}
+.bio-photo-placeholder{
+  width:80px;height:80px;border-radius:50%;
+  background:rgba(240,201,58,.06);border:2px solid rgba(240,201,58,.15);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 20px;color:rgba(240,201,58,.25);
+}
+.bio-name{
+  font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.06em;
+  text-align:center;margin-bottom:4px;
+}
+.bio-position{
+  font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--y);font-family:'JetBrains Mono',monospace;
+  text-align:center;margin-bottom:24px;opacity:.8;
+}
+.bio-divider{height:1px;background:rgba(255,255,255,.06);margin-bottom:20px}
+.bio-text{
+  font-size:14px;color:rgba(237,234,224,.6);line-height:1.8;
+  font-weight:400;
+}
+/* ── END BIO MODAL ── */
+.confirm-screen{text-align:center;padding:80px 20px}
+.confirm-icon{margin-bottom:28px}
+.confirm-icon img{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(240,201,58,.3)}
+.confirm-screen h2{font-family:'Bebas Neue',sans-serif;font-size:56px;color:var(--y);letter-spacing:.04em;margin-bottom:12px}
+.confirm-screen p{color:rgba(237,234,224,.4);font-size:13px;margin-bottom:36px;font-family:'JetBrains Mono',monospace;letter-spacing:.05em}
+.confirm-details{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:8px;padding:24px;text-align:left;margin:0 auto 40px;max-width:420px;
+}
+.confirm-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px}
+.confirm-row:last-child{border-bottom:none}
+.confirm-row-label{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.confirm-row-val{font-weight:600}
+
+/* Step 4 grid */
+.st4-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+
+/* Fade up animation */
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(20px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* Responsive */
+@media(max-width:900px){
+  .steps-grid{grid-template-columns:1fr}
+  .pkg-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:800px){
+  .nav-links{display:none}.hamburger{display:flex}
+  .form-row{grid-template-columns:1fr}
+  section{padding:72px 5%}
+  .form-section{padding:24px 20px}
+  .card-section{padding:24px 20px}
+  .hero-stats{gap:28px}
+  .st4-grid{grid-template-columns:1fr}
+  .gallery-grid{grid-template-columns:1fr 1fr;gap:3px}
+  .gi-1,.gi-2,.gi-3,.gi-4,.gi-5{grid-column:auto;grid-row:auto;height:200px}
+  .gi-1{grid-column:1/3;height:260px}
+  .locations-grid{grid-template-columns:repeat(2,1fr)}
+  .pkg-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+  .card-row.thirds{grid-template-columns:1fr 1fr}.card-row{grid-template-columns:1fr}
+  .hero-app-row{flex-direction:column;align-items:flex-start;gap:20px}
+  .app-divider{display:none}
+}
+@media(max-width:480px){
+  .hero h1{font-size:62px}
+  .hero-ctas{flex-direction:column}
+  .footer-top{flex-direction:column}
+  .book-steps{justify-content:flex-start}
+  .sdiv{display:none}
+  .gallery-grid{grid-template-columns:1fr}
+  .gi-1,.gi-2,.gi-3,.gi-4,.gi-5{grid-column:1;height:220px}
+}
+
+/* ── HERO TWO-COLUMN ── */
+.hero-inner{
+  display:flex;align-items:center;gap:60px;
+  width:100%;position:relative;z-index:1;
+}
+.hero-content{flex:1;min-width:0}
+.hero-photo{
+  flex:0 0 42%;max-width:42%;
+  position:relative;
+  border:1px solid rgba(240,201,58,.25);
+  border-radius:4px;
+}
+.hero-photo img{
+  width:100%;height:600px;object-fit:cover;object-position:center;
+  border-radius:4px;
+  filter:saturate(.85);
+  display:block;
+}
+.hero-photo::before{
+  content:'';position:absolute;
+  inset:0;border-radius:4px;
+  background:linear-gradient(180deg, transparent 60%, rgba(8,8,8,.5) 100%);
+  z-index:1;pointer-events:none;
+}
+@media(max-width:860px){
+  .hero-inner{flex-direction:column;gap:40px}
+  .hero-photo{flex:none;max-width:100%;width:100%}
+  .hero-photo img{height:320px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo" onclick="showPage('home')">
+    <img src="images/lemon-logo.webp" alt="Lemonheads">
+    <div>
+      <div class="nav-logo-text">LEMONHEADS</div>
+      <div class="nav-logo-sub">Mobile Detail</div>
+    </div>
+  </div>
+  <ul class="nav-links">
+    <li><a onclick="gohome('#packages')">Packages</a></li>
+    <li><a onclick="gohome('#addons')">Add-Ons</a></li>
+    <li><a onclick="showPage('thelab')">The LAB</a></li>
+    <li class="nav-more">
+      <button class="nav-more-btn">
+        <div class="nav-more-icon"><span></span><span></span><span></span></div>
+        More
+      </button>
+      <div class="nav-more-dropdown">
+        <div class="nav-more-dropdown-inner">
+          <a onclick="gohome('#how')">How It Works</a>
+          <a onclick="gohome('#locations')">Locations</a>
+          <a onclick="gohome('#gallery')">Gallery</a>
+          <a onclick="gohome('#reviews')">Reviews</a>
+          <a onclick="gohome('#contact')">Contact</a>
+          <a onclick="showPage('team')">Team</a>
+        </div>
+      </div>
+    </li>
+    <li><a onclick="showPage('book')" class="nav-book">Book Now</a></li>
+  </ul>
+  <button class="hamburger" id="hbg"><span></span><span></span><span></span></button>
+</nav>
+
+<div class="mobile-menu" id="mmenu">
+  <a onclick="cm();gohome('#how')">How It Works</a>
+  <a onclick="cm();gohome('#locations')">Locations</a>
+  <a onclick="cm();gohome('#packages')">Packages</a>
+  <a onclick="cm();gohome('#addons')">Add-Ons</a>
+  <a onclick="cm();gohome('#gallery')">Gallery</a><a onclick="cm();gohome('#reviews')">Reviews</a>
+  <a onclick="cm();gohome('#contact')">Contact</a>
+  <a onclick="cm();showPage('team')">Team</a>
+  <a onclick="cm();showPage('thelab')">The LAB</a>
+  <a onclick="cm();showPage('book')" class="m-book">Book Online →</a>
+</div>
+
+<!-- HOME -->
+<div id="page-home" class="page active">
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-scan"></div>
+  <div class="hero-inner">
+    <div class="hero-content">
+      <div class="hero-label">OKC &nbsp;·&nbsp; TULSA ·&nbsp; ENID</div>
+      <h1>WE COME<br>TO <span>YOU.</span></h1>
+      <p class="hero-sub">Premium mobile detailing that fits your schedule. Book online, we handle the rest — right where you are.</p>
+      <div class="hero-app-row">
+        <div class="hero-ctas">
+          <button onclick="showPage('book')" class="btn-primary">Book a Detail</button>
+          <button onclick="document.querySelector('#how').scrollIntoView({behavior:'smooth'})" class="btn-outline">How It Works</button>
+        </div>
+      </div>
+      <div class="app-dl" style="margin-top:20px;flex-direction:column;gap:10px;align-items:flex-start">
+        <div class="app-dl-label">Download the App</div>
+        <a href="https://apps.apple.com/us/app/lemonheads/id6444708582" class="app-dl-btn" target="_blank" rel="noopener">
+          <div class="app-dl-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+            </svg>
+          </div>
+          <div class="app-dl-text">
+            <div class="app-dl-text-sub">Download on the</div>
+            <div class="app-dl-text-main">App Store</div>
+          </div>
+        </a>
+      </div>
+      <div class="hero-stats">
+        <div><div class="stat-num">3K+</div><div class="stat-label">Happy Customers</div></div>
+        <div><div class="stat-num">5★</div><div class="stat-label">Avg. Rating</div></div>
+        <div><div class="stat-num">5</div><div class="stat-label">Cities Served</div></div>
+      </div>
+    </div>
+    <div class="hero-photo">
+      <img src="images/bike.webp" alt="Lemonheads Mobile Detail — detailing a Harley-Davidson CVO">
+    </div>
+  </div>
+</section>
+<section id="how" style="background:var(--dk)">
+  <div class="section-label">The Process</div>
+  <div class="section-title">HOW IT WORKS</div>
+  <div class="steps-grid">
+    <div class="step-card"><div class="step-num">01</div><div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2.5"/></svg></div><h3>Book Online</h3><p>Schedule through our website or the Lemonheads app in minutes. Pick your date, time, and package.</p></div>
+    <div class="step-card"><div class="step-num">02</div><div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17H3a2 2 0 01-2-2v-4l2.5-5h13L19 11v4a2 2 0 01-2 2h-2m-8 0a2 2 0 104 0m4 0a2 2 0 104 0"/></svg></div><h3>We Come to You</h3><p>Choose mobile at your home or office, or drop it off at our Edmond HQ. You relax.</p></div>
+    <div class="step-card"><div class="step-num">03</div><div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg></div><h3>Get Back on the Road</h3><p>Pay securely through the app or digital invoice. Drive away in a car that looks brand new.</p></div>
+  </div>
+</section>
+<section id="locations" id="locations-bg" class="locations-section">
+  <div class="section-label">Where We Serve</div>
+  <div class="section-title">OUR LOCATIONS</div>
+  <div class="locations-grid">
+
+    <!--
+    ═══════════════════════════════════════════════════
+    LOCATION CARDS
+    To add a new city, copy one <a> block below and update:
+      • href       → the city's Lemonheads landing page URL
+      • loc-name   → city name
+      • loc-state  → state name
+    ═══════════════════════════════════════════════════
+    -->
+
+    <!-- LOCATION CARD TEMPLATE (copy & fill in)
+    <a href="https://www.lemonheadsdetail.com/YOUR-CITY-URL" class="loc-card">
+      <div class="loc-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M9 21V7l6-4v18M9 9H6a1 1 0 00-1 1v11M15 9h3a1 1 0 011 1v11"/></svg></div>
+      <div class="loc-name">City Name</div>
+      <div class="loc-state">State</div>
+    </a>
+    -->
+
+    <a href="https://www.lemonheadsdetail.com/okcmobiledetailing" class="loc-card"><div class="loc-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M9 21V7l6-4v18M9 9H6a1 1 0 00-1 1v11M15 9h3a1 1 0 011 1v11"/></svg></div><div class="loc-name">Oklahoma City</div><div class="loc-state">Oklahoma</div></a>
+    <a href="https://www.lemonheadsdetail.com/tulsamobiledetailing" class="loc-card"><div class="loc-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M9 21V7l6-4v18M9 9H6a1 1 0 00-1 1v11M15 9h3a1 1 0 011 1v11"/></svg></div><div class="loc-name">Tulsa</div><div class="loc-state">Oklahoma</div></a>
+    <a href="https://www.lemonheadsdetail.com/enid-oklahoma-car-mobile-detailing-services" class="loc-card"><div class="loc-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M9 21V7l6-4v18M9 9H6a1 1 0 00-1 1v11M15 9h3a1 1 0 011 1v11"/></svg></div><div class="loc-name">Enid</div><div class="loc-state">Oklahoma</div></a>
+
+  </div>
+</section>
+<section id="packages" class="packages-section">
+  <div class="section-label">What We Offer</div>
+  <div class="section-title">DETAIL PACKAGES</div>
+
+  <!-- Vehicle type selector for pricing -->
+  <div style="margin-top:48px;margin-bottom:48px">
+    <div style="font-size:9px;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:16px;text-align:center">Select your vehicle for pricing</div>
+    <div id="pkg-veh-selector" style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px">
+      <button class="pkg-veh-btn active" onclick="setPkgVeh(this,'coupe')">2-Door Coupe</button>
+      <button class="pkg-veh-btn" onclick="setPkgVeh(this,'sedan')">4-Door Sedan</button>
+      <button class="pkg-veh-btn pkg-veh-suv" onclick="togglePkgSuv(this)">SUV ▾</button>
+      <button class="pkg-veh-btn" onclick="setPkgVeh(this,'truck')">Truck</button>
+      <button class="pkg-veh-btn" onclick="setPkgVeh(this,'van')">Van</button>
+    </div>
+    <!-- SUV sub-row, hidden until SUV is clicked -->
+    <div id="pkg-suv-sub" style="display:none;justify-content:center;gap:8px;margin-top:8px">
+      <button class="pkg-veh-subbtn" onclick="setPkgVeh(this,'suv2')">2-Row SUV</button>
+      <button class="pkg-veh-subbtn" onclick="setPkgVeh(this,'suv3')">3-Row SUV</button>
+    </div>
+  </div>
+
+  <style>
+  .pkg-veh-subbtn{
+    background:rgba(240,201,58,.06);border:1px solid rgba(240,201,58,.25);
+    color:var(--y);font-size:10px;font-weight:700;
+    letter-spacing:.15em;text-transform:uppercase;
+    padding:7px 18px;border-radius:3px;cursor:pointer;
+    font-family:'JetBrains Mono',monospace;transition:all .2s;
+  }
+  .pkg-veh-subbtn:hover{background:rgba(240,201,58,.14)}
+  .pkg-veh-subbtn.active{background:rgba(240,201,58,.18);border-color:var(--y);box-shadow:0 0 0 1px var(--y)}
+  </style>
+
+  <style>
+  .pkg-veh-btn{
+    background:transparent;border:1px solid rgba(255,255,255,.12);
+    color:rgba(237,234,224,.45);font-size:10px;font-weight:700;
+    letter-spacing:.18em;text-transform:uppercase;
+    padding:9px 20px;border-radius:3px;cursor:pointer;
+    font-family:'JetBrains Mono',monospace;
+    transition:all .2s;
+  }
+  .pkg-veh-btn:hover{border-color:rgba(240,201,58,.4);color:var(--y)}
+  .pkg-veh-btn.active{background:rgba(240,201,58,.1);border-color:var(--y);color:var(--y)}
+  .pkg-price{
+    font-family:'Bebas Neue',sans-serif;font-size:38px;color:var(--y);
+    letter-spacing:.02em;line-height:1;margin-bottom:4px;
+    transition:opacity .15s;
+  }
+  .pkg-price-label{font-size:9px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:20px}
+  /* 7-col grid for 7 packages */
+  .pkg-grid{grid-template-columns:repeat(7,1fr)!important}
+  @media(max-width:1100px){.pkg-grid{grid-template-columns:repeat(4,1fr)!important}}
+  @media(max-width:800px){.pkg-grid{grid-template-columns:repeat(2,1fr)!important}}
+  </style>
+
+  <div class="pkg-grid">
+
+    <!--
+    ═══════════════════════════════════════════════════
+    PACKAGE CARDS
+    To add a new package:
+      1. Copy a .pkg-card block below and fill in the fields.
+      2. Add its pricing to PKG_PRICES in the <script> below:
+           'key': [coupe, sedan, suv2, suv3, truck, van]
+      3. Add a matching id="pp-key" to the .pkg-price element.
+      4. Add a matching entry to SVC_KEY_MAP in fillSum() and confirm_booking().
+      5. Add a matching .service-card in the booking form (step 1).
+    To feature a package (dark card + "Most Popular" badge):
+      • Add class="pkg-card featured" and include a .pkg-badge element.
+    ═══════════════════════════════════════════════════
+    -->
+
+    <!-- PACKAGE CARD TEMPLATE (copy & fill in)
+    <div class="pkg-card">
+      <div class="pkg-name">Package Name</div>
+      <div class="pkg-price" id="pp-KEY">$000</div>
+      <div class="pkg-price-label">Starting price</div>
+      <div class="pkg-desc">Short description of what this package covers.</div>
+      <ul class="pkg-features">
+        <li>Feature one</li>
+        <li>Feature two</li>
+        <li>Feature three</li>
+      </ul>
+      <button onclick="showPage('book')" class="pkg-cta">Book This</button>
+    </div>
+    -->
+
+    <div class="pkg-card">
+      <div class="pkg-name">Totally Basic</div>
+      <div class="pkg-price" id="pp-basic">$129</div>
+      <div class="pkg-price-label">Starting price</div>
+      <div class="pkg-desc">Quick, clean, and no-frills. Gets your exterior looking sharp in no time.</div>
+      <ul class="pkg-features"><li>Exterior hand wash & dry</li><li>Wheel & tire cleaning</li><li>Tire dressing</li><li>Window exterior clean</li></ul>
+      <button onclick="showPage('book')" class="pkg-cta">Book This</button>
+    </div>
+    <div class="pkg-card">
+      <div class="pkg-name">Quickie</div>
+      <div class="pkg-price" id="pp-quickie">$69</div>
+      <div class="pkg-price-label">Starting price</div>
+      <div class="pkg-desc">A speedy refresh inside and out — perfect when you need it done fast.</div>
+      <ul class="pkg-features"><li>Express exterior wash</li><li>Interior vacuum</li><li>Dashboard wipe-down</li><li>Window cleaning</li></ul>
+      <button onclick="showPage('book')" class="pkg-cta">Book This</button>
+    </div>
+    <div class="pkg-card">
+      <div class="pkg-name">Toughy</div>
+      <div class="pkg-price" id="pp-toughy">$129</div>
+      <div class="pkg-price-label">Starting price</div>
+      <div class="pkg-desc">Built for the vehicles that need a little extra elbow grease.</div>
+      <ul class="pkg-features"><li>Heavy-duty exterior wash</li><li>Wheel & tire deep clean</li><li>Tire dressing</li><li>Bug & tar removal</li><li>Window exterior clean</li></ul>
+      <button onclick="showPage('book')" class="pkg-cta">Book This</button>
+    </div>
+    <div class="pkg-card featured">
+      <div class="pkg-badge">Most Popular</div>
+      <div class="pkg-name">Fully Loaded</div>
+      <div class="pkg-price" id="pp-fully">$209</div>
+      <div class="pkg-price-label">Starting price</div>
+      <div class="pkg-desc">The full treatment — every inch detailed inside and out to showroom condition.</div>
+      <ul class="pkg-features"><li>Full exterior wash & dry</li><li>Interior deep clean & vacuum</li><li>Leather/upholstery treatment</li><li>Windows inside & out</li><li>Tire dressing & trim detail</li></ul>
+      <button onclick="showPage('book')" class="pkg-cta">Book This</button>
+    </div>
+    <div class="pkg-card">
+      <div class="pkg-name">Boujee</div>
+      <div class="pkg-price" id="pp-boujee">$319</div>
+      <div class="pkg-price-label">Starting price</div>
+      <div class="pkg-desc">The ultimate luxury experience. Top-tier products, top-tier results.</div>
+      <ul class="pkg-features"><li>Everything in Fully Loaded</li><li>Paint decontamination</li><li>Multi-stage machine polish</li><li>Premium sealant & wax</li><li>Swirl & scratch removal</li></ul>
+      <button onclick="showPage('book')" class="pkg-cta">Book This</button>
+    </div>
+    <div class="pkg-card">
+      <div class="pkg-name">Interior Love</div>
+      <div class="pkg-price" id="pp-interior">$169</div>
+      <div class="pkg-price-label">Starting price</div>
+      <div class="pkg-desc">Full interior refresh — deep cleaned, vacuumed, and smelling brand new.</div>
+      <ul class="pkg-features"><li>Deep interior vacuum</li><li>All surface wipe-down</li><li>Leather/upholstery cleaning</li><li>Interior window cleaning</li><li>Odor treatment</li></ul>
+      <button onclick="showPage('book')" class="pkg-cta">Book This</button>
+    </div>
+  </div>
+
+  <div style="margin-top:32px;text-align:center;border-top:1px solid var(--border);padding-top:32px"><button onclick="showPage('book')" class="btn-primary">View All Packages &amp; Book</button></div>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────────
+     ADD-ONS SECTION
+     Each .addon-card here is display-only (the homepage listing).
+     To add/remove an add-on you must update THREE places:
+       1. This section (visual display card below)
+       2. The .addon-pick-grid inside the booking form (step 1)
+       3. The PKG_PRICES / pricing logic does NOT need updating
+          since add-ons are priced separately via togAddon()
+───────────────────────────────────────────────────────────── -->
+<section id="addons" style="background:var(--dk);padding:80px 5%">
+  <div class="section-label">Enhance Your Detail</div>
+  <div class="section-title">ADD-ONS</div>
+  <div style="margin-top:48px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1px;background:var(--border)" id="addons-grid">
+
+    <!--
+    ═══════════════════════════════════════════════════
+    ADD-ON DISPLAY CARDS
+    To add a new add-on, copy the template below AND add a
+    matching .addon-pick tile in the booking form (search for
+    "addon-pick-grid" to find it).
+    ═══════════════════════════════════════════════════
+    -->
+
+    <!-- ADD-ON CARD TEMPLATE (copy & fill in — also add to booking form!)
+    <div class="addon-card">
+      <div class="addon-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          YOUR SVG PATH HERE
+        </svg>
+      </div>
+      <div class="addon-name">Add-On Name</div>
+      <div class="addon-price">$00</div>
+      <div class="addon-desc">Short description of this add-on service.</div>
+    </div>
+    -->
+
+    <div class="addon-card">
+      <div class="addon-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 12c0-2.21 1.79-4 4-4s4 1.79 4 4-1.79 4-4 4"/><path d="M12 8v1m0 6v1m-4-4h1m6 0h1"/></svg>
+      </div>
+      <div class="addon-name">Shampoo</div>
+      <div class="addon-price">$50</div>
+      <div class="addon-desc">Deep carpet & upholstery shampoo treatment</div>
+    </div>
+
+    <div class="addon-card">
+      <div class="addon-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6l4 6-4 6M21 6l-4 6 4 6"/></svg>
+      </div>
+      <div class="addon-name">Steam Clean</div>
+      <div class="addon-price">$30</div>
+      <div class="addon-desc">High-pressure steam sanitizes surfaces & crevices</div>
+    </div>
+
+    <div class="addon-card">
+      <div class="addon-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+      </div>
+      <div class="addon-name">Pet Hair Removal</div>
+      <div class="addon-price">$50</div>
+      <div class="addon-desc">Full interior pet hair extraction & deodorize</div>
+    </div>
+
+    <div class="addon-card">
+      <div class="addon-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+      </div>
+      <div class="addon-name">Ozone Air Treatment</div>
+      <div class="addon-price">$70</div>
+      <div class="addon-desc">Eliminates odors at the molecular level</div>
+    </div>
+
+    <div class="addon-card">
+      <div class="addon-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      </div>
+      <div class="addon-name">Clay Bar</div>
+      <div class="addon-price">$50</div>
+      <div class="addon-desc">Removes bonded contaminants from paint surface</div>
+    </div>
+
+    <div class="addon-card">
+      <div class="addon-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V12m0-10v6M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M2 12h6m8 0h6M4.93 19.07l4.24-4.24M14.83 9.17l4.24-4.24"/></svg>
+      </div>
+      <div class="addon-name">Child Seat Clean</div>
+      <div class="addon-price">$25 <span style="font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:.05em;opacity:.6">/ seat</span></div>
+      <div class="addon-desc">Thorough cleaning & sanitizing of child safety seats</div>
+    </div>
+
+    <div class="addon-card">
+      <div class="addon-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M3 12h3m12 0h3M12 3v3m0 12v3"/></svg>
+      </div>
+      <div class="addon-name">Headlight Restoration</div>
+      <div class="addon-price">$120</div>
+      <div class="addon-desc">Clears yellowed & hazy lenses to like-new clarity</div>
+    </div>
+
+    <div class="addon-card">
+      <div class="addon-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      </div>
+      <div class="addon-name">Additional Cleaning</div>
+      <div class="addon-price">$75</div>
+      <div class="addon-desc">Extra time for heavily soiled or oversized vehicles</div>
+    </div>
+
+    <div class="addon-card">
+      <div class="addon-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <div class="addon-name">Engine Bay Clean</div>
+      <div class="addon-price">$75</div>
+      <div class="addon-desc">Degreased, cleaned & dressed engine compartment</div>
+    </div>
+
+    <div class="addon-card">
+      <div class="addon-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <div class="addon-name">Ceramic Spray</div>
+      <div class="addon-price">$40</div>
+      <div class="addon-desc">Hydrophobic ceramic coating spray for lasting shine</div>
+    </div>
+
+  </div>
+  <style>
+  .addon-card{
+    background:var(--dk);padding:28px 24px;
+    transition:background .2s;position:relative;overflow:hidden;
+  }
+  .addon-card::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,var(--y),transparent);
+    transform:scaleX(0);transform-origin:left;transition:transform .35s ease;
+  }
+  .addon-card:hover{background:var(--card2)}
+  .addon-card:hover::before{transform:scaleX(1)}
+  .addon-icon{
+    width:36px;height:36px;color:var(--y);opacity:.65;margin-bottom:16px;
+  }
+  .addon-icon svg{width:100%;height:100%}
+  .addon-name{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.04em;margin-bottom:4px}
+  .addon-price{
+    font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--y);
+    letter-spacing:.02em;line-height:1;margin-bottom:10px;
+  }
+  .addon-desc{font-size:12px;color:rgba(237,234,224,.4);line-height:1.7;font-weight:400}
+  </style>
+  <div style="margin-top:32px;text-align:center;border-top:1px solid var(--border);padding-top:32px">
+    <p style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:.1em;margin-bottom:20px">Add-ons can be requested during booking in the Special Requests field</p>
+    <button onclick="showPage('book')" class="btn-primary">Book & Add On →</button>
+  </div>
+</section>
+
+<script>
+// Pricing table: [coupe, sedan, suv2, suv3, truck, van]
+/*
+ * ═══════════════════════════════════════════════════════════════
+ * PRICING TABLE
+ * Each key maps to a package. Values are prices by vehicle type:
+ *   Index: [coupe, sedan, suv2, suv3, truck, van]
+ *
+ * To add a new package:
+ *   1. Add a row here:  'key': [price, price, price, price, price, price]
+ *   2. Add id="pp-key" to the .pkg-price element in the packages section.
+ *   3. Add the key to SVC_KEY_MAP in both fillSum() and confirm_booking().
+ *   4. Add a .service-card in the booking form step 1.
+ * ═══════════════════════════════════════════════════════════════
+ */
+var PKG_PRICES={
+  'basic':  [129,139,149,169,169,169],
+  'quickie':[69, 69, 79, 79, 89, 79],
+  'toughy': [129,139,139,149,159,159],
+  'fully':  [209,219,229,249,249,259],
+  'boujee': [319,339,349,359,349,369],
+  'interior':[169,179,189,199,189,209]
+};
+var PKG_VEH_IDX=0;
+function setPkgVeh(btn,veh){
+  /* clear all top-level buttons */
+  document.querySelectorAll('.pkg-veh-btn').forEach(function(b){b.classList.remove('active')});
+  /* clear sub-buttons */
+  document.querySelectorAll('.pkg-veh-subbtn').forEach(function(b){b.classList.remove('active')});
+
+  /* if it's an SUV sub-button, keep the SUV parent highlighted */
+  if(veh==='suv2'||veh==='suv3'){
+    document.querySelector('.pkg-veh-suv').classList.add('active');
+    btn.classList.add('active');
+  } else {
+    btn.classList.add('active');
+    /* close SUV sub-row */
+    var sub=document.getElementById('pkg-suv-sub');
+    if(sub){sub.style.display='none';}
+    var suvBtn=document.querySelector('.pkg-veh-suv');
+    if(suvBtn){suvBtn.textContent='SUV ▾';}
+  }
+
+  var idx={coupe:0,sedan:1,suv2:2,suv3:3,truck:4,van:5}[veh];
+  PKG_VEH_IDX=idx;
+  Object.keys(PKG_PRICES).forEach(function(k){
+    var el=document.getElementById('pp-'+k);
+    if(el){
+      el.style.opacity='0';
+      setTimeout(function(){
+        el.textContent='$'+PKG_PRICES[k][idx];
+        el.style.opacity='1';
+      },120);
+    }
+  });
+}
+</script>
+
+<div style="height:1px;background:linear-gradient(90deg,var(--y) 0%,rgba(240,201,58,.1) 30%,transparent 70%);margin:0 5%"></div>
+<section class="gallery-section" id="gallery">
+  <div class="section-label">Our Work</div>
+  <div class="section-title">DETAILS THAT<br>SPEAK FOR THEMSELVES</div>
+  <div class="gallery-grid">
+
+    <!--
+    ═══════════════════════════════════════════════════
+    GALLERY IMAGES
+    The grid uses a fixed 5-slot layout (gi-1 through gi-5).
+    To swap a photo, update the src="images/YOUR-FILE.webp" attribute.
+    Always use .webp for performance. Recommended sizes:
+      gi-1 (large left):  1400×760px
+      gi-2 (large right): 1000×760px
+      gi-3/4/5 (small):   800×520px
+    Always fill in a descriptive alt="" for accessibility.
+    ═══════════════════════════════════════════════════
+    -->
+
+    <div class="gallery-item gi-1">
+      <img src="images/gallery-6.webp" alt="Detail shop with cars under professional lighting">
+    </div>
+    <div class="gallery-item gi-2">
+      <img src="images/gallery-1.webp" alt="Machine polisher on black car paint">
+    </div>
+    <div class="gallery-item gi-3">
+      <img src="images/gallery-2.webp" alt="Wiping headlight with microfiber cloth">
+    </div>
+    <div class="gallery-item gi-4">
+      <img src="images/gallery-3.webp" alt="Interior door panel being cleaned with brush">
+    </div>
+    <div class="gallery-item gi-5">
+      <img src="images/gallery-4.webp" alt="Interior dashboard being cleaned with yellow cloth">
+    </div>
+
+  </div>
+</section>
+
+<section id="reviews">
+  <div class="section-label">What People Say</div>
+  <div class="section-title">CUSTOMER REVIEWS</div>
+  <div class="reviews-grid">
+
+    <!--
+    ═══════════════════════════════════════════════════
+    REVIEW CARDS
+    To add a new review, copy the template below and fill in:
+      • review-text  → the customer quote (keep it in quotes)
+      • reviewer-avatar → 2-letter initials (first + last)
+      • reviewer-name   → customer's first name
+      • reviewer-loc    → City, State
+    Stars are always 5 — do not change.
+    ═══════════════════════════════════════════════════
+    -->
+
+    <!-- REVIEW CARD TEMPLATE (copy & fill in)
+    <div class="review-card">
+      <div class="stars"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
+      <p class="review-text">"Customer review text goes here."</p>
+      <div class="reviewer">
+        <div class="reviewer-avatar">AB</div>
+        <div>
+          <div class="reviewer-name">First Name</div>
+          <div class="reviewer-loc">City, State</div>
+        </div>
+      </div>
+    </div>
+    -->
+
+    <div class="review-card"><div class="stars"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div><p class="review-text">"Super convenient, great service, quality results. My husband's car had sunscreen smears and pine needles. Our cars look brand new."</p><div class="reviewer"><div class="reviewer-avatar">AL</div><div><div class="reviewer-name">Allison</div><div class="reviewer-loc">Dallas, TX</div></div></div></div>
+    <div class="review-card"><div class="stars"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div><p class="review-text">"10/10 every time! Paint correction made my car look incredible. Each detailer is kind, timely, and always above and beyond."</p><div class="reviewer"><div class="reviewer-avatar">AE</div><div><div class="reviewer-name">Allie</div><div class="reviewer-loc">Edmond, OK</div></div></div></div>
+    <div class="review-card"><div class="stars"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div><p class="review-text">"My 10-year-old car looks brand new. They came to my house and detailed to perfection while I ran errands. Unreal."</p><div class="reviewer"><div class="reviewer-avatar">MA</div><div><div class="reviewer-name">Marci</div><div class="reviewer-loc">Wichita, KS</div></div></div></div>
+
+  </div>
+</section>
+<section id="contact" class="contact-section">
+  <div class="section-label">Get in Touch</div>
+  <div class="section-title">CONTACT US</div>
+  <div class="contact-grid">
+    <div class="contact-card"><div class="contact-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div><div class="contact-label">Headquarters</div><div class="contact-val">2600 Linda Ln, Suite 9</div><div class="contact-detail">Edmond, OK 73013</div></div>
+    <div class="contact-card"><div class="contact-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="contact-label">Office Hours</div><div class="contact-val">Mon – Fri</div><div class="contact-detail">8:00 AM – 5:00 PM</div></div>
+    <div class="contact-card"><div class="contact-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8a19.79 19.79 0 01-3.07-8.68A2 2 0 012 .92h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.9a16 16 0 006.29 6.29l1.35-1.35a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div><div class="contact-label">Main Line</div><a href="tel:8335366648" class="contact-val">833-536-6648</a><div class="contact-detail">Call or text anytime</div></div>
+    <div class="contact-card"><div class="contact-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div><div class="contact-label">After Hours</div><a href="tel:4054711168" class="contact-val">405-471-1168</a><div class="contact-detail">Text preferred after 5 PM</div></div>
+    <div class="contact-card"><div class="contact-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div><div class="contact-label">Email</div><a href="mailto:INFO@LEMONHEADSDETAIL.COM" class="contact-val" style="font-size:13px">info@lemonheadsdetail.com</a></div>
+    <div class="contact-card" style="background:rgba(245,216,0,.06);border-color:rgba(245,216,0,.2)"><div class="contact-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg></div><div class="contact-label">Gift Cards</div><a href="https://squareup.com/gift/8F6FQP6M1ZSDD/order" class="contact-val" style="color:var(--y)">Purchase E-Gift Card</a><div class="contact-detail">Perfect for any occasion</div></div>
+  </div>
+</section>
+<footer>
+  <div class="footer-top">
+    <div class="nav-logo" onclick="showPage('home')">
+      <img src="images/lemon-logo.webp" alt="Lemonheads">
+      <div><div class="nav-logo-text">LEMONHEADS</div><div class="nav-logo-sub">Mobile Detail</div></div>
+    </div>
+    <div class="footer-links">
+      <a onclick="showPage('book')">Book Now</a>
+      <a href="https://www.lemonheadsdetail.com/mobiledetailingmemberships">Memberships</a>
+      <a href="https://www.lemonheadsdetail.com/q-a">FAQs</a>
+      <a href="https://www.lemonheadsdetail.com/shop">Store</a>
+      <a href="https://www.lemonheadsdetail.com/blog">Blog</a>
+      <a href="https://www.lemonheadsdetail.com/privacy-policy">Privacy</a>
+    </div>
+    <div class="footer-social">
+      <a href="https://www.instagram.com/lemonheadsdetail/" class="social-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>
+      <a href="https://www.facebook.com/Lemonheadsdetail/" class="social-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg></a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-copy">© 2025 Lemonhead's Mobile Detail. All rights reserved.</div>
+    <button onclick="showPage('book')" class="btn-primary" style="font-size:13px;padding:11px 22px">Book a Detail →</button>
+  </div>
+</footer>
+</div>
+
+<!-- TEAM PAGE -->
+<div id="page-team" class="page">
+<div class="team-hero">
+  <div class="section-label" style="display:flex;justify-content:center">Our People</div>
+  <h1>MEET THE <span>TEAM</span></h1>
+  <p>The crew behind every spotless detail.</p>
+</div>
+<div class="team-container">
+
+  <!--
+  ═══════════════════════════════════════════════════
+  EMPLOYEE CARDS — 3-column circle-photo grid
+  To add a new employee, copy a .team-card block and fill in:
+    • data-role  → "detailer" | "Manager"
+    • data-name  → first name (used by booking detailer picker)
+    • img src / id → photo path and unique id
+    • openBio()  → name, position, bio text, img id
+  ═══════════════════════════════════════════════════
+  -->
+
+  <div class="team-grid" id="team-grid">
+
+    <div class="team-card" data-role="detailer" data-name="Colton" onclick="openBio('COLTON','Detailer','Hi Im Colton and my hobbies include riding and working on motorcycles, going to the gym and learning. I am going to UCO for Mechanical Engineering and Computer Science. I want to work for NASA or SpaceX after graduation.','colton-photo')">
+      <div class="team-photo-wrap">
+        <img id="colton-photo" src="images/Colton.webp" alt="Colton">
+      </div>
+      <div class="team-name">COLTON</div>
+      <div class="team-position">Detailer</div>
+      <div class="team-bio-hint">View Bio</div>
+    </div>
+
+    <div class="team-card" data-role="Manager" data-name="Dave" onclick="openBio('DAVE','Manager','Former educator and Texas Transplant. I enjoy video games and making music in my free time. Dream car is a 70s Datsun 240z.','dave-photo')">
+      <div class="team-photo-wrap">
+        <img id="dave-photo" src="images/Dave.webp" alt="Dave">
+      </div>
+      <div class="team-name">DAVE</div>
+      <div class="team-position">Manager</div>
+      <div class="team-bio-hint">View Bio</div>
+    </div>
+
+    <div class="team-card" data-role="Manager" data-name="Gunner" onclick="openBio('GUNNER','Manager','Enjoys lifting, reading, and hanging out with his girlfriend.','gunner-photo')">
+      <div class="team-photo-wrap">
+        <img id="gunner-photo" src="images/Gunner.webp" alt="Gunner">
+      </div>
+      <div class="team-name">GUNNER</div>
+      <div class="team-position">Manager</div>
+      <div class="team-bio-hint">View Bio</div>
+    </div>
+
+    <div class="team-card" data-role="detailer" data-name="Owen" onclick="openBio('OWEN','Detailer','27. Enjoy spending time with family, playing video games, and cleaning cars.','owen-photo')">
+      <div class="team-photo-wrap">
+        <img id="owen-photo" src="images/Owen.webp" alt="Owen">
+      </div>
+      <div class="team-name">OWEN</div>
+      <div class="team-position">Detailer</div>
+      <div class="team-bio-hint">View Bio</div>
+    </div>
+
+    <div class="team-card" data-role="detailer" data-name="Austin" onclick="openBio('AUSTIN','Detailer / Wrap Specialist','No bio available.','austin-photo')">
+      <div class="team-photo-wrap">
+        <img id="austin-photo" src="images/Austin.webp" alt="Austin">
+      </div>
+      <div class="team-name">AUSTIN</div>
+      <div class="team-position">Detailer · Wrap Specialist</div>
+      <div class="team-bio-hint">View Bio</div>
+    </div>
+
+    <div class="team-card" data-role="detailer" data-name="Richard" onclick="openBio('RICHARD','Detailer','I enjoy basketball, football, photography, and gaming. My goal is to stay healthy and be successful.','richard-photo')">
+      <div class="team-photo-wrap">
+        <img id="richard-photo" src="images/Richard.webp" alt="Richard">
+      </div>
+      <div class="team-name">RICHARD</div>
+      <div class="team-position">Detailer</div>
+      <div class="team-bio-hint">View Bio</div>
+    </div>
+
+  </div><!-- /team-grid -->
+
+  <div class="team-empty-note" id="team-empty" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+    </svg>
+    Employee profiles coming soon.
+  </div>
+
+</div><!-- /team-container -->
+<button onclick="showPage('home')" style="display:block;margin:0 auto 60px;background:none;border:none;color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;" onmouseover="this.style.color='var(--y)'" onmouseout="this.style.color='var(--muted)'">← Back to Home</button>
+</div>
+
+<!-- THE LAB PAGE -->
+<div id="page-thelab" class="page">
+<div class="team-hero">
+  <div class="section-label" style="display:flex;justify-content:center">Our Shop in Edmond</div>
+  <h1>THE <span>LAB</span></h1>
+  <p>2600 Linda Ln, Suite 9 · Edmond, OK 73013 · 405-471-1168</p>
+</div>
+<div class="team-container">
+
+  <!-- ── ABOUT THE LAB ── -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);margin-bottom:60px">
+    <div style="background:var(--card);padding:40px 36px">
+      <div class="section-label">What Is The LAB</div>
+      <h2 style="font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:.04em;line-height:1;margin-bottom:16px">LEMONHEAD'S<br>HOME BASE</h2>
+      <p style="font-size:13px;color:rgba(237,234,224,.5);line-height:1.9;font-weight:400">The LAB is our Edmond headquarters — the shop behind the mobile operation. Drop your vehicle off and we'll handle the detail while you get on with your day. Same Lemonhead's quality, stationary setting.</p>
+    </div>
+    <div style="background:var(--card);padding:40px 36px">
+      <div class="section-label">Hours & Location</div>
+      <div style="display:flex;flex-direction:column;gap:20px;margin-top:8px">
+        <div>
+          <div style="font-size:9px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:6px">Address</div>
+          <div style="font-size:15px;font-weight:700">2600 Linda Ln, Suite 9</div>
+          <div style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px">Edmond, OK 73013</div>
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:6px">Hours</div>
+          <div style="font-size:15px;font-weight:700">Mon – Fri, 8:00 AM – 5:00 PM</div>
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:6px">Phone</div>
+          <a href="tel:4054711168" style="font-size:15px;font-weight:700;color:var(--text);text-decoration:none">405-471-1168</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SERVICES GRID ── -->
+  <div class="section-label">What We Offer</div>
+  <div class="section-title" style="font-family:'Bebas Neue',sans-serif;font-size:clamp(44px,6.5vw,80px);line-height:.95;letter-spacing:.02em;margin-bottom:48px">SERVICES</div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1px;background:var(--border)">
+
+    <a href="https://www.thelabok.com/ceramiccoatings" target="_blank" rel="noopener" style="text-decoration:none;display:block;background:var(--card);padding:44px 36px;transition:background .3s;position:relative;overflow:hidden" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='var(--card)'">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:96px;color:rgba(240,201,58,.04);position:absolute;top:-16px;right:12px;line-height:1;pointer-events:none;letter-spacing:-.02em">01</div>
+      <div style="width:44px;height:44px;background:rgba(240,201,58,.08);border:1px solid rgba(240,201,58,.15);border-radius:6px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;color:var(--y)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:.04em;margin-bottom:10px;color:var(--text)">Ceramic Coatings</div>
+      <p style="font-size:13px;color:rgba(237,234,224,.4);line-height:1.8;font-weight:400">Long-term paint protection with hydrophobic ceramic coating — rated for years, not months.</p>
+      <div style="margin-top:24px;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--y);font-family:'JetBrains Mono',monospace">Learn More →</div>
+    </a>
+
+    <a href="https://www.thelabok.com/vinylwraps" target="_blank" rel="noopener" style="text-decoration:none;display:block;background:var(--card);padding:44px 36px;transition:background .3s;position:relative;overflow:hidden" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='var(--card)'">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:96px;color:rgba(240,201,58,.04);position:absolute;top:-16px;right:12px;line-height:1;pointer-events:none;letter-spacing:-.02em">02</div>
+      <div style="width:44px;height:44px;background:rgba(240,201,58,.08);border:1px solid rgba(240,201,58,.15);border-radius:6px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;color:var(--y)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      </div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:.04em;margin-bottom:10px;color:var(--text)">Vinyl Wraps</div>
+      <p style="font-size:13px;color:rgba(237,234,224,.4);line-height:1.8;font-weight:400">Full and partial vehicle wraps in any color or finish. Change the look without touching the paint.</p>
+      <div style="margin-top:24px;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--y);font-family:'JetBrains Mono',monospace">Learn More →</div>
+    </a>
+
+    <a href="https://www.thelabok.com/paintcorrection" target="_blank" rel="noopener" style="text-decoration:none;display:block;background:var(--card);padding:44px 36px;transition:background .3s;position:relative;overflow:hidden" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='var(--card)'">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:96px;color:rgba(240,201,58,.04);position:absolute;top:-16px;right:12px;line-height:1;pointer-events:none;letter-spacing:-.02em">03</div>
+      <div style="width:44px;height:44px;background:rgba(240,201,58,.08);border:1px solid rgba(240,201,58,.15);border-radius:6px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;color:var(--y)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      </div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:.04em;margin-bottom:10px;color:var(--text)">Paint Correction</div>
+      <p style="font-size:13px;color:rgba(237,234,224,.4);line-height:1.8;font-weight:400">Machine polishing to remove swirls, scratches, and oxidation. Restore your paint to showroom clarity.</p>
+      <div style="margin-top:24px;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--y);font-family:'JetBrains Mono',monospace">Learn More →</div>
+    </a>
+
+    <a href="https://www.thelabok.com/colored-ppf" target="_blank" rel="noopener" style="text-decoration:none;display:block;background:var(--card);padding:44px 36px;transition:background .3s;position:relative;overflow:hidden" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='var(--card)'">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:96px;color:rgba(240,201,58,.04);position:absolute;top:-16px;right:12px;line-height:1;pointer-events:none;letter-spacing:-.02em">04</div>
+      <div style="width:44px;height:44px;background:rgba(240,201,58,.08);border:1px solid rgba(240,201,58,.15);border-radius:6px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;color:var(--y)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:.04em;margin-bottom:10px;color:var(--text)">Colored PPF</div>
+      <p style="font-size:13px;color:rgba(237,234,224,.4);line-height:1.8;font-weight:400">Paint protection film in a full range of colors — the look of a wrap with the protection of PPF.</p>
+      <div style="margin-top:24px;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--y);font-family:'JetBrains Mono',monospace">Learn More →</div>
+    </a>
+
+    <a href="https://www.thelabok.com/paintprotectionfilm" target="_blank" rel="noopener" style="text-decoration:none;display:block;background:var(--card);padding:44px 36px;transition:background .3s;position:relative;overflow:hidden" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='var(--card)'">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:96px;color:rgba(240,201,58,.04);position:absolute;top:-16px;right:12px;line-height:1;pointer-events:none;letter-spacing:-.02em">05</div>
+      <div style="width:44px;height:44px;background:rgba(240,201,58,.08);border:1px solid rgba(240,201,58,.15);border-radius:6px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;color:var(--y)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:.04em;margin-bottom:10px;color:var(--text)">PPF</div>
+      <p style="font-size:13px;color:rgba(237,234,224,.4);line-height:1.8;font-weight:400">Clear paint protection film that shields against rock chips, road debris, and UV damage — invisible armor.</p>
+      <div style="margin-top:24px;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--y);font-family:'JetBrains Mono',monospace">Learn More →</div>
+    </a>
+
+  </div>
+
+  <!-- ── BOOK CONSULTATION CTA ── -->
+  <div style="margin-top:2px;background:rgba(240,201,58,.04);border:1px solid rgba(240,201,58,.15);padding:44px 36px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:24px">
+    <div>
+      <div class="section-label">Ready to Get Started?</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:.04em;line-height:1">BOOK A CONSULTATION</div>
+      <p style="font-size:13px;color:rgba(237,234,224,.45);margin-top:10px;max-width:400px;line-height:1.8">Talk to the team at The LAB about ceramic coatings, wraps, PPF, and paint correction. No commitment, just answers.</p>
+    </div>
+    <a href="https://www.thelabok.com/book-online-1" class="btn-primary" target="_blank" rel="noopener">Book at thelabok.com →</a>
+  </div>
+
+</div>
+<button onclick="showPage('home')" style="display:block;margin:0 auto 60px;background:none;border:none;color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;" onmouseover="this.style.color='var(--y)'" onmouseout="this.style.color='var(--muted)'">← Back to Home</button>
+</div>
+
+<!-- BOOK PAGE -->
+<div id="page-book" class="page">
+<div class="book-hero">
+  <div class="section-label" style="display:flex;justify-content:center">Schedule Your Detail</div>
+  <h1>BOOK A <span>DETAIL</span></h1>
+  <p>Takes less than 2 minutes. No account needed.</p>
+</div>
+<div class="book-container">
+  <div class="book-steps">
+    <div class="book-step active" id="si1"><div class="bsn">1</div><span>Service</span></div>
+    <div class="sdiv" id="sd1"></div>
+    <div class="book-step" id="si2"><div class="bsn">2</div><span>Schedule</span></div>
+    <div class="sdiv" id="sd2"></div>
+    <div class="book-step" id="si3"><div class="bsn">3</div><span>Details</span></div>
+    <div class="sdiv" id="sd3"></div>
+    <div class="book-step" id="si4"><div class="bsn">4</div><span>Confirm</span></div>
+  </div>
+
+  <div id="st1">
+    <div class="form-section">
+      <h2>Choose Your Service</h2>
+      <div class="service-grid">
+        <div class="service-card" onclick="selSvc(this,'Totally Basic')"><div class="svc-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div><div class="service-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h6M9 16h6m-3-12v4M5 6a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6z"/></svg></div><div class="service-name">Totally Basic</div><div class="service-time">~2 hrs</div></div>
+        <div class="service-card" onclick="selSvc(this,'Quickie')"><div class="svc-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div><div class="service-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div class="service-name">Quickie</div><div class="service-time">~1.5 hrs</div></div>
+        <div class="service-card" onclick="selSvc(this,'Toughy')"><div class="svc-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div><div class="service-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></div><div class="service-name">Toughy</div><div class="service-time">~2.5 hrs</div></div>
+        <div class="service-card" onclick="selSvc(this,'Fully Loaded')"><div class="svc-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div><div class="service-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg></div><div class="service-name">Fully Loaded</div><div class="service-time">~3–4 hrs</div></div>
+        <div class="service-card" onclick="selSvc(this,'Boujee')"><div class="svc-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div><div class="service-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9z"/><path d="M2 9h20M6 3l-2 6m16-6l2 6M10 3L8 9l4 13M14 3l2 6-4 13"/></svg></div><div class="service-name">Boujee</div><div class="service-time">~4–5 hrs</div></div>
+        <div class="service-card" onclick="selSvc(this,'Interior Love')"><div class="svc-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div><div class="service-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16M4 10V6a2 2 0 012-2h12a2 2 0 012 2v4M4 10l-1 8h18l-1-8M8 18v3m8-3v3"/></svg></div><div class="service-name">Interior Love</div><div class="service-time">~2 hrs</div></div>
+      </div>
+    </div>
+    <div class="form-section">
+      <h2>Vehicle Type</h2>
+      <div class="vehicle-grid" id="veh-main-grid">
+        <div class="vehicle-card" onclick="selVeh(this,'2-Door Coupe','coupe')">
+          <div class="vehicle-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14l3-7h14l3 7M2 14h20M2 14v4h2m16-4v4h-2m-14 0a2 2 0 104 0m6 0a2 2 0 104 0M7 7l2-4m8 4l-2-4"/></svg></div>
+          <div class="vehicle-label">2-Door Coupe</div>
+        </div>
+        <div class="vehicle-card" onclick="selVeh(this,'4-Door Sedan','sedan')">
+          <div class="vehicle-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17H3a2 2 0 01-2-2v-4l2.5-5h13L19 11v4a2 2 0 01-2 2h-2m-8 0a2 2 0 104 0m4 0a2 2 0 104 0"/></svg></div>
+          <div class="vehicle-label">4-Door Sedan</div>
+        </div>
+        <div class="vehicle-card" id="veh-suv-card" onclick="showSuvRows()">
+          <div class="vehicle-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h14l3 5h3a2 2 0 012 2v4h-2m-2 0H7m-4 0H3v-4M1 4v7m0 0h2"/><circle cx="6" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M1 11h18"/></svg></div>
+          <div class="vehicle-label">SUV</div>
+          <div id="veh-suv-hint" style="font-size:9px;font-family:'JetBrains Mono',monospace;color:rgba(240,201,58,.6);letter-spacing:.1em;margin-top:4px">TAP TO SELECT ROWS ▾</div>
+        </div>
+        <div class="vehicle-card" onclick="selVeh(this,'Truck','truck')">
+          <div class="vehicle-icon-svg" style="width:64px;height:26px"><img src="images/truck.svg" style="width:100%;height:100%;object-fit:contain"></div>
+          <div class="vehicle-label">Truck</div>
+        </div>
+        <div class="vehicle-card" onclick="selVeh(this,'Van','van')">
+          <div class="vehicle-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22M7 4v16m5-16v6"/></svg></div>
+          <div class="vehicle-label">Van</div>
+        </div>
+      </div>
+      <!-- SUV row sub-selection — slides in after tapping SUV -->
+      <div id="veh-suv-sub" style="display:none;margin-top:10px">
+        <div style="font-size:9px;font-family:'JetBrains Mono',monospace;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-bottom:10px">How many rows of seats?</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="vehicle-card" id="veh-suv2" onclick="selVeh(this,'SUV (2-Row)','suv2');selSuvRow('veh-suv2')">
+            <div class="vehicle-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h14l3 5h3a2 2 0 012 2v4h-2m-2 0H7m-4 0H3v-4M1 4v7m0 0h2"/><circle cx="6" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M1 11h18"/></svg></div>
+            <div class="vehicle-label">2-Row SUV</div>
+            <div style="font-size:10px;font-family:'JetBrains Mono',monospace;color:rgba(237,234,224,.35);margin-top:4px">e.g. RAV4, CR-V, Equinox</div>
+          </div>
+          <div class="vehicle-card" id="veh-suv3" onclick="selVeh(this,'SUV (3-Row)','suv3');selSuvRow('veh-suv3')">
+            <div class="vehicle-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h14l3 5h3a2 2 0 012 2v4h-2m-2 0H7m-4 0H3v-4M1 4v7m0 0h2"/><circle cx="6" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M1 11h18"/></svg></div>
+            <div class="vehicle-label">3-Row SUV</div>
+            <div style="font-size:10px;font-family:'JetBrains Mono',monospace;color:rgba(237,234,224,.35);margin-top:4px">e.g. Tahoe, Suburban, Expedition</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="form-section" id="addons-step">
+      <h2>Add-Ons <span style="font-size:13px;font-family:'JetBrains Mono',monospace;font-weight:400;letter-spacing:.05em;color:var(--muted);text-transform:none">— Optional</span></h2>
+      <p style="font-size:12px;color:rgba(237,234,224,.35);font-family:'JetBrains Mono',monospace;letter-spacing:.06em;margin-bottom:24px">Tap any to add to your booking</p>
+      <div class="addon-pick-grid">
+
+        <!--
+        ═══════════════════════════════════════════════════
+        BOOKING FORM — ADD-ON PICKER TILES
+        Each tile here mirrors an add-on card on the homepage.
+        To add a new add-on tile:
+          1. Copy the template below and fill in name and price.
+          2. The price ($) must match what's shown on the homepage.
+          3. Also add a matching display card in #addons-grid above.
+        togAddon(element, 'Name', price) tracks selected add-ons
+        and adds them to the booking total automatically.
+        ═══════════════════════════════════════════════════
+        -->
+
+        <!-- ADD-ON PICKER TILE TEMPLATE (copy & fill in)
+        <div class="addon-pick" onclick="togAddon(this,'Add-On Name',00)">
+          <div class="addon-pick-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div>
+          <div class="addon-pick-name">Add-On Name</div>
+          <div class="addon-pick-price">+$00</div>
+        </div>
+        -->
+        <div class="addon-pick" onclick="togAddon(this,'Shampoo',50)">
+          <div class="addon-pick-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div>
+          <div class="addon-pick-name">Shampoo</div>
+          <div class="addon-pick-price">+$50</div>
+        </div>
+        <div class="addon-pick" onclick="togAddon(this,'Steam Clean',30)">
+          <div class="addon-pick-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div>
+          <div class="addon-pick-name">Steam Clean</div>
+          <div class="addon-pick-price">+$30</div>
+        </div>
+        <div class="addon-pick" onclick="togAddon(this,'Pet Hair Removal',50)">
+          <div class="addon-pick-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div>
+          <div class="addon-pick-name">Pet Hair Removal</div>
+          <div class="addon-pick-price">+$50</div>
+        </div>
+        <div class="addon-pick" onclick="togAddon(this,'Ozone Air Treatment',70)">
+          <div class="addon-pick-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div>
+          <div class="addon-pick-name">Ozone Air Treatment</div>
+          <div class="addon-pick-price">+$70</div>
+        </div>
+        <div class="addon-pick" onclick="togAddon(this,'Clay Bar',50)">
+          <div class="addon-pick-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div>
+          <div class="addon-pick-name">Clay Bar</div>
+          <div class="addon-pick-price">+$50</div>
+        </div>
+        <div class="addon-pick" onclick="togAddon(this,'Child Seat Clean',25)">
+          <div class="addon-pick-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div>
+          <div class="addon-pick-name">Child Seat Clean</div>
+          <div class="addon-pick-price">+$25<span style="font-size:9px;opacity:.6">/seat</span></div>
+        </div>
+        <div class="addon-pick" onclick="togAddon(this,'Headlight Restoration',120)">
+          <div class="addon-pick-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div>
+          <div class="addon-pick-name">Headlight Restoration</div>
+          <div class="addon-pick-price">+$120</div>
+        </div>
+        <div class="addon-pick" onclick="togAddon(this,'Additional Cleaning',75)">
+          <div class="addon-pick-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div>
+          <div class="addon-pick-name">Additional Cleaning</div>
+          <div class="addon-pick-price">+$75</div>
+        </div>
+        <div class="addon-pick" onclick="togAddon(this,'Engine Bay Clean',75)">
+          <div class="addon-pick-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div>
+          <div class="addon-pick-name">Engine Bay Clean</div>
+          <div class="addon-pick-price">+$75</div>
+        </div>
+        <div class="addon-pick" onclick="togAddon(this,'Ceramic Spray',40)">
+          <div class="addon-pick-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div>
+          <div class="addon-pick-name">Ceramic Spray</div>
+          <div class="addon-pick-price">+$40</div>
+        </div>
+      </div>
+      <!-- Running total -->
+      <div id="addon-total-bar" style="display:none;margin-top:20px;padding:14px 18px;background:rgba(240,201,58,.06);border:1px solid rgba(240,201,58,.18);border-radius:4px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:.1em;color:var(--muted);text-transform:uppercase">Add-ons total</span>
+        <span id="addon-total-val" style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--y);letter-spacing:.04em">$0</span>
+      </div>
+    </div>
+    <!-- ── PREFERENCE QUESTIONS ── -->
+    <div class="form-section" id="pref-questions">
+      <h2>A Few Quick Questions</h2>
+      <p style="font-size:12px;color:rgba(237,234,224,.35);font-family:'JetBrains Mono',monospace;letter-spacing:.06em;margin-bottom:28px">Helps us tailor the detail to your preferences</p>
+
+      <!-- Q1: Plastic conditioning -->
+      <div style="margin-bottom:28px">
+        <p style="font-size:14px;color:rgba(237,234,224,.75);line-height:1.7;margin-bottom:14px;font-weight:500">Would you like your plastic to be conditioned? We understand some customers aren't fans of the shiny look and prefer the matte, clean look. If you'd like the shiny look, please select Yes.</p>
+        <div style="display:flex;gap:8px">
+          <button class="pref-btn active" id="pq1-no"  onclick="setPref('pq1','No',  this)">No</button>
+          <button class="pref-btn"        id="pq1-yes" onclick="setPref('pq1','Yes', this)">Yes</button>
+        </div>
+      </div>
+
+      <!-- Q2: Early contact -->
+      <div>
+        <p style="font-size:14px;color:rgba(237,234,224,.75);line-height:1.7;margin-bottom:14px;font-weight:500">Sometimes our detailers run ahead of schedule. Is it okay if they contact you for an earlier start time?</p>
+        <div style="display:flex;gap:8px">
+          <button class="pref-btn active" id="pq2-yes" onclick="setPref('pq2','Yes', this)">Yes</button>
+          <button class="pref-btn"        id="pq2-no"  onclick="setPref('pq2','No',  this)">No</button>
+        </div>
+      </div>
+    </div>
+
+    <style>
+    .pref-btn{
+      background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+      color:rgba(237,234,224,.5);font-size:11px;font-weight:700;
+      letter-spacing:.18em;text-transform:uppercase;
+      padding:11px 28px;border-radius:3px;cursor:pointer;
+      font-family:'JetBrains Mono',monospace;transition:all .2s;
+    }
+    .pref-btn:hover{border-color:rgba(240,201,58,.35);color:var(--y)}
+    .pref-btn.active{background:rgba(240,201,58,.1);border-color:var(--y);color:var(--y)}
+    </style>
+
+    <div class="form-nav"><span class="progress-text">Step 1 of 4</span><button onclick="goSt(2)" class="btn-primary">Next: Schedule →</button></div>
+  </div>
+
+  <style>
+  .addon-pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+  .addon-pick{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:6px;padding:14px 16px;cursor:pointer;
+    display:flex;flex-direction:column;gap:6px;
+    position:relative;transition:background .2s,border-color .2s;
+    user-select:none;
+  }
+  .addon-pick:hover{background:var(--card2);border-color:rgba(240,201,58,.2)}
+  .addon-pick.selected{background:rgba(240,201,58,.08);border-color:var(--y)}
+  .addon-pick-check{
+    position:absolute;top:10px;right:10px;
+    width:18px;height:18px;border-radius:50%;
+    border:1px solid rgba(255,255,255,.15);
+    background:transparent;
+    display:flex;align-items:center;justify-content:center;
+    color:transparent;transition:all .2s;flex-shrink:0;
+  }
+  .addon-pick.selected .addon-pick-check{
+    background:var(--y);border-color:var(--y);color:#000;
+  }
+  .addon-pick-name{font-size:12px;font-weight:700;letter-spacing:.04em;padding-right:20px;line-height:1.3}
+  .addon-pick-price{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--y);letter-spacing:.04em;line-height:1}
+  </style>
+
+  <style>
+  /* ── DETAILER PICKER ── */
+  .detailer-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+  .detailer-card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:8px;padding:20px 16px 18px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+    position:relative;transition:background .2s,border-color .2s;
+    text-align:center;user-select:none;
+  }
+  .detailer-card:hover{background:var(--card2);border-color:rgba(240,201,58,.2)}
+  .detailer-card.selected{background:rgba(240,201,58,.08);border-color:var(--y)}
+  .detailer-card-check{
+    position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;
+    border:1px solid rgba(255,255,255,.15);background:transparent;
+    display:flex;align-items:center;justify-content:center;
+    color:transparent;transition:all .2s;
+  }
+  .detailer-card.selected .detailer-card-check{background:var(--y);border-color:var(--y);color:#000}
+  .detailer-photo{
+    width:64px;height:64px;border-radius:50%;
+    border:2px solid rgba(240,201,58,.2);overflow:hidden;
+    background:rgba(240,201,58,.05);display:flex;align-items:center;justify-content:center;
+    transition:border-color .2s;flex-shrink:0;
+  }
+  .detailer-card:hover .detailer-photo,.detailer-card.selected .detailer-photo{border-color:rgba(240,201,58,.55)}
+  .detailer-photo img{width:100%;height:100%;object-fit:cover;display:block}
+  .detailer-photo-placeholder{color:rgba(240,201,58,.25);display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+  .detailer-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.06em;line-height:1;color:var(--text)}
+  .detailer-card.nopref .detailer-name{color:rgba(237,234,224,.4);font-size:14px;letter-spacing:.04em;font-family:'JetBrains Mono',monospace}
+  .detailer-card.nopref.selected .detailer-name{color:var(--text)}
+  .detailer-card.detailer-unavailable{
+    opacity:.32;filter:grayscale(.8);cursor:not-allowed!important;
+  }
+  .detailer-card.detailer-unavailable .detailer-name::after{
+    content:' — BOOKED';
+    font-size:8px;font-weight:700;letter-spacing:.1em;
+    font-family:'JetBrains Mono',monospace;
+    color:rgba(255,255,255,.35);
+  }
+  </style>
+
+  <div id="st2" style="display:none">
+    <div class="form-section">
+      <h2>Pick a Date</h2>
+      <div class="cal-nav">
+        <button onclick="prevM()">← Prev</button>
+        <div class="cal-month-label" id="cml"></div>
+        <button onclick="nextM()">Next →</button>
+      </div>
+      <div class="cal-header"><div class="cal-day-label">Sun</div><div class="cal-day-label">Mon</div><div class="cal-day-label">Tue</div><div class="cal-day-label">Wed</div><div class="cal-day-label">Thu</div><div class="cal-day-label">Fri</div><div class="cal-day-label">Sat</div></div>
+      <div class="cal-grid" id="cg"></div>
+    </div>
+    <div class="form-section" id="tmsec" style="display:none">
+      <h2>Pick a Time</h2>
+      <div class="time-grid" id="tg"></div>
+    </div>
+    <div class="form-nav"><button onclick="goSt(1)" class="btn-outline">← Back</button><span class="progress-text">Step 2 of 4</span><button onclick="goSt(3)" class="btn-primary">Next: Your Details →</button></div>
+  </div>
+
+  <div id="st3" style="display:none">
+    <div class="form-section">
+      <h2>Choose Your Detailer <span style="font-size:13px;font-family:'JetBrains Mono',monospace;font-weight:400;letter-spacing:.05em;color:var(--muted);text-transform:none">— Optional</span></h2>
+      <p style="font-size:12px;color:rgba(237,234,224,.35);font-family:'JetBrains Mono',monospace;letter-spacing:.06em;margin-bottom:24px">No preference? We'll assign the best available.</p>
+      <div class="detailer-grid" id="detailer-grid"></div>
+    </div>
+    <div class="form-section">
+      <h2>Your Information</h2>
+      <div class="form-row"><div class="form-group"><label>First Name</label><input type="text" placeholder="Jordan" id="fn"></div><div class="form-group"><label>Last Name</label><input type="text" placeholder="Smith" id="ln"></div></div>
+      <div class="form-row"><div class="form-group"><label>Phone</label><input type="tel" placeholder="(405) 555-0100" id="ph"></div><div class="form-group"><label>Email</label><input type="email" placeholder="you@email.com" id="em"></div></div>
+    </div>
+    <div class="form-section">
+      <h2>Service Location</h2>
+      <div class="form-row single"><div class="form-group"><label>Location Type</label><select id="lt"><option value="">Select location type...</option><option>Come to my home</option><option>Come to my office / workplace</option><option>Drop off at your Edmond location</option></select></div></div>
+      <div class="form-row single"><div class="form-group"><label>Street Address</label><input type="text" placeholder="123 Main St" id="ad"></div></div>
+      <div class="form-row"><div class="form-group"><label>City</label><input type="text" placeholder="Edmond" id="ct"></div><div class="form-group"><label>ZIP Code</label><input type="text" placeholder="73013" id="zp"></div></div>
+      <div class="form-row single"><div class="form-group"><label>Year, Make & Model</label><input type="text" placeholder="e.g. 2021 Toyota Camry" id="vi"></div></div>
+      <div class="form-row single"><div class="form-group"><label>Special Requests</label><textarea placeholder="Any specific areas to focus on, access instructions, etc." id="nt"></textarea></div></div>
+    </div>
+    <div class="form-nav"><button onclick="goSt(2)" class="btn-outline">← Back</button><span class="progress-text">Step 3 of 4</span><button onclick="goSt(4)" class="btn-primary">Review & Confirm →</button></div>
+  </div>
+
+  <div id="st4" style="display:none">
+
+    <style>
+    .st4-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+    @media(max-width:700px){.st4-grid{grid-template-columns:1fr}}
+    </style>
+
+    <div class="st4-grid">
+
+      <div class="form-section" style="margin-bottom:0">
+        <h2>Booking Summary</h2>
+        <div class="summary-card" style="margin-top:20px">
+          <div class="summary-row"><span class="summary-label">Service</span><span class="summary-val" id="ss"></span></div>
+          <div class="summary-row"><span class="summary-label">Vehicle</span><span class="summary-val" id="sv"></span></div>
+          <div class="summary-row"><span class="summary-label">Date & Time</span><span class="summary-val" id="sdt"></span></div>
+          <div class="summary-row"><span class="summary-label">Location</span><span class="summary-val" id="sl"></span></div>
+          <div class="summary-row"><span class="summary-label">Name</span><span class="summary-val" id="sn"></span></div>
+          <div class="summary-row"><span class="summary-label">Contact</span><span class="summary-val" id="sc"></span></div>
+          <div class="summary-row"><span class="summary-label">Detailer</span><span class="summary-val" id="sdetailer">No preference</span></div>
+          <div class="summary-row" id="saddon-row" style="display:none"><span class="summary-label">Add-Ons</span><span class="summary-val" id="saddon"></span></div>
+          <div class="summary-row"><span class="summary-label">Plastic Conditioning</span><span class="summary-val" id="spq1">No</span></div>
+          <div class="summary-row"><span class="summary-label">OK for Early Contact</span><span class="summary-val" id="spq2">Yes</span></div>
+        </div>
+
+        <!-- Price breakdown -->
+        <div style="margin-top:16px;border:1px solid rgba(240,201,58,.2);border-radius:6px;overflow:hidden">
+          <div style="padding:12px 16px;background:rgba(240,201,58,.04);border-bottom:1px solid rgba(240,201,58,.1)">
+            <div style="font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace">Price Breakdown</div>
+          </div>
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;justify-content:space-between;font-size:13px">
+              <span style="color:rgba(237,234,224,.5);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em">Package</span>
+              <span id="price-pkg" style="font-weight:600">—</span>
+            </div>
+            <div id="price-addon-row" style="display:none;justify-content:space-between;font-size:13px">
+              <span style="color:rgba(237,234,224,.5);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em">Add-Ons</span>
+              <span id="price-addon" style="font-weight:600"></span>
+            </div>
+            <div style="height:1px;background:rgba(255,255,255,.06)"></div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline">
+              <span style="font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;color:var(--y)">Estimated Total</span>
+              <span id="price-total" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--y);letter-spacing:.03em;line-height:1">—</span>
+            </div>
+            <div style="font-size:10px;color:rgba(237,234,224,.3);font-family:'JetBrains Mono',monospace;letter-spacing:.04em;line-height:1.6">Collected after service via app or digital invoice. No charge today.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-section" style="margin-bottom:0">
+        <h2>Payment Info</h2>
+        <div class="card-secure">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          Saved securely — charged only after your service
+        </div>
+        <div class="card-brands">
+          <span class="card-brand">VISA</span>
+          <span class="card-brand">MC</span>
+          <span class="card-brand">AMEX</span>
+          <span class="card-brand">DISC</span>
+        </div>
+        <div class="card-row single">
+          <div class="card-field">
+            <label>Cardholder Name</label>
+            <input type="text" placeholder="Name on card" id="cc-name" autocomplete="cc-name">
+          </div>
+        </div>
+        <div class="card-row single">
+          <div class="card-field">
+            <label>Card Number</label>
+            <input type="text" placeholder="1234 5678 9012 3456" id="cc-num" maxlength="19" autocomplete="cc-number" oninput="fmtCard(this)">
+          </div>
+        </div>
+        <div class="card-row thirds">
+          <div class="card-field">
+            <label>Expiry</label>
+            <input type="text" placeholder="MM / YY" id="cc-exp" maxlength="7" autocomplete="cc-exp" oninput="fmtExp(this)">
+          </div>
+          <div class="card-field">
+            <label>CVV</label>
+            <input type="text" placeholder="123" id="cc-cvv" maxlength="4" autocomplete="cc-csc">
+          </div>
+          <div class="card-field">
+            <label>ZIP</label>
+            <input type="text" placeholder="73013" id="cc-zip" maxlength="5">
+          </div>
+        </div>
+        <div style="margin-top:20px;padding:14px 16px;background:rgba(240,201,58,.05);border:1px solid rgba(240,201,58,.15);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+          <svg viewBox="0 0 24 24" fill="none" stroke="rgba(240,201,58,.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2.5"/></svg>
+          <p style="font-size:11px;color:#ff4444;line-height:1.7;font-family:'JetBrains Mono',monospace;letter-spacing:.03em;margin:0">We cannot hold a reservation without a card on file. Invoices are sent after the job is complete. A 10% gratuity is added to unpaid invoices after 48 hours.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="form-nav" style="margin-top:24px">
+      <button onclick="goSt(3)" class="btn-outline">← Back</button>
+      <span class="progress-text">Step 4 of 4</span>
+      <button onclick="confirm_booking()" class="btn-primary" style="padding:18px 36px;font-size:15px">Confirm Booking</button>
+    </div>
+  </div>
+
+  <div id="stok" style="display:none">
+    <div class="confirm-screen">
+      <div class="confirm-icon"><img src="images/confirm-icon.webp" alt="" style="width:72px;height:72px;border-radius:50%;object-fit:cover"></div>
+      <h2>YOU'RE BOOKED!</h2>
+      <p>We'll send a confirmation to your email and phone shortly.<br>A team member will reach out to finalize any details.</p>
+      <div class="confirm-details" id="cd"></div>
+      <button onclick="showPage('home')" class="btn-primary">Back to Home</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+var S={svc:'',veh:'',date:'',time:'',detailer:'',pq1:'No',pq2:'Yes',step:1};
+var cY=2026,cM=4;
+var MO=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function setPref(key,val,btn){
+  S[key]=val;
+  /* deselect sibling buttons in the same group */
+  var siblings=btn.parentElement.querySelectorAll('.pref-btn');
+  siblings.forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+}
+
+function showPage(p){
+  document.querySelectorAll('.page').forEach(function(e){e.classList.remove('active')});
+  document.getElementById('page-'+p).classList.add('active');
+  window.scrollTo(0,0);
+  if(p==='book'){renderCal();buildDetailerPicker();}
+}
+function gohome(id){
+  showPage('home');
+  setTimeout(function(){var el=document.querySelector(id);if(el)el.scrollIntoView({behavior:'smooth'})},80);
+}
+document.getElementById('hbg').addEventListener('click',function(){
+  this.classList.toggle('open');
+  document.getElementById('mmenu').classList.toggle('open');
+});
+function cm(){document.getElementById('hbg').classList.remove('open');document.getElementById('mmenu').classList.remove('open')}
+
+function goSt(n){
+  if(n===2){
+    if(!S.svc){showBookingErr('Please select a service before continuing.');return;}
+    if(!S.vehKey){showBookingErr('Please select a vehicle type before continuing.');return;}
+  }
+  if(n===3&&(!S.date||!S.time)){showBookingErr('Please select a date and time before continuing.');return;}
+  clearBookingErr();
+  var cur=document.getElementById('st'+S.step)||document.getElementById('stok');
+  if(cur)cur.style.display='none';
+  S.step=n;
+  var next=document.getElementById('st'+n);
+  if(next){next.style.display='block';}
+  updSI(n);
+  if(n===4)fillSum();
+  window.scrollTo(0,70);
+}
+function showBookingErr(msg){
+  var el=document.getElementById('booking-err');
+  if(!el){
+    el=document.createElement('div');el.id='booking-err';
+    el.style.cssText='margin-top:12px;padding:12px 16px;background:rgba(255,60,60,.08);border:1px solid rgba(255,60,60,.25);border-radius:4px;font-size:12px;font-family:JetBrains Mono,monospace;letter-spacing:.06em;color:#ff6b6b;line-height:1.6;';
+    var nav=document.querySelector('#st1 .form-nav');
+    if(nav)nav.parentNode.insertBefore(el,nav);
+  }
+  el.textContent='\u26a0 '+msg;el.style.display='block';
+}
+function clearBookingErr(){var el=document.getElementById('booking-err');if(el)el.style.display='none';}
+function updSI(a){
+  for(var i=1;i<=4;i++){
+    var el=document.getElementById('si'+i);
+    var sd=document.getElementById('sd'+i);
+    el.classList.remove('active','done');
+    if(i<a){el.classList.add('done');if(sd)sd.classList.add('active')}
+    else if(i===a){el.classList.add('active')}
+    else{if(sd)sd.classList.remove('active')}
+  }
+}
+function selSvc(el,name){
+  document.querySelectorAll('.service-card').forEach(function(c){c.classList.remove('selected')});
+  el.classList.add('selected');S.svc=name;
+  /* Duration changed — invalidate availability cache so slots re-check */
+  AVAIL_CACHE={};
+  if(S.date){renderTimes();}
+}
+function selVeh(el,name,key){
+  /* deselect all vehicle cards */
+  document.querySelectorAll('.vehicle-card').forEach(function(c){c.classList.remove('selected')});
+  el.classList.add('selected');
+  S.veh=name;
+  S.vehKey=key||name.toLowerCase();
+}
+function showSuvRows(){
+  /* highlight the SUV parent card, show the sub-row */
+  document.querySelectorAll('.vehicle-card').forEach(function(c){c.classList.remove('selected')});
+  document.getElementById('veh-suv-card').classList.add('selected');
+  document.getElementById('veh-suv-sub').style.display='block';
+  S.veh=''; /* force them to pick a row */
+}
+function selSuvRow(id){
+  /* visually mark which sub-row was chosen; parent stays highlighted */
+  ['veh-suv2','veh-suv3'].forEach(function(i){
+    document.getElementById(i).classList.remove('selected');
+  });
+  document.getElementById(id).classList.add('selected');
+  document.getElementById('veh-suv-card').classList.add('selected');
+}
+
+/* ── PACKAGES PAGE — SUV toggle ── */
+function togglePkgSuv(btn){
+  var sub=document.getElementById('pkg-suv-sub');
+  var open=sub.style.display==='flex';
+  if(open){
+    sub.style.display='none';
+    btn.textContent='SUV ▾';
+    btn.classList.remove('active');
+  } else {
+    sub.style.display='flex';
+    btn.textContent='SUV ▴';
+    /* mark parent active, deselect others */
+    document.querySelectorAll('.pkg-veh-btn').forEach(function(b){b.classList.remove('active')});
+    btn.classList.add('active');
+    document.querySelectorAll('.pkg-veh-subbtn').forEach(function(b){b.classList.remove('active')});
+  }
+}
+function renderCal(){
+  document.getElementById('cml').textContent=MO[cM]+' '+cY;
+  var g=document.getElementById('cg');g.innerHTML='';
+  var first=new Date(cY,cM,1).getDay();
+  var days=new Date(cY,cM+1,0).getDate();
+  var t=new Date();var td=t.getDate(),tm=t.getMonth(),ty=t.getFullYear();
+  var unav=[];
+  for(var i=0;i<first;i++){var b=document.createElement('div');g.appendChild(b)}
+  for(var d=1;d<=days;d++){
+    var c=document.createElement('div');c.className='cal-day';c.textContent=d;
+    var past=(new Date(cY,cM,d)<new Date(ty,tm,td));
+    var isToday=(cY===ty&&cM===tm&&d===td);
+    var todayBlocked=isToday&&(new Date().getHours()>=16);
+    if(past||todayBlocked||unav.indexOf(d)>-1){c.classList.add('disabled')}
+    else{
+      if(cY===ty&&cM===tm&&d===td)c.classList.add('today');
+      (function(day,cell){
+        cell.addEventListener('click',function(){
+          document.querySelectorAll('.cal-day').forEach(function(x){x.classList.remove('selected')});
+          cell.classList.add('selected');
+          S.date=MO[cM]+' '+day+', '+cY;
+          renderTimes();
+          document.getElementById('tmsec').style.display='block';
+        });
+      })(d,c);
+    }
+    g.appendChild(c);
+  }
+}
+function prevM(){cM--;if(cM<0){cM=11;cY--}renderCal()}
+function nextM(){cM++;if(cM>11){cM=0;cY++}renderCal()}
+
+/* ── SHOP CONFIG (update address here when it changes) ── */
+var SHOP_LAT=35.6528,SHOP_LNG=-97.4781; /* 2600 Linda Ln Suite 9, Edmond OK 73013 */
+var SHOP_ADDR='2600 Linda Ln Suite 9, Edmond, OK 73013';
+
+/* Haversine straight-line distance in miles */
+function haversine(lat1,lng1,lat2,lng2){
+  var R=3958.8,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+/* Geocode a city+state string using Nominatim (free, no key needed) */
+function geocodeCity(city,state,cb){
+  var q=encodeURIComponent(city+', '+state+', USA');
+  fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+q,{headers:{'Accept-Language':'en'}})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(d&&d[0]){cb(parseFloat(d[0].lat),parseFloat(d[0].lon));}
+      else{cb(null,null);}
+    }).catch(function(){cb(null,null);});
+}
+
+/* Cache so we don't re-geocode on every renderTimes call */
+var GEO_CACHE={city:'',state:'',lat:null,lng:null,pending:false};
+
+function getLocationRestriction(cb){
+  var city=(document.getElementById('ct')||{value:''}).value.trim().toLowerCase();
+  var state='OK';
+
+  /* Enid check — no 8:00 slot */
+  var isEnid=(city==='enid');
+
+  /* Drop-off at shop — no distance restriction */
+  var lt=(document.getElementById('lt')||{value:''}).value;
+  if(lt==='Drop off at your Edmond location'){return cb({earlyOnly:false,isEnid:false});}
+
+  if(!city){return cb({earlyOnly:false,isEnid:isEnid});}
+
+  /* Use cache if same city */
+  if(GEO_CACHE.city===city&&!GEO_CACHE.pending){
+    if(GEO_CACHE.lat!==null){
+      var d=haversine(SHOP_LAT,SHOP_LNG,GEO_CACHE.lat,GEO_CACHE.lng);
+      /* 30+ straight-line miles from shop */
+      return cb({earlyOnly:d>30,isEnid:isEnid});
+    }
+    return cb({earlyOnly:false,isEnid:isEnid});
+  }
+
+  GEO_CACHE.city=city;GEO_CACHE.pending=true;
+  geocodeCity(city,state,function(lat,lng){
+    GEO_CACHE.pending=false;
+    GEO_CACHE.lat=lat;GEO_CACHE.lng=lng;
+    if(lat!==null){
+      var d=haversine(SHOP_LAT,SHOP_LNG,lat,lng);
+      cb({earlyOnly:d>50,isEnid:isEnid});
+    } else {
+      cb({earlyOnly:false,isEnid:isEnid});
+    }
+  });
+}
+
+function renderTimes(){
+  var ALL_SLOTS=['8:00 AM','8:30 AM','9:00 AM','10:00 AM','11:00 AM','12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM'];
+  var g=document.getElementById('tg');
+  g.innerHTML='<p style="color:rgba(240,201,58,.5);font-size:11px;font-family:\'JetBrains Mono\',monospace;letter-spacing:.08em;padding:8px 0">Checking availability…</p>';
+
+  /* No same-day booking past 4 PM */
+  var now=new Date();
+  var isToday=(cY===now.getFullYear()&&cM===now.getMonth()&&S.date===MO[cM]+' '+now.getDate()+', '+cY);
+  var blockAll=isToday&&now.getHours()>=16;
+
+  if(blockAll){
+    g.innerHTML='';
+    var msg=document.createElement('p');
+    msg.style.cssText='color:rgba(240,201,58,.6);font-size:12px;font-family:\'JetBrains Mono\',monospace;letter-spacing:.08em;padding:16px 0;';
+    msg.textContent='Same-day bookings are unavailable after 4:00 PM. Please select a future date.';
+    g.appendChild(msg);
+    return;
+  }
+
+  /* Fetch availability for this date (cached per date) */
+  fetchAvailability(S.date, function(avail){
+    getLocationRestriction(function(info){
+      g.innerHTML='';
+
+      var restrict830=false;
+      var restrict830Msg='';
+      if(info.isEnid){
+        restrict830=true;
+        restrict830Msg='Enid bookings start at 8:30 AM.';
+      } else if(info.earlyOnly){
+        var isPast8pm=now.getHours()>=20;
+        if(isPast8pm){
+          restrict830=true;
+          restrict830Msg='Long-distance booking (30+ miles): earliest available time is 8:30 AM.';
+        }
+      }
+
+      ALL_SLOTS.forEach(function(t){
+        var el=document.createElement('div');el.className='time-slot';el.textContent=t;
+
+        var locationBlocked=(t==='8:00 AM'&&restrict830);
+        /* Fully booked = all detailers taken for this slot */
+        var fullyBooked=avail&&avail.fullyBooked&&avail.fullyBooked.indexOf(t)>-1;
+
+        if(locationBlocked||fullyBooked){
+          el.classList.add('unavailable');
+          el.title=fullyBooked?'All detailers booked at this time':'Not available for this location';
+          if(fullyBooked){
+            /* Extra visual label */
+            el.style.position='relative';
+            var tag=document.createElement('span');
+            tag.textContent='FULL';
+            tag.style.cssText='position:absolute;top:4px;right:5px;font-size:7px;font-weight:700;letter-spacing:.12em;font-family:\'JetBrains Mono\',monospace;color:rgba(255,255,255,.25);';
+            el.appendChild(tag);
+          }
+        } else {
+          el.addEventListener('click',function(){
+            document.querySelectorAll('.time-slot').forEach(function(s){s.classList.remove('selected')});
+            el.classList.add('selected');
+            S.time=t;
+            /* Reset detailer selection and update availability in picker */
+            S.detailer='';
+            applyDetailerAvailability(avail,t);
+          });
+        }
+        g.appendChild(el);
+      });
+
+      if(restrict830Msg){
+        var note=document.createElement('p');
+        note.style.cssText='color:rgba(240,201,58,.65);font-size:11px;font-family:\'JetBrains Mono\',monospace;letter-spacing:.06em;margin-top:14px;line-height:1.6;';
+        note.textContent='ⓘ '+restrict830Msg;
+        g.appendChild(note);
+      }
+    });
+  });
+}
+
+/* ── AVAILABILITY CACHE & FETCH ── */
+var AVAIL_CACHE={};  /* date string → availability object */
+
+function fetchAvailability(date, cb){
+  /* If no script URL set yet, skip — no availability data */
+  if(!APPS_SCRIPT_URL||APPS_SCRIPT_URL==='YOUR_APPS_SCRIPT_URL_HERE'){
+    return cb(null);
+  }
+  /* Return cached result if already fetched for this date */
+  if(AVAIL_CACHE[date]!==undefined){
+    return cb(AVAIL_CACHE[date]);
+  }
+  var url=APPS_SCRIPT_URL+'?action=availability&date='+encodeURIComponent(date)+'&duration='+(SVC_DURATION[S.svc]||2);
+  fetch(url)
+    .then(function(r){return r.json();})
+    .then(function(data){
+      AVAIL_CACHE[date]=data;
+      cb(data);
+    })
+    .catch(function(){
+      AVAIL_CACHE[date]=null; /* on error, don't block the UI */
+      cb(null);
+    });
+}
+
+/* ── GREY OUT UNAVAILABLE DETAILERS IN PICKER ── */
+/* Called when a time slot is selected */
+function applyDetailerAvailability(avail, timeSlot){
+  var grid=document.getElementById('detailer-grid');
+  if(!grid)return;
+
+  /* Detailers busy at this slot */
+  var busyList=(avail&&avail.busyBySlot&&avail.busyBySlot[timeSlot])||[];
+
+  var cards=grid.querySelectorAll('.detailer-card');
+  cards.forEach(function(card){
+    var nameEl=card.querySelector('.detailer-name');
+    if(!nameEl)return;
+    var name=nameEl.textContent.trim();
+
+    /* Auto-Assign card is always available */
+    if(card.classList.contains('nopref')){
+      card.classList.remove('detailer-unavailable');
+      card.style.pointerEvents='';
+      return;
+    }
+
+    /* Check if this detailer is in the busy list (case-insensitive) */
+    var isBusy=busyList.some(function(b){
+      return b.toLowerCase()===name.toLowerCase();
+    });
+
+    if(isBusy){
+      card.classList.add('detailer-unavailable');
+      card.style.pointerEvents='none';
+      /* If they were selected, clear the selection */
+      if(card.classList.contains('selected')){
+        card.classList.remove('selected');
+        /* Re-select Auto-Assign */
+        var noPref=grid.querySelector('.nopref');
+        if(noPref){noPref.classList.add('selected');S.detailer='';}
+      }
+    } else {
+      card.classList.remove('detailer-unavailable');
+      card.style.pointerEvents='';
+    }
+  });
+}
+
+/* Re-render times when city or location type changes */
+document.addEventListener('DOMContentLoaded',function(){
+  ['ct','lt'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el){el.addEventListener('change',function(){if(S.date)renderTimes();});}
+  });
+  var ctEl=document.getElementById('ct');
+  if(ctEl){ctEl.addEventListener('blur',function(){if(S.date)renderTimes();});}
+});
+function gv(id){return document.getElementById(id)?document.getElementById(id).value:''}
+
+/* ── ADD-ONS STATE ── */
+var SELECTED_ADDONS={}; // { name: price }
+function togAddon(el,name,price){
+  if(SELECTED_ADDONS[name]){
+    delete SELECTED_ADDONS[name];
+    el.classList.remove('selected');
+  } else {
+    SELECTED_ADDONS[name]=price;
+    el.classList.add('selected');
+  }
+  var total=Object.values(SELECTED_ADDONS).reduce(function(a,b){return a+b},0);
+  var bar=document.getElementById('addon-total-bar');
+  var val=document.getElementById('addon-total-val');
+  if(total>0){
+    bar.style.display='flex';
+    val.textContent='$'+total;
+  } else {
+    bar.style.display='none';
+  }
+}
+
+function fillSum(){
+  document.getElementById('ss').textContent=S.svc||'Not selected';
+  document.getElementById('sv').textContent=(S.veh||'Not selected')+(gv('vi')?' — '+gv('vi'):'');
+  document.getElementById('sdt').textContent=(S.date||'Not selected')+(S.time?' at '+S.time:'');
+  document.getElementById('sl').textContent=(gv('lt')||'Not selected')+(gv('ad')?' · '+gv('ad')+', '+gv('ct'):'');
+  document.getElementById('sn').textContent=(gv('fn')||'—')+' '+(gv('ln')||'');
+  document.getElementById('sc').textContent=(gv('ph')||'—')+' · '+(gv('em')||'—');
+  document.getElementById('sdetailer').textContent=S.detailer||'No preference';
+  document.getElementById('spq1').textContent=S.pq1||'No';
+  document.getElementById('spq2').textContent=S.pq2||'Yes';
+
+  /* Add-ons summary row */
+  var names=Object.keys(SELECTED_ADDONS);
+  var addonRow=document.getElementById('saddon-row');
+  var addonEl=document.getElementById('saddon');
+  if(names.length>0){
+    addonEl.textContent=names.join(', ');
+    addonRow.style.display='flex';
+  } else {
+    addonRow.style.display='none';
+  }
+
+  /* Maps booking service name → PKG_PRICES key. Update when adding packages. */
+  var SVC_KEY_MAP={
+    'Totally Basic':'basic','Quickie':'quickie','Toughy':'toughy',
+    'Fully Loaded':'fully','Boujee':'boujee','Interior Love':'interior'
+  };
+  var VEH_IDX_MAP={'coupe':0,'sedan':1,'suv2':2,'suv3':3,'truck':4,'van':5};
+
+  var svcKey=SVC_KEY_MAP[S.svc];
+  var vehIdx=VEH_IDX_MAP[S.vehKey];
+  var pkgPrice=(svcKey!==undefined && vehIdx!==undefined && PKG_PRICES[svcKey]) ? PKG_PRICES[svcKey][vehIdx] : null;
+  var addonTotal=Object.values(SELECTED_ADDONS).reduce(function(a,b){return a+b},0);
+
+  var pricePkgEl=document.getElementById('price-pkg');
+  var priceAddonRowEl=document.getElementById('price-addon-row');
+  var priceAddonEl=document.getElementById('price-addon');
+  var priceTotalEl=document.getElementById('price-total');
+
+  if(pkgPrice!==undefined && pkgPrice!==null){
+    pricePkgEl.textContent='$'+pkgPrice;
+    var total=pkgPrice+addonTotal;
+    priceTotalEl.textContent='$'+total;
+  } else {
+    pricePkgEl.textContent='—';
+    priceTotalEl.textContent='—';
+  }
+
+  if(addonTotal>0){
+    priceAddonEl.textContent='+$'+addonTotal;
+    priceAddonRowEl.style.display='flex';
+  } else {
+    priceAddonRowEl.style.display='none';
+  }
+}
+/* ── APPS SCRIPT URL  ── */
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzKwuhPm300e3MCuL40GVU6hM0TTasAyoXny0bbefDbl1nhOdwYt5sB5MjdJqd0XM2H9w/exec';
+
+/* Service durations in hours */
+var SVC_DURATION={
+  'Totally Basic':2,'Quickie':1.5,'Toughy':2.5,
+  'Fully Loaded':3.5,'Boujee':4.5,'Interior Love':3
+};
+
+function confirm_booking(){
+  var SVC_KEY_MAP={
+    'Totally Basic':'basic','Quickie':'quickie','Toughy':'toughy',
+    'Fully Loaded':'fully','Boujee':'boujee','Interior Love':'interior'
+  };
+  var VEH_IDX_MAP={'coupe':0,'sedan':1,'suv2':2,'suv3':3,'truck':4,'van':5};
+  var svcKey=SVC_KEY_MAP[S.svc];
+  var vehIdx=VEH_IDX_MAP[S.vehKey];
+  var pkgPrice=(svcKey!==undefined && vehIdx!==undefined && PKG_PRICES[svcKey])?PKG_PRICES[svcKey][vehIdx]:null;
+  var addonTotal=Object.values(SELECTED_ADDONS).reduce(function(a,b){return a+b},0);
+  var grandTotal=pkgPrice!==null?pkgPrice+addonTotal:null;
+
+  /* Show loading state */
+  var confirmBtn=document.querySelector('#st4 .btn-primary[onclick]');
+  if(confirmBtn){confirmBtn.textContent='Checking availability…';confirmBtn.disabled=true;}
+  clearBookingErr();
+
+  var payload={
+    customerName: gv('fn')+' '+gv('ln'),
+    phone:        gv('ph'),
+    email:        gv('em'),
+    service:      S.svc,
+    vehicle:      S.veh,
+    vehicleInfo:  gv('vi'),
+    date:         S.date,
+    time:         S.time,
+    duration:     SVC_DURATION[S.svc]||2,
+    location:     gv('lt')+(gv('ad')?' — '+gv('ad')+', '+gv('ct')+' '+gv('zp'):''),
+    requestedDetailer: S.detailer||'',
+    addons:       Object.keys(SELECTED_ADDONS).join(', '),
+    price:        grandTotal!==null?'$'+grandTotal:'TBD',
+    plasticCondition: S.pq1||'No',
+    earlyContact: S.pq2||'Yes',
+    notes:        gv('nt')
+  };
+
+  fetch(APPS_SCRIPT_URL,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  })
+  .then(function(){
+    /* no-cors means we can't read the response body — treat success as confirmed */
+    showConfirmScreen(payload, grandTotal, 'Auto-Assigned');
+  })
+  .catch(function(err){
+    if(confirmBtn){confirmBtn.textContent='Confirm Booking';confirmBtn.disabled=false;}
+    showBookingErr('Connection error. Please try again or call us at 833-536-6648.');
+  });
+}
+
+function showConfirmScreen(payload, grandTotal, assignmentType){
+  var rows=[
+    ['Service',    payload.service||'—'],
+    ['Vehicle',    payload.vehicle+(payload.vehicleInfo?' — '+payload.vehicleInfo:'')],
+    ['Date',       payload.date||'—'],
+    ['Time',       payload.time||'—'],
+    ['Detailer',   payload.requestedDetailer||(assignmentType==='Auto-Assigned'?'Auto-Assigned':'—')],
+    ['Assignment', assignmentType],
+    ['Location',   payload.location||'—'],
+    ['Name',       payload.customerName||'—'],
+    ['Phone',      payload.phone||'—'],
+    ['Plastic Conditioning', payload.plasticCondition],
+    ['Early Contact OK',     payload.earlyContact]
+  ];
+  if(payload.addons){rows.push(['Add-Ons',payload.addons]);}
+  if(grandTotal!==null){rows.push(['__total__','$'+grandTotal]);}
+
+  var h='';
+  rows.forEach(function(r){
+    if(r[0]==='__total__'){
+      h+='<div class="confirm-row" style="border-top:1px solid rgba(240,201,58,.2);margin-top:8px;padding-top:14px"><span class="confirm-row-label" style="color:var(--y)">Total</span><span class="confirm-row-val" style="font-family:\'Bebas Neue\',sans-serif;font-size:28px;color:var(--y);letter-spacing:.03em">'+r[1]+'</span></div>';
+    } else {
+      h+='<div class="confirm-row"><span class="confirm-row-label">'+r[0]+'</span><span class="confirm-row-val">'+r[1]+'</span></div>';
+    }
+  });
+  document.getElementById('cd').innerHTML=h;
+  document.getElementById('st4').style.display='none';
+  document.getElementById('stok').style.display='block';
+  updSI(5);window.scrollTo(0,70);
+}
+/* ── DETAILER PICKER ── */
+/*
+ * ═══════════════════════════════════════════════════════════════
+ * DETAILER PICKER
+ * Dynamically builds the detailer selection UI in step 3 of
+ * the booking form by reading .team-card elements that have:
+ *   data-role="detailer"   → included in the picker
+ *   data-name="First Name" → display name on the card
+ *
+ * To add a new detailer to the picker:
+ *   Simply add a team card with data-role="detailer" on the
+ *   Team page — this function picks it up automatically.
+ * ═══════════════════════════════════════════════════════════════
+ */
+function buildDetailerPicker(){
+  var grid=document.getElementById('detailer-grid');
+  if(!grid)return;
+  grid.innerHTML='';
+  var noPref=document.createElement('div');
+  noPref.className='detailer-card nopref selected';
+  noPref.innerHTML=
+    '<div class="detailer-card-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div>'+
+    '<div class="detailer-photo detailer-photo-placeholder" style="border-style:dashed;border-color:rgba(255,255,255,.1)">'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>'+
+    '</div>'+
+    '<div class="detailer-name">Auto-Assign</div>'+
+    '<div style="font-size:9px;font-family:\'JetBrains Mono\',monospace;color:rgba(237,234,224,.3);letter-spacing:.06em;margin-top:2px">Best available</div>';
+  noPref.addEventListener('click',function(){selDetailer(noPref,'')});
+  grid.appendChild(noPref);
+  var cards=document.querySelectorAll('#team-grid .team-card[data-role="detailer"]');
+  cards.forEach(function(card){
+    var name=card.dataset.name||card.querySelector('.team-name').textContent.trim();
+    var imgEl=card.querySelector('img');
+    var imgSrc=imgEl?imgEl.getAttribute('src'):'';
+    var dc=document.createElement('div');
+    dc.className='detailer-card';
+    var photoHTML=imgSrc
+      ?'<div class="detailer-photo"><img src="'+imgSrc+'" alt="'+name+'"></div>'
+      :'<div class="detailer-photo detailer-photo-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>';
+    dc.innerHTML=
+      '<div class="detailer-card-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><polyline points="2,6 5,9 10,3"/></svg></div>'+
+      photoHTML+
+      '<div class="detailer-name">'+name.toUpperCase()+'</div>';
+    dc.addEventListener('click',function(){selDetailer(dc,name)});
+    grid.appendChild(dc);
+  });
+}
+function selDetailer(el,name){
+  document.querySelectorAll('.detailer-card').forEach(function(c){c.classList.remove('selected')});
+  el.classList.add('selected');
+  S.detailer=name;
+}
+renderCal();
+(function(){var g=document.getElementById('team-grid');var e=document.getElementById('team-empty');if(g&&e){var cards=g.querySelectorAll('.team-card');if(cards.length>0)e.style.display='none';}})();
+function openBio(name,position,text,imgId){
+  document.getElementById('bio-name').textContent=name;
+  document.getElementById('bio-position').textContent=position;
+  document.getElementById('bio-text').textContent=text;
+  var wrap=document.getElementById('bio-img-wrap');
+  var src=imgId?document.getElementById(imgId).src:null;
+  if(src){wrap.innerHTML='<img class="bio-photo" src="'+src+'" alt="'+name+'">';}
+  else{wrap.innerHTML='<div class="bio-photo-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="width:32px;height:32px"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>';}
+  document.getElementById('bio-overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeBio(){
+  document.getElementById('bio-overlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+function closeBioOnOverlay(e){if(e.target===document.getElementById('bio-overlay'))closeBio();}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeBio();});
+function fmtCard(el){
+  var v=el.value.replace(/\D/g,'').substring(0,16);
+  el.value=v.replace(/(\d{4})(?=\d)/g,'$1 ');
+}
+function fmtExp(el){
+  var v=el.value.replace(/\D/g,'').substring(0,4);
+  if(v.length>=2) v=v.substring(0,2)+' / '+v.substring(2);
+  el.value=v;
+}
+
+</script>
+<!-- BIO MODAL -->
+<div class="bio-overlay" id="bio-overlay" onclick="closeBioOnOverlay(event)">
+  <div class="bio-modal">
+    <button class="bio-close" onclick="closeBio()">✕</button>
+    <div id="bio-img-wrap"></div>
+    <div class="bio-name" id="bio-name"></div>
+    <div class="bio-position" id="bio-position"></div>
+    <div class="bio-divider"></div>
+    <p class="bio-text" id="bio-text"></p>
+  </div>
+</div>
+
+</body>
+</html>
