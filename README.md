@@ -39,13 +39,14 @@ npm run build:pages
 
 ### GitHub Pages limitations
 
-On Pages (static export), these use **mailto** fallbacks instead of server email/Stripe:
+On Pages (static export), these use **mailto** fallbacks instead of server email:
 
 - Booking form submit
 - Contact form submit
-- Saving a card on file
 
-Full booking email + Stripe work on **Vercel** (or any Node host) using `npm run build` without `build:pages`.
+**Stripe is optional** and not required for launch. Without Stripe keys in `.env.local`, the booking flow does not show a card section. When you add Stripe later (on Vercel), set `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` and `STRIPE_SECRET_KEY`.
+
+Full booking email + optional card save work on **Vercel** (or any Node host) using `npm run build` — not `build:pages`.
 
 ## Vercel (production later)
 

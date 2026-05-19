@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icons";
+import { assetPath } from "@/lib/asset-path";
 import { SITE } from "@/lib/site";
 
 export function Hero() {
@@ -92,7 +93,7 @@ export function Hero() {
         <div className="relative w-full max-w-[480px] flex-shrink-0 lg:w-[42%] lg:max-w-[520px]">
           <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[4px] border border-y/25 max-lg:aspect-[4/3] max-lg:max-h-[360px]">
             <Image
-              src="/bike.webp"
+              src={assetPath("/bike.webp")}
               alt="Lemonhead's Mobile Detail — detailing a Harley-Davidson CVO"
               fill
               priority

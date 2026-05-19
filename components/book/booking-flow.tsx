@@ -27,6 +27,7 @@ import {
   Textarea,
 } from "@/components/ui/field";
 import { Icon, type IconName } from "@/components/ui/icons";
+import { assetPath } from "@/lib/asset-path";
 import {
   ADDONS,
   PACKAGES,
@@ -863,7 +864,7 @@ function Step3({
             <DetailerCard
               key={d.name}
               name={d.name}
-              photo={d.photo}
+              photo={d.photo ? assetPath(d.photo) : undefined}
               selected={state.detailer === d.name}
               onClick={() => update("detailer", d.name)}
             />

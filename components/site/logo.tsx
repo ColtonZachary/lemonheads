@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { assetPath } from "@/lib/asset-path";
 import { SITE } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -14,7 +15,7 @@ export function Logo({ className, href = "/" }: LogoProps) {
     <Link href={href} className={cn("group flex items-center gap-3", className)}>
       <div className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center transition-all group-hover:drop-shadow-[0_0_12px_rgba(240,201,58,0.45)]">
         <Image
-          src="/lemon-logo.png"
+          src={assetPath("/lemon-logo.png")}
           alt=""
           width={36}
           height={36}

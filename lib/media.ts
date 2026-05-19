@@ -1,3 +1,4 @@
+import { assetPath } from "@/lib/asset-path";
 import { TEAM, type TeamMember } from "@/lib/data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPublicMediaUrl } from "@/lib/supabase/storage";
@@ -55,13 +56,17 @@ export function memberSlug(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "-");
 }
 
+function withPublicAssetPaths(items: GalleryItem[]): GalleryItem[] {
+  return items.map((item) => ({ ...item, src: assetPath(item.src) }));
+}
+
 export async function getGalleryItems(): Promise<GalleryItem[]> {
   if (process.env.NEXT_PUBLIC_STATIC_EXPORT === "true") {
-    return FALLBACK_GALLERY;
+    return withPublicAssetPaths(FALLBACK_GALLERY);
   }
 
   const supabase = await createSupabaseServerClient();
-  if (!supabase) return FALLBACK_GALLERY;
+  if (!supabase) return withPublicAssetPaths(FALLBACK_GALLERY);
 
   const { data, error } = await supabase
     .from("site_images")
@@ -72,14 +77,14 @@ export async function getGalleryItems(): Promise<GalleryItem[]> {
 
   if (error) {
     console.warn("[media] gallery fetch failed:", error.message);
-    return FALLBACK_GALLERY;
+    return withPublicAssetPaths(FALLBACK_GALLERY);
   }
 
   const rows = (data as SiteImageRow[]).filter(
     (row) => !isGalleryBikePath(row.storage_path),
   );
 
-  if (!rows.length) return FALLBACK_GALLERY;
+  if (!rows.length) return withPublicAssetPaths(FALLBACK_GALLERY);
 
   return rows.map((row) => ({
     src: getPublicMediaUrl(row.storage_path),
@@ -113,15 +118,22 @@ async function fetchTeamPhotoUrls(): Promise<Map<string, string>> {
 }
 
 /** TEAM from `lib/data.ts` with optional Supabase headshots by member slug. */
+function withMemberPhotoPath(member: TeamMember): TeamMember {
+  return member.photo
+    ? { ...member, photo: assetPath(member.photo) }
+    : member;
+}
+
 export async function getTeamMembers(): Promise<TeamMember[]> {
   if (process.env.NEXT_PUBLIC_STATIC_EXPORT === "true") {
-    return TEAM.map((member) => ({ ...member }));
+    return TEAM.map(withMemberPhotoPath);
   }
 
   const photos = await fetchTeamPhotoUrls();
   return TEAM.map((member) => {
     const slug = memberSlug(member.name);
     const photo = photos.get(slug) ?? member.photo;
-    return photo ? { ...member, photo } : member;
+    const next = photo ? { ...member, photo } : member;
+    return withMemberPhotoPath(next);
   });
 }
