@@ -20,7 +20,7 @@ export default async function HubBookingsPage() {
     <div>
       <h1 className="font-display text-5xl tracking-[0.04em] text-y">BOOKINGS</h1>
       <p className="mt-2 font-mono text-xs tracking-[0.08em] text-text/40">
-        Cancel, delete, and edit actions — coming on booking detail page
+        Click a reference to edit, cancel, or delete
       </p>
 
       <div className="mt-8 overflow-x-auto rounded-md border border-white/10">
@@ -42,8 +42,13 @@ export default async function HubBookingsPage() {
                 key={b.id}
                 className={`border-b border-white/5 ${b.deleted_at ? "opacity-40" : ""}`}
               >
-                <td className="px-4 py-3 font-mono text-xs text-y/80">
-                  {b.reference_id}
+                <td className="px-4 py-3 font-mono text-xs">
+                  <Link
+                    href={`/hub/bookings/${b.id}`}
+                    className="text-y/80 hover:text-y hover:underline"
+                  >
+                    {b.reference_id}
+                  </Link>
                 </td>
                 <td className="px-4 py-3 font-mono text-xs text-text/60">
                   {formatCentralDateTime(b.starts_at)}
@@ -70,10 +75,6 @@ export default async function HubBookingsPage() {
         </table>
       </div>
 
-      <p className="mt-6 font-mono text-[10px] text-text/35">
-        Next: open <Link href="/hub/bookings" className="text-y/70">booking detail</Link> for
-        price override, cancel, delete, and audit log.
-      </p>
     </div>
   );
 }

@@ -78,12 +78,20 @@ export function findAvailableDetailer(
 export async function fetchBookingsForDate(
   client: SupabaseClient,
   appointmentDate: string,
+  options?: { excludeBookingId?: string },
 ): Promise<ExistingBookingWindow[]> {
-  const { data, error } = await client
+  let query = client
     .from("bookings")
     .select("starts_at, ends_at, detailer_name, detailer_auto_assigned")
     .eq("appointment_date", appointmentDate)
-    .in("status", [...BLOCKING_BOOKING_STATUSES]);
+    .in("status", [...BLOCKING_BOOKING_STATUSES])
+    .is("deleted_at", null);
+
+  if (options?.excludeBookingId) {
+    query = query.neq("id", options.excludeBookingId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("[bookings] availability fetch failed:", error.message);

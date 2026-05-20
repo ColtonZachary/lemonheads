@@ -1,9 +1,11 @@
+import Link from "next/link";
+
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import { formatCentralDateTime } from "@/lib/hub/format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function HubCalendarPage() {
-  await requireHubAccess();
+  const access = await requireHubAccess();
   const supabase = await createSupabaseServerClient();
 
   const start = new Date();
@@ -56,7 +58,18 @@ export default async function HubCalendarPage() {
                   {formatCentralDateTime(b.starts_at)}
                 </td>
                 <td className="px-4 py-3">{b.detailer_name ?? "—"}</td>
-                <td className="px-4 py-3">{b.customer_name}</td>
+                <td className="px-4 py-3">
+                  {access.isManager ? (
+                    <Link
+                      href={`/hub/bookings/${b.id}`}
+                      className="hover:text-y hover:underline"
+                    >
+                      {b.customer_name}
+                    </Link>
+                  ) : (
+                    b.customer_name
+                  )}
+                </td>
                 <td className="px-4 py-3 text-text/60">{b.service_name}</td>
                 <td className="px-4 py-3 text-text/50">{b.city || "—"}</td>
                 <td className="px-4 py-3 font-mono text-[10px] uppercase text-y/70">

@@ -450,7 +450,8 @@ Long term: point your main domain to **Vercel** and retire GitHub Pages when rea
 
 - Database schema for catalog, staff, promos, rules, blocks, customers, audit, invoice stubs
 - RLS: managers write, detailers read schedule, public still uses server role for web bookings
-- `/login`, `/hub/*` shell, calendar (read), bookings list skeleton
+- `/login`, `/hub/*` shell, calendar (read), bookings list
+- `/hub/bookings/[id]` — edit schedule/detailer/status/price, cancel, soft-delete, audit log
 - Central time formatting helpers
 - `npm run hub:seed` to populate catalog from `lib/data.ts`
 
@@ -458,7 +459,7 @@ Long term: point your main domain to **Vercel** and retire GitHub Pages when rea
 
 | # | Feature | Hub UI |
 |---|---------|--------|
-| 1 | Booking edit (time, detailer, status, price override) + audit log | `/hub/bookings/[id]` |
+| 1 | ~~Booking edit + cancel/delete + audit log~~ | `/hub/bookings/[id]` ✅ |
 | 2 | Schedule blocks (PTO / block time) | `/hub/blocks` |
 | 3 | Blackout dates & lead-time rules editor | `/hub/settings/rules` |
 | 4 | Capacity per city & service-area zip validation | `/hub/settings/coverage` |
