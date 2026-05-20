@@ -14,6 +14,12 @@ export const BOOKING_TIME_SLOTS = [
 
 export type BookingTimeSlot = (typeof BOOKING_TIME_SLOTS)[number];
 
+export const BOOKING_LOCATION_TYPES = [
+  "Come to my home",
+  "Come to my office / workplace",
+  "Drop off at your Edmond location",
+] as const;
+
 export const BLOCKING_BOOKING_STATUSES = [
   "pending",
   "confirmed",

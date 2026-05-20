@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import { formatCentralDateTime } from "@/lib/hub/format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -18,10 +19,17 @@ export default async function HubBookingsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-5xl tracking-[0.04em] text-y">BOOKINGS</h1>
-      <p className="mt-2 font-mono text-xs tracking-[0.08em] text-text/40">
-        Click a reference to edit, cancel, or delete
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-5xl tracking-[0.04em] text-y">BOOKINGS</h1>
+          <p className="mt-2 font-mono text-xs tracking-[0.08em] text-text/40">
+            Click a reference to edit, cancel, or delete
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/hub/bookings/new">+ New booking</Link>
+        </Button>
+      </div>
 
       <div className="mt-8 overflow-x-auto rounded-md border border-white/10">
         <table className="w-full min-w-[800px] text-left text-sm">

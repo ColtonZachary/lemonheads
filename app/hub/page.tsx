@@ -50,6 +50,11 @@ export default async function HubDashboardPage() {
             </Link>
           </li>
           <li>
+            <Link href="/hub/bookings/new" className="hover:text-y">
+              → Create booking
+            </Link>
+          </li>
+          <li>
             <Link href="/hub/settings" className="hover:text-y">
               → Rules, blackouts, capacity
             </Link>

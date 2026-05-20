@@ -81,12 +81,23 @@ export function buildBookingRow(
   };
 }
 
+export type BookingInsertOptions = {
+  status?: "pending" | "confirmed" | "in_progress" | "completed" | "cancelled";
+  managerNotes?: string;
+};
+
 export async function insertBooking(
   client: SupabaseClient,
   referenceId: string,
   data: BookingInput,
+  options?: BookingInsertOptions,
 ): Promise<
-  | { ok: true; detailerName: string; detailerAutoAssigned: boolean }
+  | {
+      ok: true;
+      bookingId: string;
+      detailerName: string;
+      detailerAutoAssigned: boolean;
+    }
   | { ok: false; error: string }
 > {
   const { appointmentDate } = parseBookingSchedule(
@@ -111,8 +122,20 @@ export async function insertBooking(
     return { ok: false, error: assignment.message };
   }
 
-  const row = buildBookingRow(referenceId, data, assignment);
-  const { error } = await client.from("bookings").insert(row);
+  const priceCents = parsePriceCents(data.estimatedTotal);
+  const row = {
+    ...buildBookingRow(referenceId, data, assignment),
+    status: options?.status ?? "pending",
+    manager_notes: options?.managerNotes ?? "",
+    estimated_price_cents: priceCents,
+    final_price_cents: priceCents,
+  };
+
+  const { data: inserted, error } = await client
+    .from("bookings")
+    .insert(row)
+    .select("id")
+    .single();
 
   if (error) {
     console.error("[bookings] insert failed:", error.message);
@@ -121,6 +144,7 @@ export async function insertBooking(
 
   return {
     ok: true,
+    bookingId: inserted.id,
     detailerName: assignment.detailerName,
     detailerAutoAssigned: assignment.detailerAutoAssigned,
   };

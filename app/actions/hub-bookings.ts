@@ -8,19 +8,36 @@ import {
   bookingDurationHours,
   dateInputToLabel,
 } from "@/lib/hub/schedule-labels";
-import { BOOKING_TIME_SLOTS } from "@/lib/bookings/constants";
+import {
+  insertBooking,
+  type BookingInsertOptions,
+} from "@/lib/bookings/insert-booking";
+import {
+  BOOKING_LOCATION_TYPES,
+  BOOKING_TIME_SLOTS,
+} from "@/lib/bookings/constants";
 import {
   fetchBookingsForDate,
   findAvailableDetailer,
   isDetailerAvailable,
 } from "@/lib/bookings/detailer-availability";
 import { parseBookingSchedule } from "@/lib/bookings/parse-schedule";
-import { DETAILER_NAMES } from "@/lib/data";
+import {
+  ADDONS,
+  DETAILER_NAMES,
+  PACKAGE_BY_KEY,
+  type PackageKey,
+  VEHICLE_OPTIONS,
+  type VehicleKey,
+} from "@/lib/data";
+import { generateBookingReferenceId } from "@/lib/hub/booking-reference";
+import { BookingSchema, type BookingInput } from "@/lib/booking-types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type HubBookingActionState = {
   ok: boolean;
   message: string;
+  bookingId?: string;
 };
 
 type ManagerContext =
@@ -295,4 +312,134 @@ export async function deleteHubBooking(
   revalidatePath("/hub/calendar");
 
   return { ok: true, message: "Booking deleted." };
+}
+
+function hubPriceTotal(
+  packageKey: PackageKey,
+  vehicleKey: VehicleKey,
+  addonNames: string[],
+): string {
+  const pkg = PACKAGE_BY_KEY[packageKey];
+  if (!pkg) return "TBD";
+  let total = pkg.prices[vehicleKey] ?? 0;
+  for (const name of addonNames) {
+    const addon = ADDONS.find((a) => a.name === name);
+    if (addon) total += addon.price;
+  }
+  return `$${total}`;
+}
+
+export async function createHubBooking(
+  _prev: HubBookingActionState,
+  formData: FormData,
+): Promise<HubBookingActionState> {
+  const ctx = await requireManagerSupabase();
+  if ("error" in ctx) return { ok: false, message: ctx.error };
+
+  const { supabase, profile } = ctx;
+
+  const packageKey = String(formData.get("package_key") ?? "") as PackageKey;
+  const vehicleKey = String(formData.get("vehicle_key") ?? "") as VehicleKey;
+  const pkg = PACKAGE_BY_KEY[packageKey];
+  const vehicle = VEHICLE_OPTIONS.find((v) => v.key === vehicleKey);
+
+  if (!pkg || !vehicle) {
+    return { ok: false, message: "Select a valid package and vehicle." };
+  }
+
+  const dateInput = String(formData.get("appointment_date") ?? "");
+  const timeLabel = String(formData.get("time") ?? "");
+  const detailerChoice = String(formData.get("detailer") ?? "");
+  const location = String(formData.get("location") ?? "");
+  const status = String(formData.get("status") ?? "confirmed");
+  const addonNames = formData.getAll("addons").map(String);
+
+  if (!BOOKING_LOCATION_TYPES.includes(location as (typeof BOOKING_LOCATION_TYPES)[number])) {
+    return { ok: false, message: "Select a location type." };
+  }
+
+  let dateLabel: string;
+  try {
+    dateLabel = dateInputToLabel(dateInput);
+  } catch {
+    return { ok: false, message: "Invalid appointment date." };
+  }
+
+  if (!BOOKING_TIME_SLOTS.includes(timeLabel as (typeof BOOKING_TIME_SLOTS)[number])) {
+    return { ok: false, message: "Invalid time slot." };
+  }
+
+  const validStatuses = [
+    "pending",
+    "confirmed",
+    "in_progress",
+    "completed",
+    "cancelled",
+  ];
+  if (!validStatuses.includes(status)) {
+    return { ok: false, message: "Invalid status." };
+  }
+
+  const input: BookingInput = {
+    customerName: String(formData.get("customer_name") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    phone: String(formData.get("phone") ?? ""),
+    service: pkg.name,
+    serviceKey: packageKey,
+    vehicle: vehicle.label,
+    vehicleInfo: String(formData.get("vehicle_info") ?? ""),
+    date: dateLabel,
+    time: timeLabel,
+    location,
+    address: String(formData.get("address") ?? ""),
+    city: String(formData.get("city") ?? ""),
+    zip: String(formData.get("zip") ?? ""),
+    requestedDetailer: detailerChoice === "auto" ? "" : detailerChoice,
+    durationHours: pkg.durationHours,
+    addons: addonNames,
+    estimatedTotal: hubPriceTotal(packageKey, vehicleKey, addonNames),
+    plasticCondition:
+      String(formData.get("plastic_shine") ?? "No") === "Yes" ? "Yes" : "No",
+    earlyContact: "Yes",
+    notes: String(formData.get("customer_notes") ?? ""),
+    cardOnFile: false,
+  };
+
+  const parsed = BookingSchema.safeParse(input);
+  if (!parsed.success) {
+    const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
+    return { ok: false, message: first ?? "Check required fields." };
+  }
+
+  const referenceId = generateBookingReferenceId();
+  const saved = await insertBooking(supabase, referenceId, parsed.data, {
+    status: status as BookingInsertOptions["status"],
+    managerNotes: String(formData.get("manager_notes") ?? ""),
+  });
+
+  if (!saved.ok) {
+    return { ok: false, message: saved.error };
+  }
+
+  await recordBookingAudit(
+    supabase,
+    saved.bookingId,
+    profile.id,
+    "booking.created",
+    {
+      reference_id: referenceId,
+      source: "hub",
+      detailer: saved.detailerName,
+    },
+  );
+
+  revalidatePath("/hub/bookings");
+  revalidatePath("/hub/calendar");
+  revalidatePath(`/hub/bookings/${saved.bookingId}`);
+
+  return {
+    ok: true,
+    message: `Booking ${referenceId} created.`,
+    bookingId: saved.bookingId,
+  };
 }
