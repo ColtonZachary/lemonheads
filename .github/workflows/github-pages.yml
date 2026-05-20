@@ -1,9 +1,8 @@
-# Build static site and deploy to GitHub Pages (https://coltonzachary.github.io/lemonheads/)
+# Optional static marketing deploy — disabled while using Vercel for the full app + hub.
+# Re-enable: uncomment `push` under `on` and turn GitHub Pages back on in repo Settings.
 name: Deploy GitHub Pages
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -32,7 +31,6 @@ jobs:
         run: npm run build:pages
         env:
           NEXT_PUBLIC_STATIC_EXPORT: "true"
-          # Optional: bake Supabase gallery/team into the static build
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}

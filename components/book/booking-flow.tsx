@@ -12,7 +12,7 @@ import {
   type RefObject,
 } from "react";
 
-import { getDetailerAvailability } from "@/app/actions/booking-availability";
+import { getDetailerAvailability } from "@/lib/booking-availability";
 import { BOOKING_TIME_SLOTS } from "@/lib/bookings/constants";
 import type { DetailerAvailabilitySnapshot } from "@/lib/bookings/detailer-availability";
 import { submitBooking } from "@/lib/submit-booking";
