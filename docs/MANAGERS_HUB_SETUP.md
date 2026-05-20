@@ -288,7 +288,7 @@ You do **not** need Stripe on Vercel yet.
 | **Root Directory** | `./` (repo root) |
 | **Build Command** | `npm run build` (default — **not** `build:pages`) |
 | **Output Directory** | leave default (Next.js handles this) |
-| **Install Command** | `npm ci` or `npm install` |
+| **Install Command** | `npm ci` or `npm install` (no quotes — `'npm ci'` makes Vercel fail with “command not found”) |
 
 **Important:** Do **not** override the build to `npm run build:pages`. That command is only for GitHub Pages and **disables** the hub.
 
