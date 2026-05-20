@@ -303,6 +303,11 @@ export const TEAM: TeamMember[] = [
   },
 ];
 
+/** Names bookable in the online flow (must match `bookings.detailer_name`). */
+export const DETAILER_NAMES = TEAM.filter((m) => m.isDetailer).map(
+  (m) => m.name,
+);
+
 /* ─── REVIEWS ─── */
 
 export interface Review {

@@ -12,11 +12,13 @@ import {
   renderBookingEmail,
   type BookingEmailData,
 } from "@/lib/email-templates";
+import { insertBooking } from "@/lib/bookings/insert-booking";
 import { FROM_EMAIL, TO_EMAIL, getResend } from "@/lib/resend";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
-export type { BookingInput, BookingState };
-
-export async function submitBooking(input: BookingInput): Promise<BookingState> {
+export async function submitBooking(
+  input: BookingInput,
+): Promise<BookingState> {
   const parsed = BookingSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -30,6 +32,8 @@ export async function submitBooking(input: BookingInput): Promise<BookingState> 
   }
 
   const data = parsed.data;
+  let assignedDetailer = data.requestedDetailer?.trim() || "Auto-Assigned";
+
   const emailPayload: BookingEmailData = {
     customerName: data.customerName,
     email: data.email,
@@ -43,7 +47,7 @@ export async function submitBooking(input: BookingInput): Promise<BookingState> 
     address: data.address,
     city: data.city,
     zip: data.zip,
-    requestedDetailer: data.requestedDetailer,
+    requestedDetailer: assignedDetailer,
     addons: data.addons,
     estimatedTotal: data.estimatedTotal,
     plasticCondition: data.plasticCondition,
@@ -55,11 +59,32 @@ export async function submitBooking(input: BookingInput): Promise<BookingState> 
   const resend = getResend();
   const bookingId = `LH-${Date.now().toString(36).toUpperCase()}`;
 
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const saved = await insertBooking(supabase, bookingId, data);
+    if (!saved.ok) {
+      return {
+        status: "error",
+        message: saved.error,
+      };
+    }
+    assignedDetailer = saved.detailerName;
+    emailPayload.requestedDetailer = saved.detailerName;
+  } else {
+    console.warn(
+      "[booking] SUPABASE_SERVICE_ROLE_KEY not set — booking not stored in database",
+    );
+  }
+
   try {
     if (!resend) {
       // No API key configured — log so dev can see the payload
       console.log("[booking] would send →", emailPayload);
-      return { status: "success", bookingId };
+      return {
+        status: "success",
+        bookingId,
+        assignedDetailer,
+      };
     }
 
     // Notify the shop
@@ -79,7 +104,11 @@ export async function submitBooking(input: BookingInput): Promise<BookingState> 
       html: renderBookingConfirmationToCustomer(emailPayload),
     });
 
-    return { status: "success", bookingId };
+    return {
+      status: "success",
+      bookingId,
+      assignedDetailer,
+    };
   } catch (err) {
     console.error("[booking] resend error", err);
     return {

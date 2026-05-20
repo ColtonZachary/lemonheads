@@ -12,6 +12,9 @@ import {
   type RefObject,
 } from "react";
 
+import { getDetailerAvailability } from "@/app/actions/booking-availability";
+import { BOOKING_TIME_SLOTS } from "@/lib/bookings/constants";
+import type { DetailerAvailabilitySnapshot } from "@/lib/bookings/detailer-availability";
 import { submitBooking } from "@/lib/submit-booking";
 import {
   BookingCardCapture,
@@ -91,19 +94,6 @@ const VEHICLE_TOP: { key: VehicleKey | "suv"; label: string; icon: IconName }[] 
   { key: "van", label: "Van", icon: "van" },
 ];
 
-const TIME_SLOTS = [
-  "8:00 AM",
-  "8:30 AM",
-  "9:00 AM",
-  "10:00 AM",
-  "11:00 AM",
-  "12:00 PM",
-  "1:00 PM",
-  "2:00 PM",
-  "3:00 PM",
-  "4:00 PM",
-];
-
 const LOCATION_TYPES = [
   "Come to my home",
   "Come to my office / workplace",
@@ -170,9 +160,13 @@ export function BookingFlow() {
   );
   const [step, setStep] = useState<Step>(1);
   const [error, setError] = useState<string | null>(null);
-  const [confirmation, setConfirmation] = useState<{ bookingId: string } | null>(
-    null,
-  );
+  const [confirmation, setConfirmation] = useState<{
+    bookingId: string;
+    assignedDetailer?: string;
+  } | null>(null);
+  const [availability, setAvailability] =
+    useState<DetailerAvailabilitySnapshot | null>(null);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
   const paymentRef = useRef<BookingCardCaptureApi | null>(null);
 
@@ -206,6 +200,42 @@ export function BookingFlow() {
   const total =
     pkgPrice !== null ? pkgPrice + addonTotal : null;
 
+  useEffect(() => {
+    if (!state.date || !pkg) {
+      setAvailability(null);
+      return;
+    }
+
+    let cancelled = false;
+    setAvailabilityLoading(true);
+    void getDetailerAvailability(state.date, pkg.durationHours)
+      .then((snapshot) => {
+      if (cancelled) return;
+      setAvailability(snapshot);
+      setState((s) => {
+        let next = s;
+        if (s.time && snapshot.fullyBookedSlots.includes(s.time)) {
+          next = { ...next, time: "" };
+        }
+        if (
+          s.detailer &&
+          s.time &&
+          snapshot.busySlotsByDetailer[s.detailer]?.includes(s.time)
+        ) {
+          next = { ...next, detailer: "" };
+        }
+        return next;
+      });
+    })
+      .finally(() => {
+        if (!cancelled) setAvailabilityLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [state.date, pkg?.durationHours]);
+
   const tryAdvance = (target: Step) => {
     setError(null);
     if (target === 2) {
@@ -217,6 +247,11 @@ export function BookingFlow() {
     if (target === 3) {
       if (!state.date || !state.time)
         return setError("Please pick a date and time before continuing.");
+      if (availability?.fullyBookedSlots.includes(state.time)) {
+        return setError(
+          "That time is fully booked. Please pick another time slot.",
+        );
+      }
     }
     if (target === 4) {
       if (!state.firstName || !state.lastName)
@@ -225,6 +260,19 @@ export function BookingFlow() {
       if (!state.email) return setError("Please enter an email address.");
       if (!state.locationType)
         return setError("Please pick a service location type.");
+      if (availability?.fullyBookedSlots.includes(state.time)) {
+        return setError(
+          "That time is fully booked. Please pick another time slot.",
+        );
+      }
+      if (
+        state.detailer &&
+        availability?.busySlotsByDetailer[state.detailer]?.includes(state.time)
+      ) {
+        return setError(
+          `${state.detailer} is not available at that time. Pick another time or detailer.`,
+        );
+      }
     }
     setStep(target);
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
@@ -255,6 +303,8 @@ export function BookingFlow() {
         email: state.email,
         phone: state.phone,
         service: pkg?.name ?? "",
+        serviceKey: state.packageKey,
+        durationHours: pkg?.durationHours ?? 2,
         vehicle: vehicleLabel(state.vehicleKey),
         vehicleInfo: state.vehicleInfo,
         date: state.date,
@@ -272,7 +322,10 @@ export function BookingFlow() {
         cardOnFile,
       });
       if (result.status === "success") {
-        setConfirmation({ bookingId: result.bookingId });
+        setConfirmation({
+          bookingId: result.bookingId,
+          assignedDetailer: result.assignedDetailer,
+        });
       } else if (result.status === "error") {
         setError(result.message);
       }
@@ -294,6 +347,7 @@ export function BookingFlow() {
         pkg={pkg}
         total={total}
         bookingId={confirmation.bookingId}
+        assignedDetailer={confirmation.assignedDetailer}
       />
     );
   }
@@ -313,6 +367,8 @@ export function BookingFlow() {
       {step === 2 && (
         <Step2
           state={state}
+          availability={availability}
+          availabilityLoading={availabilityLoading}
           onPickDate={(d) => update("date", d)}
           onPickTime={(t) => update("time", t)}
         />
@@ -321,7 +377,12 @@ export function BookingFlow() {
       {step >= 3 && step <= 4 && (
         <>
           <div className={cn(step !== 3 && "hidden")}>
-            <Step3 state={state} update={update} paymentRef={paymentRef} />
+            <Step3
+              state={state}
+              update={update}
+              paymentRef={paymentRef}
+              availability={availability}
+            />
           </div>
           <div className={cn(step !== 4 && "hidden")}>
             <Step4
@@ -678,10 +739,14 @@ function PrefQuestion({
 
 function Step2({
   state,
+  availability,
+  availabilityLoading,
   onPickDate,
   onPickTime,
 }: {
   state: BookingState;
+  availability: DetailerAvailabilitySnapshot | null;
+  availabilityLoading: boolean;
   onPickDate: (d: string) => void;
   onPickTime: (t: string) => void;
 }) {
@@ -795,20 +860,30 @@ function Step2({
               Same-day bookings are unavailable after 4:00 PM. Please pick a
               future date.
             </p>
+          ) : availabilityLoading ? (
+            <p className="py-4 font-mono text-xs tracking-[0.08em] text-text/40">
+              Checking availability…
+            </p>
           ) : (
             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-5">
-              {TIME_SLOTS.map((t) => {
+              {BOOKING_TIME_SLOTS.map((t) => {
                 const selected = state.time === t;
+                const fullyBooked =
+                  availability?.fullyBookedSlots.includes(t) ?? false;
                 return (
                   <button
                     key={t}
                     type="button"
+                    disabled={fullyBooked}
                     onClick={() => onPickTime(t)}
                     className={cn(
-                      "cursor-pointer rounded-[4px] border bg-white/[0.03] px-2.5 py-3 text-center font-mono text-xs font-semibold transition-all",
-                      selected
-                        ? "border-y bg-y font-bold text-black"
-                        : "border-border-faint text-text/60 hover:border-y/30 hover:bg-y/[0.04] hover:text-y",
+                      "rounded-[4px] border bg-white/[0.03] px-2.5 py-3 text-center font-mono text-xs font-semibold transition-all",
+                      fullyBooked
+                        ? "cursor-not-allowed border-white/5 text-white/20 line-through"
+                        : "cursor-pointer border-border-faint text-text/60 hover:border-y/30 hover:bg-y/[0.04] hover:text-y",
+                      selected &&
+                        !fullyBooked &&
+                        "border-y bg-y font-bold text-black",
                     )}
                   >
                     {t}
@@ -831,12 +906,17 @@ function Step3({
   state,
   update,
   paymentRef,
+  availability,
 }: {
   state: BookingState;
   update: <K extends keyof BookingState>(k: K, v: BookingState[K]) => void;
   paymentRef: RefObject<BookingCardCaptureApi | null>;
+  availability: DetailerAvailabilitySnapshot | null;
 }) {
   const detailers = TEAM.filter((m) => m.isDetailer);
+  const autoAssignUnavailable =
+    Boolean(state.time) &&
+    Boolean(availability?.fullyBookedSlots.includes(state.time));
 
   return (
     <>
@@ -857,19 +937,31 @@ function Step3({
           <DetailerCard
             name=""
             label="Auto-Assign"
-            sub="Best available"
+            sub={
+              autoAssignUnavailable ? "Fully booked at this time" : "Best available"
+            }
             selected={state.detailer === ""}
+            disabled={autoAssignUnavailable}
             onClick={() => update("detailer", "")}
           />
-          {detailers.map((d) => (
-            <DetailerCard
-              key={d.name}
-              name={d.name}
-              photo={d.photo ? assetPath(d.photo) : undefined}
-              selected={state.detailer === d.name}
-              onClick={() => update("detailer", d.name)}
-            />
-          ))}
+          {detailers.map((d) => {
+            const busy =
+              Boolean(state.time) &&
+              Boolean(
+                availability?.busySlotsByDetailer[d.name]?.includes(state.time),
+              );
+            return (
+              <DetailerCard
+                key={d.name}
+                name={d.name}
+                photo={d.photo ? assetPath(d.photo) : undefined}
+                selected={state.detailer === d.name}
+                disabled={busy}
+                sub={busy ? "Booked at this time" : undefined}
+                onClick={() => update("detailer", d.name)}
+              />
+            );
+          })}
         </div>
       </FormSection>
 
@@ -1018,6 +1110,7 @@ function DetailerCard({
   sub,
   photo,
   selected,
+  disabled = false,
   onClick,
 }: {
   name: string;
@@ -1025,18 +1118,24 @@ function DetailerCard({
   sub?: string;
   photo?: string;
   selected: boolean;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   const noPref = name === "";
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={onClick}
       className={cn(
-        "relative flex cursor-pointer flex-col items-center gap-2.5 rounded-lg border bg-card px-4 pb-4 pt-5 text-center transition-colors",
-        selected
-          ? "border-y bg-y/[0.08]"
-          : "border-border-faint hover:border-y/20 hover:bg-card2",
+        "relative flex flex-col items-center gap-2.5 rounded-lg border bg-card px-4 pb-4 pt-5 text-center transition-colors",
+        disabled
+          ? "cursor-not-allowed border-white/5 opacity-45"
+          : "cursor-pointer",
+        !disabled &&
+          (selected
+            ? "border-y bg-y/[0.08]"
+            : "border-border-faint hover:border-y/20 hover:bg-card2"),
       )}
     >
       <span
@@ -1269,11 +1368,13 @@ function ConfirmScreen({
   pkg,
   total,
   bookingId,
+  assignedDetailer,
 }: {
   state: BookingState;
   pkg: Package | null;
   total: number | null;
   bookingId: string;
+  assignedDetailer?: string;
 }) {
   return (
     <div className="py-20 text-center">
@@ -1300,7 +1401,11 @@ function ConfirmScreen({
         />
         <ConfirmRow
           label="Detailer"
-          value={state.detailer || "Auto-Assigned"}
+          value={
+            assignedDetailer ??
+            state.detailer ??
+            "Assigned at confirmation"
+          }
         />
         <ConfirmRow
           label="Location"

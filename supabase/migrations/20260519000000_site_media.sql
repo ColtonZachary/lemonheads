@@ -44,11 +44,8 @@ on conflict (id) do update set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
-create policy "Public read site-media"
-  on storage.objects
-  for select
-  to anon, authenticated
-  using (bucket_id = 'site-media');
+-- No SELECT policy on storage.objects: bucket is public, so known paths work via
+-- /storage/v1/object/public/site-media/... without allowing bucket-wide listing.
 
 -- Authenticated staff can upload/update (tighten to admin role when auth ships)
 create policy "Authenticated upload site-media"
