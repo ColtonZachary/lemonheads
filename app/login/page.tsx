@@ -2,13 +2,31 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/field";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginFallback />}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginFallback() {
+  return (
+    <div className="flex min-h-[100svh] items-center justify-center px-[5%] py-20">
+      <div className="w-full max-w-[400px] rounded-md border border-y/20 bg-card p-8 text-center font-mono text-xs text-text/40">
+        Loading…
+      </div>
+    </div>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const errorParam = searchParams?.get("error");

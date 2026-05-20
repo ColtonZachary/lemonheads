@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 
-import { ADDONS, LOCATIONS, PACKAGES, TEAM } from "../lib/data.ts";
+import { ADDONS, LOCATIONS, PACKAGES, TEAM } from "../lib/data";
 
 function loadEnvLocal() {
   try {

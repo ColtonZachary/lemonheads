@@ -74,14 +74,7 @@ export function localServiceTimeToUtc(
   hour: number,
   minute: number,
 ): Date {
-  if (typeof Temporal !== "undefined") {
-    const zdt = Temporal.ZonedDateTime.from(
-      `${year}-${pad2(month)}-${pad2(day)}T${pad2(hour)}:${pad2(minute)}:00[${BUSINESS_TIME_ZONE}]`,
-    );
-    return new Date(zdt.epochMilliseconds);
-  }
-
-  // Fallback: adjust UTC until Chicago-formatted parts match the intended local time.
+  // Intl-based conversion (works on Vercel/Node without Temporal types).
   let ts = Date.UTC(year, month - 1, day, hour, minute, 0);
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: BUSINESS_TIME_ZONE,
