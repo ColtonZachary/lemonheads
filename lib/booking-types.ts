@@ -14,8 +14,13 @@ export const BookingSchema = z.object({
   city: z.string().optional().default(""),
   zip: z.string().optional().default(""),
   requestedDetailer: z.string().optional().default(""),
+  /** Package key from booking flow (e.g. fully, quickie). */
+  serviceKey: z.string().optional().default(""),
+  /** Used to compute ends_at from starts_at. */
+  durationHours: z.number().positive().optional().default(2),
   addons: z.array(z.string()).optional().default([]),
   estimatedTotal: z.string().optional().default("TBD"),
+  /** Plastic conditioning — Yes = customer wants the shiny look. */
   plasticCondition: z.enum(["Yes", "No"]).default("No"),
   earlyContact: z.enum(["Yes", "No"]).default("Yes"),
   notes: z.string().optional().default(""),
@@ -27,4 +32,4 @@ export type BookingInput = z.infer<typeof BookingSchema>;
 export type BookingState =
   | { status: "idle" }
   | { status: "error"; message: string; fieldErrors?: Record<string, string[]> }
-  | { status: "success"; bookingId: string };
+  | { status: "success"; bookingId: string; assignedDetailer?: string };

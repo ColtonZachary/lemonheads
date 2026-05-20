@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "supabase:configure": "node scripts/supabase-configure.mjs",
-    "supabase:upload": "node scripts/upload-site-media.mjs"
+    "supabase:upload": "node scripts/upload-site-media.mjs",
+    "hub:seed": "npx tsx scripts/seed-hub-catalog.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",

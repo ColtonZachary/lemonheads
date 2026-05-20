@@ -62,6 +62,22 @@ Set environment variables from `.env.example` in the Vercel dashboard.
 
 ```bash
 npm run supabase:configure -- sb_publishable_YOUR_KEY
-# Run SQL migration in Supabase dashboard once
+# Run SQL migrations in Supabase dashboard (SQL Editor → paste files under supabase/migrations/)
 npm run supabase:upload
 ```
+
+Public `site-media` files are served by URL only — do not add a broad `SELECT` policy on `storage.objects` (that lets anyone list the whole bucket). If the linter flags it, run `supabase/migrations/20260520000000_drop_site_media_list_policy.sql`.
+
+### Bookings table
+
+Run `supabase/migrations/20260521000000_bookings.sql` in the SQL Editor. Set `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` so the booking server action can insert rows (RLS blocks anonymous inserts). View data in **Table Editor → bookings**.
+
+Bookings block overlapping times for the same detailer (`pending`, `confirmed`, `in_progress`). Auto-assign picks the first free detailer; named detailers show unavailable slots in the calendar UI.
+
+Appointment times from the form are **America/Chicago** and stored as UTC in `starts_at` / `ends_at`. In Supabase Table Editor (UTC), 2:00 PM Central may show as 19:00 or 20:00 depending on daylight saving — that is expected.
+
+## Managers Hub
+
+Staff scheduling and catalog management live at `/hub` (Vercel — not GitHub Pages).
+
+**Setup:** follow **[docs/MANAGERS_HUB_SETUP.md](docs/MANAGERS_HUB_SETUP.md)** step by step (migrations, Auth, first admin, `npm run hub:seed`, deploy).
