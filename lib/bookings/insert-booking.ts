@@ -6,6 +6,7 @@ import {
   fetchBookingsForDate,
   resolveDetailerAssignment,
 } from "@/lib/bookings/detailer-availability";
+import { fetchActiveDateOverrides } from "@/lib/bookings/date-overrides";
 import { fetchActiveWeeklyBlocks } from "@/lib/bookings/weekly-blocks";
 import {
   parseBookingSchedule,
@@ -124,12 +125,16 @@ export async function insertBooking(
     };
   }
 
-  const weeklyBlocks = await fetchActiveWeeklyBlocks(client);
+  const [weeklyBlocks, openDayOverrides] = await Promise.all([
+    fetchActiveWeeklyBlocks(client),
+    fetchActiveDateOverrides(client),
+  ]);
   const assignment = resolveDetailerAssignment(
     data,
     existing,
     DETAILER_NAMES,
     weeklyBlocks,
+    openDayOverrides,
   );
   if (!assignment.ok) {
     return { ok: false, error: assignment.message };

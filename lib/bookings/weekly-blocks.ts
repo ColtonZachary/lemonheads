@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import {
+  hasOpenDayOverride,
+  type StaffDateOverride,
+} from "@/lib/bookings/date-overrides";
 import { BOOKING_TIME_SLOTS } from "@/lib/bookings/constants";
 import {
   BUSINESS_TIME_ZONE,
@@ -56,7 +60,11 @@ export function isDetailerBlockedByWeeklyRule(
   detailerName: string,
   dateInput: string,
   weeklyBlocks: StaffWeeklyBlock[],
+  openDayOverrides: StaffDateOverride[] = [],
 ): boolean {
+  if (hasOpenDayOverride(detailerName, dateInput, openDayOverrides)) {
+    return false;
+  }
   const dow = centralWeekdayIndex(dateInput);
   if (dow < 0) return false;
   return weeklyBlocksForDetailer(detailerName, weeklyBlocks).some(

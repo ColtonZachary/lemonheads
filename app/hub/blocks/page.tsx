@@ -1,6 +1,5 @@
-import { ScheduleBlockForm } from "@/components/hub/schedule-block-form";
-import { ScheduleBlocksList } from "@/components/hub/schedule-blocks-list";
-import { WeeklyBlocksList } from "@/components/hub/weekly-blocks-list";
+import { ScheduleBlocksHub } from "@/components/hub/schedule-blocks-hub";
+import type { StaffDateOverride } from "@/lib/bookings/date-overrides";
 import type { StaffWeeklyBlock } from "@/lib/bookings/weekly-blocks";
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import {
@@ -19,29 +18,41 @@ export default async function HubBlocksPage() {
   const end = new Date();
   end.setDate(end.getDate() + 90);
 
-  const [{ data: staff }, { data: blocks }, { data: weekly }] = await Promise.all([
-    supabase!
-      .from("staff_members")
-      .select("id, display_name")
-      .eq("active", true)
-      .eq("is_detailer", true)
-      .order("sort_order"),
-    supabase!
-      .from("schedule_blocks")
-      .select(
-        "id, starts_at, ends_at, reason, staff_member_id, staff_members(display_name)",
-      )
-      .gte("starts_at", start.toISOString())
-      .lte("starts_at", end.toISOString())
-      .order("starts_at", { ascending: true }),
-    supabase!
-      .from("staff_weekly_blocks")
-      .select(
-        "id, staff_member_id, day_of_week, all_day, reason, staff_members(display_name)",
-      )
-      .eq("active", true)
-      .order("day_of_week"),
-  ]);
+  const overrideFrom = start.toISOString().slice(0, 10);
+  const overrideTo = end.toISOString().slice(0, 10);
+
+  const [{ data: staff }, { data: blocks }, { data: weekly }, { data: openDays }] =
+    await Promise.all([
+      supabase!
+        .from("staff_members")
+        .select("id, display_name")
+        .eq("active", true)
+        .eq("is_detailer", true)
+        .order("sort_order"),
+      supabase!
+        .from("schedule_blocks")
+        .select(
+          "id, starts_at, ends_at, reason, staff_member_id, staff_members(display_name)",
+        )
+        .gte("starts_at", start.toISOString())
+        .lte("starts_at", end.toISOString())
+        .order("starts_at", { ascending: true }),
+      supabase!
+        .from("staff_weekly_blocks")
+        .select(
+          "id, staff_member_id, day_of_week, all_day, reason, staff_members(display_name)",
+        )
+        .eq("active", true)
+        .order("day_of_week"),
+      supabase!
+        .from("staff_date_overrides")
+        .select(
+          "id, staff_member_id, override_date, reason, staff_members(display_name)",
+        )
+        .gte("override_date", overrideFrom)
+        .lte("override_date", overrideTo)
+        .order("override_date"),
+    ]);
 
   const rows: ScheduleBlockRow[] = (blocks ?? []).map((b) => ({
     id: b.id,
@@ -55,6 +66,16 @@ export default async function HubBlocksPage() {
   }));
 
   const groups = groupBlocksByDate(rows, DETAILER_NAMES);
+
+  const openDayRows: StaffDateOverride[] = (openDays ?? []).map((o) => ({
+    id: o.id,
+    staff_member_id: o.staff_member_id,
+    override_date: o.override_date,
+    reason: o.reason,
+    staff_members: Array.isArray(o.staff_members)
+      ? (o.staff_members[0] ?? null)
+      : o.staff_members,
+  }));
 
   const weeklyRows: StaffWeeklyBlock[] = (weekly ?? []).map((w) => ({
     id: w.id,
@@ -70,32 +91,21 @@ export default async function HubBlocksPage() {
   return (
     <div>
       <h1 className="font-display text-5xl tracking-[0.04em] text-y">
-        SCHEDULE BLOCKS
+        TEAM SCHEDULE
       </h1>
-      <p className="mt-2 font-mono text-xs tracking-[0.08em] text-text/40">
-        Block detailer time (PTO, lunch, etc.) · grouped by date · shown on team
-        calendar
+      <p className="mt-2 max-w-2xl text-sm text-text/45">
+        Control when each detailer can be booked — time off, regular days off, or
+        one-time exceptions when they pick up an extra shift.
       </p>
 
-      <div className="mt-8 max-w-xl">
-        <ScheduleBlockForm staff={staff ?? []} />
+      <div className="mt-10">
+        <ScheduleBlocksHub
+          staff={staff ?? []}
+          weeklyRows={weeklyRows}
+          openDayRows={openDayRows}
+          blockGroups={groups}
+        />
       </div>
-
-      <section className="mt-12">
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
-          Recurring weekly (every week)
-        </h2>
-        <div className="mt-4">
-          <WeeklyBlocksList blocks={weeklyRows} />
-        </div>
-      </section>
-
-      <section className="mt-12">
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
-          Specific dates
-        </h2>
-        <ScheduleBlocksList groups={groups} />
-      </section>
     </div>
   );
 }

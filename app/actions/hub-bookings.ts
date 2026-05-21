@@ -21,6 +21,7 @@ import {
   findAvailableDetailer,
   isDetailerAvailable,
 } from "@/lib/bookings/detailer-availability";
+import { fetchActiveDateOverrides } from "@/lib/bookings/date-overrides";
 import { fetchActiveWeeklyBlocks } from "@/lib/bookings/weekly-blocks";
 import { parseBookingSchedule } from "@/lib/bookings/parse-schedule";
 import {
@@ -37,13 +38,30 @@ import {
 } from "@/lib/data";
 import { generateBookingReferenceId } from "@/lib/hub/booking-reference";
 import { BookingSchema, type BookingInput } from "@/lib/booking-types";
+import {
+  parseHubBookingCreateDraft,
+  type HubBookingCreateDraft,
+} from "@/lib/hub/booking-create-draft";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type HubBookingActionState = {
   ok: boolean;
   message: string;
   bookingId?: string;
+  /** Preserved when create booking fails so the form is not cleared. */
+  draft?: HubBookingCreateDraft;
 };
+
+function createBookingFailed(
+  message: string,
+  formData: FormData,
+): HubBookingActionState {
+  return {
+    ok: false,
+    message,
+    draft: parseHubBookingCreateDraft(formData),
+  };
+}
 
 type ManagerContext =
   | {
@@ -153,14 +171,16 @@ export async function updateHubBooking(
   let detailerName: string | null = null;
   let detailerAutoAssigned = false;
 
-  const [dayBookings, weeklyBlocks] = await Promise.all([
+  const [dayBookings, weeklyBlocks, openDayOverrides] = await Promise.all([
     fetchBookingsForDate(supabase, schedule.appointmentDate, {
       excludeBookingId: bookingId,
     }),
     fetchActiveWeeklyBlocks(supabase),
+    fetchActiveDateOverrides(supabase),
   ]);
   const availabilityOpts = {
     weeklyBlocks,
+    openDayOverrides,
     appointmentDateInput: schedule.appointmentDate,
   };
 
@@ -357,7 +377,9 @@ export async function createHubBooking(
   formData: FormData,
 ): Promise<HubBookingActionState> {
   const ctx = await requireManagerSupabase();
-  if ("error" in ctx) return { ok: false, message: ctx.error };
+  if ("error" in ctx) {
+    return createBookingFailed(ctx.error, formData);
+  }
 
   const { supabase, profile } = ctx;
 
@@ -367,7 +389,7 @@ export async function createHubBooking(
   const vehicle = VEHICLE_OPTIONS.find((v) => v.key === vehicleKey);
 
   if (!pkg || !vehicle) {
-    return { ok: false, message: "Select a valid package and vehicle." };
+    return createBookingFailed("Select a valid package and vehicle.", formData);
   }
 
   const dateInput = String(formData.get("appointment_date") ?? "");
@@ -378,23 +400,23 @@ export async function createHubBooking(
   const addonNames = formData.getAll("addons").map(String);
 
   if (!BOOKING_LOCATION_TYPES.includes(location as (typeof BOOKING_LOCATION_TYPES)[number])) {
-    return { ok: false, message: "Select a location type." };
+    return createBookingFailed("Select a location type.", formData);
   }
 
   let dateLabel: string;
   try {
     dateLabel = dateInputToLabel(dateInput);
   } catch {
-    return { ok: false, message: "Invalid appointment date." };
+    return createBookingFailed("Invalid appointment date.", formData);
   }
 
   if (!BOOKING_TIME_SLOTS.includes(timeLabel as (typeof BOOKING_TIME_SLOTS)[number])) {
-    return { ok: false, message: "Invalid time slot." };
+    return createBookingFailed("Invalid time slot.", formData);
   }
 
   const scheduleError = validateBookingScheduleFromInput(dateInput, timeLabel);
   if (scheduleError) {
-    return { ok: false, message: scheduleError };
+    return createBookingFailed(scheduleError, formData);
   }
 
   const validStatuses = [
@@ -405,7 +427,7 @@ export async function createHubBooking(
     "cancelled",
   ];
   if (!validStatuses.includes(status)) {
-    return { ok: false, message: "Invalid status." };
+    return createBookingFailed("Invalid status.", formData);
   }
 
   const input: BookingInput = {
@@ -436,7 +458,7 @@ export async function createHubBooking(
   const parsed = BookingSchema.safeParse(input);
   if (!parsed.success) {
     const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
-    return { ok: false, message: first ?? "Check required fields." };
+    return createBookingFailed(first ?? "Check required fields.", formData);
   }
 
   const referenceId = generateBookingReferenceId();
@@ -446,7 +468,7 @@ export async function createHubBooking(
   });
 
   if (!saved.ok) {
-    return { ok: false, message: saved.error };
+    return createBookingFailed(saved.error, formData);
   }
 
   await recordBookingAudit(

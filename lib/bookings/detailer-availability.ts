@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { BLOCKING_BOOKING_STATUSES } from "@/lib/bookings/constants";
 import { parseBookingSchedule } from "@/lib/bookings/parse-schedule";
 import type { BookingInput } from "@/lib/booking-types";
+import type { StaffDateOverride } from "@/lib/bookings/date-overrides";
 import {
   isDetailerBlockedByWeeklyRule,
   type StaffWeeklyBlock,
@@ -60,6 +61,7 @@ export function isDetailerAvailable(
   endsAt: string,
   options?: {
     weeklyBlocks?: StaffWeeklyBlock[];
+    openDayOverrides?: StaffDateOverride[];
     appointmentDateInput?: string;
   },
 ): boolean {
@@ -70,6 +72,7 @@ export function isDetailerAvailable(
       detailerName,
       options.appointmentDateInput,
       options.weeklyBlocks,
+      options.openDayOverrides ?? [],
     )
   ) {
     return false;
@@ -130,6 +133,7 @@ export function resolveDetailerAssignment(
   existing: ExistingBookingWindow[],
   detailerNames: readonly string[],
   weeklyBlocks: StaffWeeklyBlock[] = [],
+  openDayOverrides: StaffDateOverride[] = [],
 ): DetailerAssignment {
   const schedule = parseBookingSchedule(
     data.date,
@@ -138,6 +142,7 @@ export function resolveDetailerAssignment(
   );
   const availabilityOpts = {
     weeklyBlocks,
+    openDayOverrides,
     appointmentDateInput: schedule.appointmentDate,
   };
   const requested = data.requestedDetailer?.trim() ?? "";
@@ -195,6 +200,7 @@ export function buildAvailabilitySnapshot(
   detailerNames: readonly string[],
   existing: ExistingBookingWindow[],
   weeklyBlocks: StaffWeeklyBlock[] = [],
+  openDayOverrides: StaffDateOverride[] = [],
 ): DetailerAvailabilitySnapshot {
   const { appointmentDate } = parseBookingSchedule(
     dateLabel,
@@ -203,6 +209,7 @@ export function buildAvailabilitySnapshot(
   );
   const availabilityOpts = {
     weeklyBlocks,
+    openDayOverrides,
     appointmentDateInput: appointmentDate,
   };
   const busySlotsByDetailer: Record<string, string[]> = {};

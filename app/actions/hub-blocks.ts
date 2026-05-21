@@ -69,16 +69,35 @@ export async function createScheduleBlock(
     return { ok: false, message: "Reason is required (e.g. PTO, lunch, training)." };
   }
 
-  if (allDay) {
-    startTime = ALL_DAY_START;
-    endTime = ALL_DAY_END;
-  }
+  if (blockMode === "open_day") {
+    if (!startDate) {
+      return { ok: false, message: "Select the date they will work." };
+    }
+    if (isPastDateInput(startDate)) {
+      return { ok: false, message: "Date cannot be in the past." };
+    }
 
-  if (
-    !BOOKING_TIME_SLOTS.includes(startTime as (typeof BOOKING_TIME_SLOTS)[number]) ||
-    !BOOKING_TIME_SLOTS.includes(endTime as (typeof BOOKING_TIME_SLOTS)[number])
-  ) {
-    return { ok: false, message: "Invalid time slot." };
+    const { error } = await supabase.from("staff_date_overrides").upsert(
+      {
+        staff_member_id: staffMemberId,
+        override_date: startDate,
+        reason,
+        created_by: profile.id,
+      },
+      { onConflict: "staff_member_id,override_date" },
+    );
+
+    if (error) return { ok: false, message: error.message };
+
+    revalidatePath("/hub/blocks");
+    revalidatePath("/hub/calendar");
+    revalidatePath("/hub/bookings/new");
+
+    return {
+      ok: true,
+      message:
+        "This detailer can be booked on that day even if their weekly schedule says they are off.",
+    };
   }
 
   if (blockMode === "weekly") {
@@ -120,6 +139,18 @@ export async function createScheduleBlock(
           ? "Weekly days off cleared for this team member."
           : `Recurring block set for ${weekdays.length} day${weekdays.length === 1 ? "" : "s"} each week.`,
     };
+  }
+
+  if (allDay) {
+    startTime = ALL_DAY_START;
+    endTime = ALL_DAY_END;
+  }
+
+  if (
+    !BOOKING_TIME_SLOTS.includes(startTime as (typeof BOOKING_TIME_SLOTS)[number]) ||
+    !BOOKING_TIME_SLOTS.includes(endTime as (typeof BOOKING_TIME_SLOTS)[number])
+  ) {
+    return { ok: false, message: "Invalid time slot." };
   }
 
   let dateList: { dates: string[] } | { error: string };
@@ -224,6 +255,29 @@ export async function deleteScheduleBlock(
   revalidatePath("/hub/calendar");
 
   return { ok: true, message: "Block removed." };
+}
+
+export async function deleteOpenDayOverride(
+  overrideId: string,
+  _prev: HubBlockActionState,
+  _formData: FormData,
+): Promise<HubBlockActionState> {
+  void _formData;
+  const ctx = await requireManagerSupabase();
+  if ("error" in ctx) return { ok: false, message: ctx.error };
+
+  const { error } = await ctx.supabase
+    .from("staff_date_overrides")
+    .delete()
+    .eq("id", overrideId);
+
+  if (error) return { ok: false, message: error.message };
+
+  revalidatePath("/hub/blocks");
+  revalidatePath("/hub/calendar");
+  revalidatePath("/hub/bookings/new");
+
+  return { ok: true, message: "Open day removed." };
 }
 
 export async function deleteWeeklyBlock(

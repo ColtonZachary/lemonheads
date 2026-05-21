@@ -44,38 +44,51 @@ function DeleteBlockButton({ blockId }: { blockId: string }) {
   );
 }
 
-export function ScheduleBlocksList({ groups }: { groups: BlockDateGroup[] }) {
+export function ScheduleBlocksList({
+  groups,
+  embedded = false,
+}: {
+  groups: BlockDateGroup[];
+  embedded?: boolean;
+}) {
   if (!groups.length) {
     return (
-      <p className="mt-8 rounded-md border border-white/10 p-8 text-center font-mono text-xs text-text/40">
-        No blocks scheduled. Add PTO or blocked time above.
+      <p className="text-sm text-text/40">
+        No blocked dates in the next few months. Use{" "}
+        <span className="text-text/55">Time off or busy</span> above for PTO,
+        vacation, or partial-day blocks.
       </p>
     );
   }
 
   return (
-    <div className="mt-10 space-y-8">
+    <div className={embedded ? "space-y-6" : "mt-10 space-y-8"}>
       {groups.map((day) => (
-        <section key={day.dateKey}>
-          <h2 className="border-b border-white/10 pb-2 font-display text-xl tracking-[0.05em] text-y/90">
+        <section
+          key={day.dateKey}
+          className="rounded border border-red-500/10 bg-red-500/[0.02] px-4 py-3"
+        >
+          <h3 className="font-mono text-xs uppercase tracking-[0.1em] text-red-200/70">
             {day.dateLabel}
-          </h2>
-          <ul className="mt-3 divide-y divide-white/5">
+          </h3>
+          <ul className="mt-2 space-y-2">
             {day.blocks.map((block) => (
               <li
                 key={block.id}
-                className="flex flex-wrap items-center justify-between gap-3 py-3"
+                className="flex flex-wrap items-center justify-between gap-3 border-t border-white/5 pt-2 first:border-0 first:pt-0"
               >
                 <div>
-                  <div className="font-mono text-xs text-text/70">
-                    {formatBlockTimeRange(block)}
+                  <div className="font-mono text-sm text-y/80">
+                    {block.staff_members?.display_name ?? "—"}
                   </div>
-                  <div className="mt-1 text-sm">
-                    <span className="text-y/80">
-                      {block.staff_members?.display_name ?? "—"}
-                    </span>
-                    <span className="text-text/40"> · </span>
-                    <span className="text-text/60">{block.reason}</span>
+                  <div className="mt-0.5 text-sm text-text/55">
+                    {formatBlockTimeRange(block)}
+                    {block.reason ? (
+                      <>
+                        <span className="text-text/30"> · </span>
+                        {block.reason}
+                      </>
+                    ) : null}
                   </div>
                 </div>
                 <DeleteBlockButton blockId={block.id} />

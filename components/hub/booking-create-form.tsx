@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   createHubBooking,
@@ -18,6 +18,7 @@ import {
   PACKAGES,
   VEHICLE_OPTIONS,
 } from "@/lib/data";
+import { EMPTY_BOOKING_CREATE_DRAFT } from "@/lib/hub/booking-create-draft";
 
 const EMPTY: HubBookingActionState = { ok: false, message: "" };
 
@@ -29,7 +30,19 @@ const labelClass =
 export function BookingCreateForm() {
   const router = useRouter();
   const [state, action, pending] = useActionState(createHubBooking, EMPTY);
-  const [dateInput, setDateInput] = useState("");
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  const draft = state.draft ?? EMPTY_BOOKING_CREATE_DRAFT;
+  const [dateInput, setDateInput] = useState(draft.appointment_date);
+  const [time, setTime] = useState(draft.time);
+
+  const formKey = useMemo(
+    () =>
+      state.draft
+        ? `restore-${state.draft.appointment_date}-${state.draft.time}-${state.draft.customer_name}-${state.draft.package_key}`
+        : "new",
+    [state.draft],
+  );
 
   useEffect(() => {
     if (state.ok && state.bookingId) {
@@ -37,8 +50,32 @@ export function BookingCreateForm() {
     }
   }, [state.ok, state.bookingId, router]);
 
+  useEffect(() => {
+    if (!state.ok && state.draft) {
+      setDateInput(state.draft.appointment_date);
+      setTime(state.draft.time);
+      errorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [state]);
+
   return (
-    <form action={action} className="space-y-10">
+    <form key={formKey} action={action} className="space-y-10">
+      {!state.ok && state.message && (
+        <div
+          ref={errorRef}
+          className="rounded-md border border-red-500/40 bg-red-500/10 px-4 py-3"
+          role="alert"
+        >
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-red-200/90">
+            Could not create booking
+          </p>
+          <p className="mt-1 font-mono text-sm text-red-100">{state.message}</p>
+          <p className="mt-2 text-sm text-text/45">
+            Your entries are kept below — fix the issue and submit again.
+          </p>
+        </div>
+      )}
+
       <section className="rounded-md border border-white/10 p-6">
         <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-y">
           Customer
@@ -51,6 +88,7 @@ export function BookingCreateForm() {
               required
               className={fieldClass}
               placeholder="Jane Smith"
+              defaultValue={draft.customer_name}
             />
           </label>
           <label className="block">
@@ -61,6 +99,7 @@ export function BookingCreateForm() {
               required
               className={fieldClass}
               placeholder="405-555-0100"
+              defaultValue={draft.phone}
             />
           </label>
           <label className="block sm:col-span-2">
@@ -71,6 +110,7 @@ export function BookingCreateForm() {
               required
               className={fieldClass}
               placeholder="jane@example.com"
+              defaultValue={draft.email}
             />
           </label>
         </div>
@@ -83,7 +123,12 @@ export function BookingCreateForm() {
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
           <label className="block">
             <span className={labelClass}>Package *</span>
-            <select name="package_key" required className={fieldClass} defaultValue="">
+            <select
+              name="package_key"
+              required
+              className={fieldClass}
+              defaultValue={draft.package_key || undefined}
+            >
               <option value="" disabled>
                 Select package…
               </option>
@@ -96,7 +141,12 @@ export function BookingCreateForm() {
           </label>
           <label className="block">
             <span className={labelClass}>Vehicle *</span>
-            <select name="vehicle_key" required className={fieldClass} defaultValue="">
+            <select
+              name="vehicle_key"
+              required
+              className={fieldClass}
+              defaultValue={draft.vehicle_key || undefined}
+            >
               <option value="" disabled>
                 Select vehicle…
               </option>
@@ -113,6 +163,7 @@ export function BookingCreateForm() {
               name="vehicle_info"
               className={fieldClass}
               placeholder="Color, year, fleet unit #"
+              defaultValue={draft.vehicle_info}
             />
           </label>
         </div>
@@ -130,6 +181,7 @@ export function BookingCreateForm() {
                   name="addons"
                   value={a.name}
                   className="mt-1"
+                  defaultChecked={draft.addons.includes(a.name)}
                 />
                 <span>
                   {a.name}
@@ -149,19 +201,29 @@ export function BookingCreateForm() {
         </h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
           <HubDatePicker
+            key={`date-${formKey}`}
             name="appointment_date"
             label="Date"
             disablePast
+            defaultValue={draft.appointment_date}
             onDateChange={setDateInput}
           />
           <HubTimeSelect
+            key={`time-${formKey}`}
             dateInput={dateInput}
             name="time"
             label="Time"
+            value={time}
+            onValueChange={setTime}
           />
           <label className="block">
             <span className={labelClass}>Detailer *</span>
-            <select name="detailer" required className={fieldClass} defaultValue="auto">
+            <select
+              name="detailer"
+              required
+              className={fieldClass}
+              defaultValue={draft.detailer || "auto"}
+            >
               <option value="auto">Auto-assign (next available)</option>
               {DETAILER_NAMES.map((name) => (
                 <option key={name} value={name}>
@@ -172,7 +234,7 @@ export function BookingCreateForm() {
           </label>
           <label className="block">
             <span className={labelClass}>Status *</span>
-            <select name="status" className={fieldClass} defaultValue="confirmed">
+            <select name="status" className={fieldClass} defaultValue={draft.status}>
               <option value="pending">pending</option>
               <option value="confirmed">confirmed</option>
               <option value="in_progress">in_progress</option>
@@ -188,7 +250,12 @@ export function BookingCreateForm() {
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
           <label className="block sm:col-span-2">
             <span className={labelClass}>Location type *</span>
-            <select name="location" required className={fieldClass} defaultValue="">
+            <select
+              name="location"
+              required
+              className={fieldClass}
+              defaultValue={draft.location || undefined}
+            >
               <option value="" disabled>
                 Select…
               </option>
@@ -201,15 +268,20 @@ export function BookingCreateForm() {
           </label>
           <label className="block sm:col-span-2">
             <span className={labelClass}>Street address</span>
-            <input name="address" className={fieldClass} />
+            <input name="address" className={fieldClass} defaultValue={draft.address} />
           </label>
           <label className="block">
             <span className={labelClass}>City</span>
-            <input name="city" className={fieldClass} />
+            <input name="city" className={fieldClass} defaultValue={draft.city} />
           </label>
           <label className="block">
             <span className={labelClass}>ZIP</span>
-            <input name="zip" className={fieldClass} maxLength={10} />
+            <input
+              name="zip"
+              className={fieldClass}
+              maxLength={10}
+              defaultValue={draft.zip}
+            />
           </label>
         </div>
       </section>
@@ -220,7 +292,12 @@ export function BookingCreateForm() {
         </h2>
         <div className="mt-5 grid gap-5">
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="plastic_shine" value="Yes" />
+            <input
+              type="checkbox"
+              name="plastic_shine"
+              value="Yes"
+              defaultChecked={draft.plastic_shine}
+            />
             Plastic shine (customer wants shiny plastic)
           </label>
           <label className="block">
@@ -229,11 +306,17 @@ export function BookingCreateForm() {
               name="customer_notes"
               rows={2}
               className={fieldClass}
+              defaultValue={draft.customer_notes}
             />
           </label>
           <label className="block">
             <span className={labelClass}>Manager notes (internal)</span>
-            <textarea name="manager_notes" rows={2} className={fieldClass} />
+            <textarea
+              name="manager_notes"
+              rows={2}
+              className={fieldClass}
+              defaultValue={draft.manager_notes}
+            />
           </label>
         </div>
       </section>
@@ -246,18 +329,6 @@ export function BookingCreateForm() {
           <Link href="/hub/bookings">Cancel</Link>
         </Button>
       </div>
-
-      {state.message && (
-        <p
-          className={`rounded-md border px-4 py-3 font-mono text-xs ${
-            state.ok
-              ? "border-y/30 bg-y/10 text-y"
-              : "border-red-500/30 bg-red-500/10 text-red-200"
-          }`}
-        >
-          {state.message}
-        </p>
-      )}
     </form>
   );
 }
