@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Logo } from "@/components/site/logo";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icons";
+import { getHubLoginUrl } from "@/lib/app-url";
 import { SITE } from "@/lib/site";
 
 const FOOTER_LINKS = [
@@ -14,7 +15,13 @@ const FOOTER_LINKS = [
   { href: SITE.externalLinks.privacy, label: "Privacy", external: true },
 ];
 
+const footerLinkClass =
+  "font-mono text-[10px] uppercase tracking-[0.15em] text-muted transition-colors hover:text-y";
+
 export function SiteFooter() {
+  const hubLoginHref = getHubLoginUrl();
+  const hubLoginExternal = hubLoginHref.startsWith("http");
+
   return (
     <footer className="flex flex-col gap-9 border-t border-border-faint bg-[#040404] px-[5%] pb-9 pt-12">
       <div className="flex flex-wrap items-center justify-between gap-6">
@@ -28,20 +35,28 @@ export function SiteFooter() {
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted transition-colors hover:text-y"
+                  className={footerLinkClass}
                 >
                   {link.label}
                 </a>
               ) : (
-                <Link
-                  href={link.href}
-                  className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted transition-colors hover:text-y"
-                >
+                <Link href={link.href} className={footerLinkClass}>
                   {link.label}
                 </Link>
               )}
             </li>
           ))}
+          <li>
+            {hubLoginExternal ? (
+              <a href={hubLoginHref} className={footerLinkClass}>
+                Employee Login
+              </a>
+            ) : (
+              <Link href={hubLoginHref} className={footerLinkClass}>
+                Employee Login
+              </Link>
+            )}
+          </li>
         </ul>
 
         <div className="flex gap-2.5">

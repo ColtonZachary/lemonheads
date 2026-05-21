@@ -14,3 +14,11 @@ export function authRedirectPath(path: string): string {
   if (!base) return path;
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
+
+/** Managers hub sign-in (absolute when app URL is set, else Vercel default). */
+export function getHubLoginUrl(): string {
+  const base = getAppBaseUrl();
+  if (base) return `${base}/login`;
+  if (process.env.NODE_ENV === "development") return "/login";
+  return "https://lemonheads.vercel.app/login";
+}
