@@ -3,16 +3,16 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icons";
 import { Section, SectionLabel, SectionTitle } from "@/components/ui/section";
-import { ADDONS } from "@/lib/data";
+import type { AddOn } from "@/lib/data";
 
-export function AddOns() {
+export function AddOns({ addons }: { addons: AddOn[] }) {
   return (
     <Section id="addons" className="bg-dk">
       <SectionLabel>Enhance Your Detail</SectionLabel>
       <SectionTitle>ADD-ONS</SectionTitle>
 
       <div className="mt-12 grid gap-px bg-border-faint sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {ADDONS.map((addon) => (
+        {addons.map((addon) => (
           <article
             key={addon.name}
             className="group relative overflow-hidden bg-dk px-6 py-7 transition-colors hover:bg-card2 before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:origin-left before:scale-x-0 before:bg-gradient-to-r before:from-y before:to-transparent before:transition-transform before:duration-500 hover:before:scale-x-100"

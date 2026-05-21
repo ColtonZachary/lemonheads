@@ -463,13 +463,13 @@ Long term: point your main domain to **Vercel** and retire GitHub Pages when rea
 | 2 | ~~Schedule blocks (PTO / block time)~~ | `/hub/blocks` ✅ |
 | 3 | ~~Blackout dates & lead-time rules editor~~ | `/hub/settings/rules` ✅ |
 | 4 | ~~Service-area ZIP/city validation (hub + public `/book`)~~ | `/hub/settings/coverage` ✅ |
-| 5 | Staff + **managers** CRUD | `/hub/staff`, `/hub/managers` |
-| 6 | Packages / add-ons / locations CRUD | `/hub/catalog/*` |
+| 5 | ~~Staff + hub access (managers) CRUD~~ | `/hub/staff`, `/hub/managers` ✅ |
+| 6 | ~~Packages / add-ons / locations CRUD~~ | `/hub/catalog/*` ✅ |
 | 7 | Promo codes | `/hub/promos` |
 | 8 | Customer history by email/phone | `/hub/customers` |
 | 9 | Reports (revenue, utilization) | `/hub/reports` |
 | 10 | Notifications queue (email now, SMS via Twilio later) | `/hub/settings/notifications` |
-| 11 | Public `/book` reads Supabase catalog + rules | site-wide |
+| 11 | Public `/book` reads Supabase catalog + rules | packages/add-ons/locations ✅ · scheduling rules TBD |
 | 12 | Stripe invoices | after hub stable |
 
 ---
@@ -505,7 +505,7 @@ No Stripe work is required to use the hub for scheduling and catalog.
 | “Unauthorized” on `/hub` | User missing row in `profiles` or `active = false` |
 | Detailer sees edit buttons | Role must be `detailer`, not `manager` |
 | Times wrong in Supabase | Table stores UTC; hub shows Central — 2 PM Central = `19:00 UTC` in summer |
-| Booking still uses old prices | Public site still reads `lib/data.ts` until Phase 11 |
+| Hub catalog change not on website | Package must be **Active**; redeploy Vercel (or hard-refresh locally). Site reads Supabase for packages/add-ons/locations. |
 | RLS blocks hub write | Sign in with manager/admin; check policy in migration |
 
 ---

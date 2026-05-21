@@ -6,15 +6,20 @@ import { HowItWorks } from "@/components/home/how-it-works";
 import { Locations } from "@/components/home/locations";
 import { Packages } from "@/components/home/packages";
 import { Reviews } from "@/components/home/reviews";
+import { fetchPublicCatalog } from "@/lib/catalog/public-catalog";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createSupabaseServerClient();
+  const catalog = await fetchPublicCatalog(supabase);
+
   return (
     <>
       <Hero />
       <HowItWorks />
       <Locations />
-      <Packages />
-      <AddOns />
+      <Packages packages={catalog.packages} />
+      <AddOns addons={catalog.addons} />
       <Gallery />
       <Reviews />
       <ContactCards />

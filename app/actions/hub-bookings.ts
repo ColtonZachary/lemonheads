@@ -22,6 +22,7 @@ import {
   isDetailerAvailable,
 } from "@/lib/bookings/detailer-availability";
 import { fetchActiveDateOverrides } from "@/lib/bookings/date-overrides";
+import { fetchBookableDetailerNames } from "@/lib/bookings/bookable-detailers";
 import { fetchActiveWeeklyBlocks } from "@/lib/bookings/weekly-blocks";
 import { parseBookingSchedule } from "@/lib/bookings/parse-schedule";
 import {
@@ -30,7 +31,6 @@ import {
 } from "@/lib/bookings/scheduling-limits";
 import {
   ADDONS,
-  DETAILER_NAMES,
   PACKAGE_BY_KEY,
   type PackageKey,
   VEHICLE_OPTIONS,
@@ -171,13 +171,15 @@ export async function updateHubBooking(
   let detailerName: string | null = null;
   let detailerAutoAssigned = false;
 
-  const [dayBookings, weeklyBlocks, openDayOverrides] = await Promise.all([
-    fetchBookingsForDate(supabase, schedule.appointmentDate, {
-      excludeBookingId: bookingId,
-    }),
-    fetchActiveWeeklyBlocks(supabase),
-    fetchActiveDateOverrides(supabase),
-  ]);
+  const [dayBookings, weeklyBlocks, openDayOverrides, detailerNames] =
+    await Promise.all([
+      fetchBookingsForDate(supabase, schedule.appointmentDate, {
+        excludeBookingId: bookingId,
+      }),
+      fetchActiveWeeklyBlocks(supabase),
+      fetchActiveDateOverrides(supabase),
+      fetchBookableDetailerNames(supabase),
+    ]);
   const availabilityOpts = {
     weeklyBlocks,
     openDayOverrides,
@@ -186,7 +188,7 @@ export async function updateHubBooking(
 
   if (autoAssign) {
     const assigned = findAvailableDetailer(
-      DETAILER_NAMES,
+      detailerNames,
       dayBookings,
       schedule.startsAt,
       schedule.endsAt,
@@ -202,8 +204,8 @@ export async function updateHubBooking(
     detailerName = assigned;
     detailerAutoAssigned = true;
   } else {
-    if (!DETAILER_NAMES.includes(detailerChoice)) {
-      return { ok: false, message: "Unknown detailer." };
+    if (!detailerNames.includes(detailerChoice)) {
+      return { ok: false, message: "Unknown or inactive detailer." };
     }
     if (
       !isDetailerAvailable(

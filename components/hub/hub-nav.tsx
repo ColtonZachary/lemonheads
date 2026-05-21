@@ -13,6 +13,7 @@ const managerLinks = [
   { href: "/hub/bookings", label: "Bookings" },
   { href: "/hub/customers", label: "Customers" },
   { href: "/hub/staff", label: "Staff" },
+  { href: "/hub/catalog", label: "Catalog" },
   { href: "/hub/promos", label: "Promo codes" },
   { href: "/hub/reports", label: "Reports" },
   { href: "/hub/settings", label: "Settings" },

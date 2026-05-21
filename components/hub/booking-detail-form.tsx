@@ -13,7 +13,6 @@ import {
 import { HubDatePicker } from "@/components/hub/hub-date-picker";
 import { HubTimeSelect } from "@/components/hub/hub-time-select";
 import { Button } from "@/components/ui/button";
-import { DETAILER_NAMES } from "@/lib/data";
 import { centralScheduleLabels } from "@/lib/hub/schedule-labels";
 
 const EMPTY: HubBookingActionState = { ok: false, message: "" };
@@ -72,7 +71,13 @@ function ActionBanner({ state }: { state: HubBookingActionState }) {
   );
 }
 
-export function BookingDetailForm({ booking }: { booking: HubBookingDetail }) {
+export function BookingDetailForm({
+  booking,
+  detailerNames,
+}: {
+  booking: HubBookingDetail;
+  detailerNames: string[];
+}) {
   const router = useRouter();
   const labels = centralScheduleLabels(booking.starts_at);
   const [dateInput, setDateInput] = useState(labels.dateInput);
@@ -182,7 +187,12 @@ export function BookingDetailForm({ booking }: { booking: HubBookingDetail }) {
                 className="mt-1 w-full rounded border border-white/15 bg-dk px-3 py-2 font-mono text-sm"
               >
                 <option value="auto">Auto-assign (next available)</option>
-                {DETAILER_NAMES.map((name) => (
+                {[
+                  ...new Set([
+                    ...detailerNames,
+                    ...(booking.detailer_name ? [booking.detailer_name] : []),
+                  ]),
+                ].map((name) => (
                   <option key={name} value={name}>
                     {name}
                   </option>

@@ -2,9 +2,13 @@ import Link from "next/link";
 
 import { BookingCreateForm } from "@/components/hub/booking-create-form";
 import { requireHubAccess } from "@/lib/auth/require-hub";
+import { fetchBookableDetailerNames } from "@/lib/bookings/bookable-detailers";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function HubBookingNewPage() {
   await requireHubAccess({ managerOnly: true });
+  const supabase = await createSupabaseServerClient();
+  const detailerNames = await fetchBookableDetailerNames(supabase!);
 
   return (
     <div>
@@ -24,7 +28,7 @@ export default async function HubBookingNewPage() {
       </p>
 
       <div className="mt-8 max-w-3xl">
-        <BookingCreateForm />
+        <BookingCreateForm detailerNames={detailerNames} />
       </div>
     </div>
   );

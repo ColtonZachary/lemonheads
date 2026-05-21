@@ -64,6 +64,16 @@ export default async function HubDashboardPage() {
               → Rules & blackouts
             </Link>
           </li>
+          <li>
+            <Link href="/hub/catalog" className="hover:text-y">
+              → Catalog (packages & add-ons)
+            </Link>
+          </li>
+          <li>
+            <Link href="/hub/staff" className="hover:text-y">
+              → Staff roster
+            </Link>
+          </li>
         </ul>
         <p className="mt-6 font-mono text-[10px] leading-relaxed text-text/35">
           Full setup steps:{" "}

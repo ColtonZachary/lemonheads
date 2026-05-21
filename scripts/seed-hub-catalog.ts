@@ -168,6 +168,21 @@ async function main() {
       { onConflict: "slug" },
     );
     if (error) console.warn("staff_members", slug, error.message);
+
+    if (m.photo) {
+      const storagePath = m.photo.replace(/^\//, "");
+      await supabase.from("site_images").upsert(
+        {
+          category: "team",
+          storage_path: storagePath,
+          alt_text: m.name,
+          member_slug: slug,
+          sort_order: i,
+          published: true,
+        },
+        { onConflict: "category,storage_path" },
+      );
+    }
   }
 
   console.log(

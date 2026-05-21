@@ -6,7 +6,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icons";
 import { Section, SectionLabel, SectionTitle } from "@/components/ui/section";
-import { PACKAGES, VEHICLE_OPTIONS, type VehicleKey } from "@/lib/data";
+import { VEHICLE_OPTIONS, type VehicleKey } from "@/lib/data";
+import type { SitePackage } from "@/lib/catalog/public-catalog";
 import { cn, formatCurrency } from "@/lib/utils";
 
 const TOP_LEVEL: { key: VehicleKey | "suv"; label: string }[] = [
@@ -17,7 +18,7 @@ const TOP_LEVEL: { key: VehicleKey | "suv"; label: string }[] = [
   { key: "van", label: "Van" },
 ];
 
-export function Packages() {
+export function Packages({ packages }: { packages: SitePackage[] }) {
   const [vehicle, setVehicle] = useState<VehicleKey>("coupe");
   const [suvOpen, setSuvOpen] = useState(false);
 
@@ -88,7 +89,7 @@ export function Packages() {
 
       {/* Package cards */}
       <div className="grid grid-cols-1 gap-px md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        {PACKAGES.map((pkg) => (
+        {packages.map((pkg) => (
           <article
             key={pkg.key}
             className={cn(

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { BookingInput } from "@/lib/booking-types";
-import { DETAILER_NAMES } from "@/lib/data";
+import { fetchBookableDetailerNames } from "@/lib/bookings/bookable-detailers";
 import {
   fetchBookingsForDate,
   resolveDetailerAssignment,
@@ -143,14 +143,15 @@ export async function insertBooking(
     };
   }
 
-  const [weeklyBlocks, openDayOverrides] = await Promise.all([
+  const [weeklyBlocks, openDayOverrides, detailerNames] = await Promise.all([
     fetchActiveWeeklyBlocks(client),
     fetchActiveDateOverrides(client),
+    fetchBookableDetailerNames(client),
   ]);
   const assignment = resolveDetailerAssignment(
     data,
     existing,
-    DETAILER_NAMES,
+    detailerNames,
     weeklyBlocks,
     openDayOverrides,
   );

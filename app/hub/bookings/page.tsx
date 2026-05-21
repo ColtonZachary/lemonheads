@@ -7,12 +7,13 @@ import {
   groupBookingsByDateAndDetailer,
   type HubBookingListRow,
 } from "@/lib/hub/group-bookings";
-import { DETAILER_NAMES } from "@/lib/data";
+import { fetchBookableDetailerNames } from "@/lib/bookings/bookable-detailers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function HubBookingsPage() {
   await requireHubAccess({ managerOnly: true });
   const supabase = await createSupabaseServerClient();
+  const detailerOrder = await fetchBookableDetailerNames(supabase!);
 
   const { data: bookings } = await supabase!
     .from("bookings")
@@ -23,7 +24,7 @@ export default async function HubBookingsPage() {
     .limit(200);
 
   const rows = (bookings ?? []) as HubBookingListRow[];
-  const groups = groupBookingsByDateAndDetailer(rows, DETAILER_NAMES);
+  const groups = groupBookingsByDateAndDetailer(rows, detailerOrder);
 
   return (
     <div>

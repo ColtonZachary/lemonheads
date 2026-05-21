@@ -12,12 +12,7 @@ import { HubDatePicker } from "@/components/hub/hub-date-picker";
 import { HubTimeSelect } from "@/components/hub/hub-time-select";
 import { Button } from "@/components/ui/button";
 import { BOOKING_LOCATION_TYPES } from "@/lib/bookings/constants";
-import {
-  ADDONS,
-  DETAILER_NAMES,
-  PACKAGES,
-  VEHICLE_OPTIONS,
-} from "@/lib/data";
+import { ADDONS, PACKAGES, VEHICLE_OPTIONS } from "@/lib/data";
 import { EMPTY_BOOKING_CREATE_DRAFT } from "@/lib/hub/booking-create-draft";
 
 const EMPTY: HubBookingActionState = { ok: false, message: "" };
@@ -27,7 +22,11 @@ const fieldClass =
 const labelClass =
   "font-mono text-[9px] uppercase tracking-[0.12em] text-text/40";
 
-export function BookingCreateForm() {
+export function BookingCreateForm({
+  detailerNames,
+}: {
+  detailerNames: string[];
+}) {
   const router = useRouter();
   const [state, action, pending] = useActionState(createHubBooking, EMPTY);
   const errorRef = useRef<HTMLDivElement>(null);
@@ -225,7 +224,7 @@ export function BookingCreateForm() {
               defaultValue={draft.detailer || "auto"}
             >
               <option value="auto">Auto-assign (next available)</option>
-              {DETAILER_NAMES.map((name) => (
+              {detailerNames.map((name) => (
                 <option key={name} value={name}>
                   {name}
                 </option>

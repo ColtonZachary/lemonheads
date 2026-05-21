@@ -42,15 +42,14 @@ import {
 } from "@/components/ui/field";
 import { Icon, type IconName } from "@/components/ui/icons";
 import { assetPath } from "@/lib/asset-path";
+import type { DetailerCardInfo } from "@/lib/bookings/bookable-detailers";
+import { TEAM, type VehicleKey } from "@/lib/data";
 import {
-  ADDONS,
-  PACKAGES,
-  PACKAGE_BY_KEY,
-  TEAM,
-  type Package,
-  type PackageKey,
-  type VehicleKey,
-} from "@/lib/data";
+  packageIconForKey,
+  packagesByKey,
+  type PublicCatalog,
+  type SitePackage,
+} from "@/lib/catalog/public-catalog";
 import { cn, formatCurrency } from "@/lib/utils";
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -60,7 +59,7 @@ import { cn, formatCurrency } from "@/lib/utils";
 type Step = 1 | 2 | 3 | 4;
 
 interface BookingState {
-  packageKey: PackageKey | "";
+  packageKey: string;
   vehicleKey: VehicleKey | "";
   addons: Set<string>;
   plasticCondition: "Yes" | "No";
@@ -87,27 +86,12 @@ interface BookingState {
   saveCardOnFile: boolean;
 }
 
-const SERVICE_ICON: Record<PackageKey, IconName> = {
-  basic: "document",
-  quickie: "bolt",
-  toughy: "wrench",
-  fully: "star",
-  boujee: "diamond",
-  interior: "couch",
-};
-
 const VEHICLE_TOP: { key: VehicleKey | "suv"; label: string; icon: IconName }[] = [
   { key: "coupe", label: "2-Door Coupe", icon: "coupe" },
   { key: "sedan", label: "4-Door Sedan", icon: "sedan" },
   { key: "suv", label: "SUV", icon: "suv" },
   { key: "truck", label: "Truck", icon: "truck" },
   { key: "van", label: "Van", icon: "van" },
-];
-
-const LOCATION_TYPES = [
-  "Come to my home",
-  "Come to my office / workplace",
-  "Drop off at your Edmond location",
 ];
 
 const MONTHS = [
@@ -155,16 +139,31 @@ function emptyState(
    ROOT COMPONENT
 ─────────────────────────────────────────────────────────────────────*/
 
-export function BookingFlow() {
+export function BookingFlow({
+  detailers: detailersProp,
+  catalog,
+}: {
+  detailers?: DetailerCardInfo[];
+  catalog: PublicCatalog;
+}) {
+  const { packages, addons, locationTypes } = catalog;
+  const packageByKey = useMemo(() => packagesByKey(packages), [packages]);
+  const bookableDetailers =
+    detailersProp?.length
+      ? detailersProp
+      : TEAM.filter((m) => m.isDetailer).map((m) => ({
+          name: m.name,
+          photo: m.photo ? assetPath(m.photo) : undefined,
+        }));
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const presetPkg = searchParams?.get("service") as PackageKey | null;
+  const presetPkg = searchParams?.get("service");
   const presetVeh = searchParams?.get("vehicle") as VehicleKey | null;
 
   const [state, setState] = useState<BookingState>(() =>
     emptyState({
-      packageKey: presetPkg && PACKAGE_BY_KEY[presetPkg] ? presetPkg : "",
+      packageKey: presetPkg && packageByKey[presetPkg] ? presetPkg : "",
       vehicleKey: presetVeh ?? "",
     }),
   );
@@ -194,18 +193,18 @@ export function BookingFlow() {
     });
 
   const pkg =
-    state.packageKey && PACKAGE_BY_KEY[state.packageKey]
-      ? PACKAGE_BY_KEY[state.packageKey]
+    state.packageKey && packageByKey[state.packageKey]
+      ? packageByKey[state.packageKey]
       : null;
   const pkgPrice =
     pkg && state.vehicleKey ? pkg.prices[state.vehicleKey] : null;
   const addonTotal = useMemo(
     () =>
       Array.from(state.addons).reduce((sum, name) => {
-        const a = ADDONS.find((x) => x.name === name);
+        const a = addons.find((x) => x.name === name);
         return sum + (a?.price ?? 0);
       }, 0),
-    [state.addons],
+    [state.addons, addons],
   );
   const total =
     pkgPrice !== null ? pkgPrice + addonTotal : null;
@@ -373,6 +372,8 @@ export function BookingFlow() {
           state={state}
           update={update}
           toggleAddon={toggleAddon}
+          packages={packages}
+          addons={addons}
         />
       )}
 
@@ -399,6 +400,8 @@ export function BookingFlow() {
               update={update}
               paymentRef={paymentRef}
               availability={availability}
+              detailers={bookableDetailers}
+              locationTypes={locationTypes}
             />
           </div>
           <div className={cn(step !== 4 && "hidden")}>
@@ -491,10 +494,14 @@ function Step1({
   state,
   update,
   toggleAddon,
+  packages,
+  addons,
 }: {
   state: BookingState;
   update: <K extends keyof BookingState>(k: K, v: BookingState[K]) => void;
   toggleAddon: (name: string) => void;
+  packages: SitePackage[];
+  addons: PublicCatalog["addons"];
 }) {
   const [suvOpen, setSuvOpen] = useState(
     state.vehicleKey === "suv2" || state.vehicleKey === "suv3",
@@ -503,7 +510,7 @@ function Step1({
     <>
       <FormSection title="Choose Your Service">
         <div className="grid gap-[3px] bg-border-faint sm:grid-cols-2 lg:grid-cols-3">
-          {PACKAGES.map((p) => (
+          {packages.map((p) => (
             <button
               key={p.key}
               type="button"
@@ -528,7 +535,7 @@ function Step1({
                 )}
               </span>
               <Icon
-                name={SERVICE_ICON[p.key]}
+                name={packageIconForKey(p.key)}
                 className="mb-3 h-7 w-7 text-y opacity-70"
               />
               <div className="font-display text-lg tracking-[0.05em]">
@@ -638,7 +645,7 @@ function Step1({
           Tap any to add to your booking
         </p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-          {ADDONS.map((a) => {
+          {addons.map((a) => {
             const selected = state.addons.has(a.name);
             return (
               <button
@@ -685,7 +692,7 @@ function Step1({
             <span className="font-display text-2xl tracking-[0.04em] text-y">
               {formatCurrency(
                 Array.from(state.addons).reduce((s, n) => {
-                  const a = ADDONS.find((x) => x.name === n);
+                  const a = addons.find((x) => x.name === n);
                   return s + (a?.price ?? 0);
                 }, 0),
               )}
@@ -923,13 +930,16 @@ function Step3({
   update,
   paymentRef,
   availability,
+  detailers,
+  locationTypes,
 }: {
   state: BookingState;
   update: <K extends keyof BookingState>(k: K, v: BookingState[K]) => void;
   paymentRef: RefObject<BookingCardCaptureApi | null>;
   availability: DetailerAvailabilitySnapshot | null;
+  detailers: DetailerCardInfo[];
+  locationTypes: string[];
 }) {
-  const detailers = TEAM.filter((m) => m.isDetailer);
   const autoAssignUnavailable =
     Boolean(state.time) &&
     Boolean(availability?.fullyBookedSlots.includes(state.time));
@@ -966,11 +976,14 @@ function Step3({
               Boolean(
                 availability?.busySlotsByDetailer[d.name]?.includes(state.time),
               );
+            const photoSrc =
+              d.photo &&
+              (d.photo.startsWith("http") ? d.photo : assetPath(d.photo));
             return (
               <DetailerCard
                 key={d.name}
                 name={d.name}
-                photo={d.photo ? assetPath(d.photo) : undefined}
+                photo={photoSrc}
                 selected={state.detailer === d.name}
                 disabled={busy}
                 sub={busy ? "Booked at this time" : undefined}
@@ -1036,7 +1049,7 @@ function Step3({
               onChange={(e) => update("locationType", e.target.value)}
             >
               <option value="">Select location type…</option>
-              {LOCATION_TYPES.map((t) => (
+              {locationTypes.map((t) => (
                 <option key={t}>{t}</option>
               ))}
             </Select>
@@ -1219,7 +1232,7 @@ function Step4({
   total,
 }: {
   state: BookingState;
-  pkg: Package | null;
+  pkg: SitePackage | null;
   pkgPrice: number | null;
   addonTotal: number;
   total: number | null;
@@ -1394,7 +1407,7 @@ function ConfirmScreen({
   assignedDetailer,
 }: {
   state: BookingState;
-  pkg: Package | null;
+  pkg: SitePackage | null;
   total: number | null;
   bookingId: string;
   assignedDetailer?: string;

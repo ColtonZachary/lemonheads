@@ -6,7 +6,7 @@ import {
   groupBlocksByDate,
   type ScheduleBlockRow,
 } from "@/lib/hub/group-schedule-blocks";
-import { DETAILER_NAMES } from "@/lib/data";
+import { fetchBookableDetailerNames } from "@/lib/bookings/bookable-detailers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function HubBlocksPage() {
@@ -65,7 +65,8 @@ export default async function HubBlocksPage() {
       : b.staff_members,
   }));
 
-  const groups = groupBlocksByDate(rows, DETAILER_NAMES);
+  const detailerOrder = await fetchBookableDetailerNames(supabase!);
+  const groups = groupBlocksByDate(rows, detailerOrder);
 
   const openDayRows: StaffDateOverride[] = (openDays ?? []).map((o) => ({
     id: o.id,

@@ -6,6 +6,7 @@ import {
   type HubBookingDetail,
 } from "@/components/hub/booking-detail-form";
 import { requireHubAccess } from "@/lib/auth/require-hub";
+import { fetchBookableDetailerNames } from "@/lib/bookings/bookable-detailers";
 import { formatCentralDateTime } from "@/lib/hub/format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -37,6 +38,8 @@ export default async function HubBookingDetailPage({
 
   if (!booking) notFound();
 
+  const detailerNames = await fetchBookableDetailerNames(supabase!);
+
   const { data: audit } = await supabase!
     .from("booking_audit_log")
     .select("id, action, changes, created_at, profiles(full_name, email)")
@@ -62,7 +65,10 @@ export default async function HubBookingDetailPage({
       </p>
 
       <div className="mt-8">
-        <BookingDetailForm booking={booking as HubBookingDetail} />
+        <BookingDetailForm
+          booking={booking as HubBookingDetail}
+          detailerNames={detailerNames}
+        />
       </div>
 
       <section className="mt-12">

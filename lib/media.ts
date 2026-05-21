@@ -129,7 +129,30 @@ export async function getTeamMembers(): Promise<TeamMember[]> {
     return TEAM.map(withMemberPhotoPath);
   }
 
+  const supabase = await createSupabaseServerClient();
   const photos = await fetchTeamPhotoUrls();
+
+  if (supabase) {
+    const { data: staff } = await supabase
+      .from("staff_members")
+      .select("slug, display_name, role_label, bio, is_detailer, active")
+      .eq("active", true)
+      .order("sort_order");
+
+    if (staff?.length) {
+      return staff.map((row) => {
+        const photo = photos.get(row.slug);
+        return withMemberPhotoPath({
+          name: row.display_name,
+          role: row.role_label as TeamMember["role"],
+          bio: row.bio,
+          isDetailer: row.is_detailer,
+          photo: photo ?? undefined,
+        });
+      });
+    }
+  }
+
   return TEAM.map((member) => {
     const slug = memberSlug(member.name);
     const photo = photos.get(slug) ?? member.photo;

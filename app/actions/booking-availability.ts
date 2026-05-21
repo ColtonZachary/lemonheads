@@ -9,6 +9,7 @@ import {
   type DetailerAvailabilitySnapshot,
 } from "@/lib/bookings/detailer-availability";
 import { parseBookingSchedule } from "@/lib/bookings/parse-schedule";
+import { fetchBookableDetailerNames } from "@/lib/bookings/bookable-detailers";
 import { DETAILER_NAMES } from "@/lib/data";
 import { fetchActiveDateOverrides } from "@/lib/bookings/date-overrides";
 import { fetchActiveWeeklyBlocks } from "@/lib/bookings/weekly-blocks";
@@ -34,16 +35,18 @@ export async function getDetailerAvailability(
       BOOKING_TIME_SLOTS[0],
       durationHours,
     );
-    const [existing, weeklyBlocks, openDayOverrides] = await Promise.all([
-      fetchBookingsForDate(client, probe.appointmentDate),
-      fetchActiveWeeklyBlocks(client),
-      fetchActiveDateOverrides(client),
-    ]);
+    const [existing, weeklyBlocks, openDayOverrides, detailerNames] =
+      await Promise.all([
+        fetchBookingsForDate(client, probe.appointmentDate),
+        fetchActiveWeeklyBlocks(client),
+        fetchActiveDateOverrides(client),
+        fetchBookableDetailerNames(client),
+      ]);
     return buildAvailabilitySnapshot(
       dateLabel,
       durationHours,
       BOOKING_TIME_SLOTS,
-      DETAILER_NAMES,
+      detailerNames,
       existing,
       weeklyBlocks,
       openDayOverrides,
