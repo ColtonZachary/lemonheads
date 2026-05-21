@@ -15,6 +15,7 @@ const managerLinks = [
   { href: "/hub/staff", label: "Staff" },
   { href: "/hub/catalog", label: "Catalog" },
   { href: "/hub/promos", label: "Promo codes" },
+  { href: "/hub/website-feedback", label: "Site feedback" },
   { href: "/hub/reports", label: "Reports" },
   { href: "/hub/settings", label: "Settings" },
 ] as const;

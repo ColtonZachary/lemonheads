@@ -13,6 +13,7 @@ const FOOTER_LINKS = [
   { href: SITE.externalLinks.shop, label: "Store", external: true },
   { href: SITE.externalLinks.blog, label: "Blog", external: true },
   { href: SITE.externalLinks.privacy, label: "Privacy", external: true },
+  { href: "/feedback", label: "Site Feedback" },
 ];
 
 const footerLinkClass =

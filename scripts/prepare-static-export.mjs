@@ -34,6 +34,10 @@ if (existsSync("middleware.ts")) {
 
 copyFileSync("lib/submit-booking.static.ts", "lib/submit-booking.ts");
 copyFileSync("lib/submit-contact.static.ts", "lib/submit-contact.ts");
+copyFileSync(
+  "lib/submit-website-feedback.static.ts",
+  "lib/submit-website-feedback.ts",
+);
 copyFileSync("lib/stripe-setup.static.ts", "lib/stripe-setup.ts");
 copyFileSync("lib/booking-availability.static.ts", "lib/booking-availability.ts");
 

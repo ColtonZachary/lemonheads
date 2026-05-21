@@ -21,6 +21,10 @@ if (existsSync("middleware.static-export.ts") && !existsSync("middleware.ts")) {
 const libRestores = [
   ["lib/submit-booking.server.ts", "lib/submit-booking.ts"],
   ["lib/submit-contact.server.ts", "lib/submit-contact.ts"],
+  [
+    "lib/submit-website-feedback.server.ts",
+    "lib/submit-website-feedback.ts",
+  ],
   ["lib/stripe-setup.server.ts", "lib/stripe-setup.ts"],
   ["lib/booking-availability.server.ts", "lib/booking-availability.ts"],
 ];

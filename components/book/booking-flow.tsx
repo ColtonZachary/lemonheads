@@ -1708,6 +1708,21 @@ function ConfirmScreen({
         )}
       </div>
 
+      <div className="mx-auto mt-8 max-w-[420px] rounded-md border border-border-faint bg-white/[0.02] p-5 text-left">
+        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+          Quick favor
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-text/60">
+          How was booking on our website? Your feedback helps us improve the
+          site — not your detail appointment.
+        </p>
+        <Button asChild variant="outline" size="sm" className="mt-4">
+          <Link href="/feedback">
+            Rate the website <Icon name="arrowRight" className="h-3 w-3" />
+          </Link>
+        </Button>
+      </div>
+
       <div className="mt-10">
         <Button asChild>
           <Link href="/">Back to Home</Link>
