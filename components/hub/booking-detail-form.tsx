@@ -10,6 +10,7 @@ import {
   updateHubBooking,
   type HubBookingActionState,
 } from "@/app/actions/hub-bookings";
+import { HubDatePicker } from "@/components/hub/hub-date-picker";
 import { Button } from "@/components/ui/button";
 import { BOOKING_TIME_SLOTS } from "@/lib/bookings/constants";
 import { DETAILER_NAMES } from "@/lib/data";
@@ -188,17 +189,12 @@ export function BookingDetailForm({ booking }: { booking: HubBookingDetail }) {
               </select>
             </label>
 
-            <label className="block">
-              <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-text/40">
-                Date (Central)
-              </span>
-              <input
-                type="date"
-                name="appointment_date"
-                defaultValue={labels.dateInput}
-                className="mt-1 w-full rounded border border-white/15 bg-dk px-3 py-2 font-mono text-sm"
-              />
-            </label>
+            <HubDatePicker
+              name="appointment_date"
+              label="Date (Central)"
+              defaultValue={labels.dateInput}
+              disablePast={false}
+            />
 
             <label className="block">
               <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-text/40">

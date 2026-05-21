@@ -7,6 +7,7 @@ import {
   deleteBlackoutDate,
   type HubRulesActionState,
 } from "@/app/actions/hub-rules";
+import { HubDatePicker } from "@/components/hub/hub-date-picker";
 import { Button } from "@/components/ui/button";
 
 const EMPTY: HubRulesActionState = { ok: false, message: "" };
@@ -75,15 +76,7 @@ export function BlackoutDatesPanel({
         </p>
 
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
-          <label className="block">
-            <span className={labelClass}>Date *</span>
-            <input
-              type="date"
-              name="blackout_date"
-              required
-              className={fieldClass}
-            />
-          </label>
+          <HubDatePicker name="blackout_date" label="Date" disablePast />
 
           <label className="block">
             <span className={labelClass}>Scope</span>

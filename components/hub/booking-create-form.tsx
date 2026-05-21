@@ -8,6 +8,7 @@ import {
   createHubBooking,
   type HubBookingActionState,
 } from "@/app/actions/hub-bookings";
+import { HubDatePicker } from "@/components/hub/hub-date-picker";
 import { Button } from "@/components/ui/button";
 import { BOOKING_LOCATION_TYPES, BOOKING_TIME_SLOTS } from "@/lib/bookings/constants";
 import {
@@ -145,15 +146,11 @@ export function BookingCreateForm() {
           Schedule (Central)
         </h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
-          <label className="block">
-            <span className={labelClass}>Date *</span>
-            <input
-              type="date"
-              name="appointment_date"
-              required
-              className={fieldClass}
-            />
-          </label>
+          <HubDatePicker
+            name="appointment_date"
+            label="Date"
+            disablePast
+          />
           <label className="block">
             <span className={labelClass}>Time *</span>
             <select name="time" required className={fieldClass} defaultValue="">

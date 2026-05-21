@@ -6,6 +6,7 @@ import {
   createScheduleBlock,
   type HubBlockActionState,
 } from "@/app/actions/hub-blocks";
+import { HubDatePicker } from "@/components/hub/hub-date-picker";
 import { Button } from "@/components/ui/button";
 import { BOOKING_TIME_SLOTS } from "@/lib/bookings/constants";
 
@@ -56,10 +57,7 @@ export function ScheduleBlockForm({
           </select>
         </label>
 
-        <label className="block">
-          <span className={labelClass}>Date *</span>
-          <input type="date" name="appointment_date" required className={fieldClass} />
-        </label>
+        <HubDatePicker name="appointment_date" label="Date" disablePast={false} />
 
         <label className="block">
           <span className={labelClass}>Reason *</span>
