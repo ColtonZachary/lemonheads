@@ -1,3 +1,4 @@
+import { centralDateKey } from "@/lib/bookings/scheduling-limits";
 import { BUSINESS_TIME_ZONE } from "@/lib/bookings/parse-schedule";
 import { formatCentralDate, formatCentralTime } from "@/lib/hub/format";
 
@@ -28,16 +29,6 @@ export type HubDateGroup = {
   dateLabel: string;
   detailers: HubDetailerGroup[];
 };
-
-/** Central calendar date YYYY-MM-DD for grouping. */
-export function centralDateKey(iso: string): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: BUSINESS_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(iso));
-}
 
 function detailerSortIndex(name: string, order: readonly string[]): number {
   const idx = order.indexOf(name);

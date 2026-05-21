@@ -1,0 +1,244 @@
+import { BOOKING_TIME_SLOTS, type BookingTimeSlot } from "@/lib/bookings/constants";
+import {
+  BUSINESS_TIME_ZONE,
+  parseBookingSchedule,
+} from "@/lib/bookings/parse-schedule";
+import { dateInputToLabel } from "@/lib/hub/schedule-labels";
+
+/** Same-day bookings close after this hour (Central, 24h). */
+export const SAME_DAY_CUTOFF_HOUR = 16;
+
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
+
+/** YYYY-MM-DD in America/Chicago for the given instant. */
+export function centralDateKey(instant: string | Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: BUSINESS_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(typeof instant === "string" ? new Date(instant) : instant);
+}
+
+export function getCentralTodayDateInput(): string {
+  return centralDateKey(new Date());
+}
+
+export function dateLabelFromParts(
+  year: number,
+  monthIndex: number,
+  day: number,
+): string {
+  return `${MONTH_NAMES[monthIndex]} ${day}, ${year}`;
+}
+
+export function dateInputFromParts(
+  year: number,
+  monthIndex: number,
+  day: number,
+): string {
+  return `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+export function centralHourNow(): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: BUSINESS_TIME_ZONE,
+    hour: "numeric",
+    hourCycle: "h23",
+  }).formatToParts(new Date());
+  return Number.parseInt(
+    parts.find((p) => p.type === "hour")?.value ?? "0",
+    10,
+  );
+}
+
+export function isSameDayCutoffActive(): boolean {
+  return centralHourNow() >= SAME_DAY_CUTOFF_HOUR;
+}
+
+export function isPastDateInput(dateInput: string): boolean {
+  return dateInput < getCentralTodayDateInput();
+}
+
+export function isTodayDateInput(dateInput: string): boolean {
+  return dateInput === getCentralTodayDateInput();
+}
+
+export function isPastDateLabel(dateLabel: string): boolean {
+  try {
+    const { appointmentDate } = parseBookingSchedule(
+      dateLabel,
+      BOOKING_TIME_SLOTS[0],
+      0.25,
+    );
+    return isPastDateInput(appointmentDate);
+  } catch {
+    return true;
+  }
+}
+
+export function isTodayDateLabel(dateLabel: string): boolean {
+  try {
+    const { appointmentDate } = parseBookingSchedule(
+      dateLabel,
+      BOOKING_TIME_SLOTS[0],
+      0.25,
+    );
+    return isTodayDateInput(appointmentDate);
+  } catch {
+    return false;
+  }
+}
+
+/** Slot start instant (UTC) for a Central wall-clock time. */
+export function slotStartsAtIso(
+  dateLabel: string,
+  timeSlot: string,
+): string | null {
+  try {
+    return parseBookingSchedule(dateLabel, timeSlot, 0.25).startsAt;
+  } catch {
+    return null;
+  }
+}
+
+export function isTimeSlotInPast(dateLabel: string, timeSlot: string): boolean {
+  const startsAt = slotStartsAtIso(dateLabel, timeSlot);
+  if (!startsAt) return true;
+  return new Date(startsAt).getTime() <= Date.now();
+}
+
+export function isDateLabelSelectable(dateLabel: string): boolean {
+  if (isPastDateLabel(dateLabel)) return false;
+  if (isTodayDateLabel(dateLabel) && isSameDayCutoffActive()) return false;
+  return true;
+}
+
+export function isTimeSlotSelectable(
+  dateLabel: string,
+  timeSlot: string,
+): boolean {
+  if (!isDateLabelSelectable(dateLabel)) return false;
+  if (isTimeSlotInPast(dateLabel, timeSlot)) return false;
+  return true;
+}
+
+export function isTimeSlotSelectableForDateInput(
+  dateInput: string,
+  timeSlot: string,
+): boolean {
+  try {
+    return isTimeSlotSelectable(dateInputToLabel(dateInput), timeSlot);
+  } catch {
+    return false;
+  }
+}
+
+export function validateBookingSchedule(
+  dateLabel: string,
+  timeSlot: string,
+): string | null {
+  if (!isDateLabelSelectable(dateLabel)) {
+    if (isPastDateLabel(dateLabel)) {
+      return "That date has already passed. Please pick a future date.";
+    }
+    return "Same-day bookings are unavailable after 4:00 PM Central. Pick a future date.";
+  }
+  if (!isTimeSlotSelectable(dateLabel, timeSlot)) {
+    if (isTimeSlotInPast(dateLabel, timeSlot)) {
+      return "That time has already passed. Please pick a later time or another day.";
+    }
+    return "That time is not available. Please pick another slot.";
+  }
+  return null;
+}
+
+export function validateBookingScheduleFromInput(
+  dateInput: string,
+  timeSlot: string,
+): string | null {
+  try {
+    return validateBookingSchedule(dateInputToLabel(dateInput), timeSlot);
+  } catch {
+    return "Invalid date or time.";
+  }
+}
+
+/** Allow keeping an existing past slot when managers only edit other fields. */
+export function validateScheduleChangeFromInput(
+  dateInput: string,
+  timeSlot: string,
+  existingStartsAt: string | null | undefined,
+): string | null {
+  try {
+    const label = dateInputToLabel(dateInput);
+    const { startsAt } = parseBookingSchedule(label, timeSlot, 0.25);
+    if (existingStartsAt && startsAt === existingStartsAt) {
+      return null;
+    }
+  } catch {
+    return "Invalid date or time.";
+  }
+  return validateBookingScheduleFromInput(dateInput, timeSlot);
+}
+
+export function validateBlockScheduleFromInput(
+  dateInput: string,
+  startTime: string,
+  endTime: string,
+): string | null {
+  const startErr = validateBookingScheduleFromInput(dateInput, startTime);
+  if (startErr) return startErr;
+
+  const endErr = validateBookingScheduleFromInput(dateInput, endTime);
+  if (endErr) return "End time must be in the future.";
+
+  try {
+    const dateLabel = dateInputToLabel(dateInput);
+    const start = parseBookingSchedule(dateLabel, startTime, 0.25).startsAt;
+    const end = parseBookingSchedule(dateLabel, endTime, 0.25).startsAt;
+    if (new Date(end).getTime() <= new Date(start).getTime()) {
+      return "End time must be after start time.";
+    }
+  } catch {
+    return "Invalid date or time.";
+  }
+
+  return null;
+}
+
+export function listTimeSlotStates(dateLabel: string | null) {
+  if (!dateLabel) {
+    return BOOKING_TIME_SLOTS.map((slot) => ({
+      slot,
+      selectable: false,
+      reason: "past" as const,
+    }));
+  }
+
+  return BOOKING_TIME_SLOTS.map((slot) => {
+    const selectable = isTimeSlotSelectable(dateLabel, slot);
+    let reason: "past" | "cutoff" | "ok" = "ok";
+    if (!selectable) {
+      if (!isDateLabelSelectable(dateLabel)) reason = "cutoff";
+      else if (isTimeSlotInPast(dateLabel, slot)) reason = "past";
+      else reason = "cutoff";
+    }
+    return { slot, selectable, reason };
+  });
+}
+
+export type { BookingTimeSlot };

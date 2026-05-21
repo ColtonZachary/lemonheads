@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import {
   cancelHubBooking,
@@ -11,8 +11,8 @@ import {
   type HubBookingActionState,
 } from "@/app/actions/hub-bookings";
 import { HubDatePicker } from "@/components/hub/hub-date-picker";
+import { HubTimeSelect } from "@/components/hub/hub-time-select";
 import { Button } from "@/components/ui/button";
-import { BOOKING_TIME_SLOTS } from "@/lib/bookings/constants";
 import { DETAILER_NAMES } from "@/lib/data";
 import { centralScheduleLabels } from "@/lib/hub/schedule-labels";
 
@@ -75,6 +75,7 @@ function ActionBanner({ state }: { state: HubBookingActionState }) {
 export function BookingDetailForm({ booking }: { booking: HubBookingDetail }) {
   const router = useRouter();
   const labels = centralScheduleLabels(booking.starts_at);
+  const [dateInput, setDateInput] = useState(labels.dateInput);
   const overrideDollars =
     booking.price_override_cents != null
       ? String(booking.price_override_cents / 100)
@@ -193,25 +194,16 @@ export function BookingDetailForm({ booking }: { booking: HubBookingDetail }) {
               name="appointment_date"
               label="Date (Central)"
               defaultValue={labels.dateInput}
-              disablePast={false}
+              disablePast
+              onDateChange={setDateInput}
             />
 
-            <label className="block">
-              <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-text/40">
-                Time (Central)
-              </span>
-              <select
-                name="time"
-                defaultValue={labels.timeLabel}
-                className="mt-1 w-full rounded border border-white/15 bg-dk px-3 py-2 font-mono text-sm"
-              >
-                {BOOKING_TIME_SLOTS.map((slot) => (
-                  <option key={slot} value={slot}>
-                    {slot}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <HubTimeSelect
+              dateInput={dateInput}
+              name="time"
+              label="Time (Central)"
+              defaultValue={labels.timeLabel}
+            />
 
             <label className="block">
               <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-text/40">

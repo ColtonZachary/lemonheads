@@ -10,6 +10,7 @@ import {
   parseBookingSchedule,
   parsePriceCents,
 } from "@/lib/bookings/parse-schedule";
+import { validateBookingSchedule } from "@/lib/bookings/scheduling-limits";
 
 export type BookingInsertRow = {
   reference_id: string;
@@ -100,6 +101,11 @@ export async function insertBooking(
     }
   | { ok: false; error: string }
 > {
+  const scheduleError = validateBookingSchedule(data.date, data.time);
+  if (scheduleError) {
+    return { ok: false, error: scheduleError };
+  }
+
   const { appointmentDate } = parseBookingSchedule(
     data.date,
     data.time,

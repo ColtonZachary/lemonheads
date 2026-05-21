@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import {
   createHubBooking,
   type HubBookingActionState,
 } from "@/app/actions/hub-bookings";
 import { HubDatePicker } from "@/components/hub/hub-date-picker";
+import { HubTimeSelect } from "@/components/hub/hub-time-select";
 import { Button } from "@/components/ui/button";
-import { BOOKING_LOCATION_TYPES, BOOKING_TIME_SLOTS } from "@/lib/bookings/constants";
+import { BOOKING_LOCATION_TYPES } from "@/lib/bookings/constants";
 import {
   ADDONS,
   DETAILER_NAMES,
@@ -28,6 +29,7 @@ const labelClass =
 export function BookingCreateForm() {
   const router = useRouter();
   const [state, action, pending] = useActionState(createHubBooking, EMPTY);
+  const [dateInput, setDateInput] = useState("");
 
   useEffect(() => {
     if (state.ok && state.bookingId) {
@@ -150,20 +152,13 @@ export function BookingCreateForm() {
             name="appointment_date"
             label="Date"
             disablePast
+            onDateChange={setDateInput}
           />
-          <label className="block">
-            <span className={labelClass}>Time *</span>
-            <select name="time" required className={fieldClass} defaultValue="">
-              <option value="" disabled>
-                Select time…
-              </option>
-              {BOOKING_TIME_SLOTS.map((slot) => (
-                <option key={slot} value={slot}>
-                  {slot}
-                </option>
-              ))}
-            </select>
-          </label>
+          <HubTimeSelect
+            dateInput={dateInput}
+            name="time"
+            label="Time"
+          />
           <label className="block">
             <span className={labelClass}>Detailer *</span>
             <select name="detailer" required className={fieldClass} defaultValue="auto">

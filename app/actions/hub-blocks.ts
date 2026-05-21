@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getProfile, isManagerRole, type Profile } from "@/lib/auth/profile";
+import { validateBlockScheduleFromInput } from "@/lib/bookings/scheduling-limits";
 import { blockWindowFromForm } from "@/lib/hub/block-schedule";
 import { BOOKING_TIME_SLOTS } from "@/lib/bookings/constants";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -63,6 +64,15 @@ export async function createScheduleBlock(
     !BOOKING_TIME_SLOTS.includes(endTime as (typeof BOOKING_TIME_SLOTS)[number])
   ) {
     return { ok: false, message: "Invalid time slot." };
+  }
+
+  const scheduleError = validateBlockScheduleFromInput(
+    dateInput,
+    startTime,
+    endTime,
+  );
+  if (scheduleError) {
+    return { ok: false, message: scheduleError };
   }
 
   const window = blockWindowFromForm(dateInput, startTime, endTime);

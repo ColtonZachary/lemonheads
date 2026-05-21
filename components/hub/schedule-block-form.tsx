@@ -1,14 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import {
   createScheduleBlock,
   type HubBlockActionState,
 } from "@/app/actions/hub-blocks";
 import { HubDatePicker } from "@/components/hub/hub-date-picker";
+import { HubTimeRangeSelect } from "@/components/hub/hub-time-select";
 import { Button } from "@/components/ui/button";
-import { BOOKING_TIME_SLOTS } from "@/lib/bookings/constants";
 
 const EMPTY: HubBlockActionState = { ok: false, message: "" };
 
@@ -23,6 +23,7 @@ export function ScheduleBlockForm({
   staff: { id: string; display_name: string }[];
 }) {
   const [state, action, pending] = useActionState(createScheduleBlock, EMPTY);
+  const [dateInput, setDateInput] = useState("");
 
   if (!staff.length) {
     return (
@@ -57,7 +58,12 @@ export function ScheduleBlockForm({
           </select>
         </label>
 
-        <HubDatePicker name="appointment_date" label="Date" disablePast={false} />
+        <HubDatePicker
+          name="appointment_date"
+          label="Date"
+          disablePast
+          onDateChange={setDateInput}
+        />
 
         <label className="block">
           <span className={labelClass}>Reason *</span>
@@ -69,33 +75,11 @@ export function ScheduleBlockForm({
           />
         </label>
 
-        <label className="block">
-          <span className={labelClass}>Start (CT) *</span>
-          <select name="start_time" required className={fieldClass} defaultValue="">
-            <option value="" disabled>
-              Start…
-            </option>
-            {BOOKING_TIME_SLOTS.map((slot) => (
-              <option key={slot} value={slot}>
-                {slot}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="block">
-          <span className={labelClass}>End (CT) *</span>
-          <select name="end_time" required className={fieldClass} defaultValue="">
-            <option value="" disabled>
-              End…
-            </option>
-            {BOOKING_TIME_SLOTS.map((slot) => (
-              <option key={slot} value={slot}>
-                {slot}
-              </option>
-            ))}
-          </select>
-        </label>
+        <HubTimeRangeSelect
+          dateInput={dateInput}
+          startName="start_time"
+          endName="end_time"
+        />
       </div>
 
       <Button type="submit" className="mt-6" disabled={pending}>

@@ -1,3 +1,9 @@
+import {
+  dateInputFromParts,
+  getCentralTodayDateInput,
+  isSameDayCutoffActive,
+} from "@/lib/bookings/scheduling-limits";
+
 export const HUB_CALENDAR_MONTHS = [
   "January",
   "February",
@@ -52,22 +58,23 @@ export function buildCalendarMonth(
   const firstWeekday = new Date(year, monthIndex, 1).getDay();
   const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
   const cells: CalendarDayCell[] = [];
+  const todayKey = getCentralTodayDateInput();
 
   for (let i = 0; i < firstWeekday; i++) {
     cells.push({ day: null, dateInput: null, disabled: true, isToday: false });
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, monthIndex, day);
-    const isToday = date.toDateString() === new Date().toDateString();
-    const past = options.disablePast ? date < today : false;
+    const dateInput = dateInputFromParts(year, monthIndex, day);
+    const isToday = dateInput === todayKey;
+    const past = options.disablePast ? dateInput < todayKey : false;
+    const todayCutoff = Boolean(
+      options.disablePast && isToday && isSameDayCutoffActive(),
+    );
     cells.push({
       day,
-      dateInput: toDateInput(year, monthIndex, day),
-      disabled: past,
+      dateInput,
+      disabled: past || todayCutoff,
       isToday,
     });
   }

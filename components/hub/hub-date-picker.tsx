@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { getCentralTodayDateInput } from "@/lib/bookings/scheduling-limits";
 import {
   buildCalendarMonth,
   formatDateInputLabel,
@@ -22,7 +23,8 @@ export function HubDatePicker({
   label = "Date",
   required = true,
   defaultValue = "",
-  disablePast = false,
+  disablePast = true,
+  onDateChange,
 }: {
   name: string;
   label?: string;
@@ -30,6 +32,7 @@ export function HubDatePicker({
   /** YYYY-MM-DD */
   defaultValue?: string;
   disablePast?: boolean;
+  onDateChange?: (dateInput: string) => void;
 }) {
   const initial = parseDateInput(defaultValue);
   const today = new Date();
@@ -40,6 +43,11 @@ export function HubDatePicker({
     y: initial?.y ?? today.getFullYear(),
     m: initial?.m ?? today.getMonth(),
   });
+
+  const setDate = (value: string) => {
+    setDateInput(value);
+    onDateChange?.(value);
+  };
 
   const days = useMemo(
     () => buildCalendarMonth(cursor.y, cursor.m, { disablePast }),
@@ -137,7 +145,7 @@ export function HubDatePicker({
                   key={i}
                   type="button"
                   disabled={cell.disabled}
-                  onClick={() => cell.dateInput && setDateInput(cell.dateInput)}
+                  onClick={() => cell.dateInput && setDate(cell.dateInput)}
                   className={cn(
                     "flex h-9 items-center justify-center rounded border border-transparent text-sm font-semibold transition-all",
                     cell.disabled
@@ -170,8 +178,9 @@ export function HubDatePicker({
           name={name}
           required={required}
           value={dateInput}
+          min={disablePast ? getCentralTodayDateInput() : undefined}
           onChange={(e) => {
-            setDateInput(e.target.value);
+            setDate(e.target.value);
             const parsed = parseDateInput(e.target.value);
             if (parsed) setCursor({ y: parsed.y, m: parsed.m });
           }}

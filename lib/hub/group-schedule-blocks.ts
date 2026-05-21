@@ -1,4 +1,4 @@
-import { centralDateKey } from "@/lib/hub/group-bookings";
+import { centralDateKey } from "@/lib/bookings/scheduling-limits";
 import { formatCentralDate, formatCentralTime } from "@/lib/hub/format";
 
 export type ScheduleBlockRow = {

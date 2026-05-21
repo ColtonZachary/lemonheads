@@ -23,6 +23,10 @@ import {
 } from "@/lib/bookings/detailer-availability";
 import { parseBookingSchedule } from "@/lib/bookings/parse-schedule";
 import {
+  validateBookingScheduleFromInput,
+  validateScheduleChangeFromInput,
+} from "@/lib/bookings/scheduling-limits";
+import {
   ADDONS,
   DETAILER_NAMES,
   PACKAGE_BY_KEY,
@@ -121,6 +125,15 @@ export async function updateHubBooking(
     dateLabel = dateInputToLabel(dateInput);
   } catch {
     return { ok: false, message: "Invalid appointment date." };
+  }
+
+  const scheduleError = validateScheduleChangeFromInput(
+    dateInput,
+    timeLabel,
+    existing.starts_at,
+  );
+  if (scheduleError) {
+    return { ok: false, message: scheduleError };
   }
 
   const durationHours = bookingDurationHours(
@@ -367,6 +380,11 @@ export async function createHubBooking(
 
   if (!BOOKING_TIME_SLOTS.includes(timeLabel as (typeof BOOKING_TIME_SLOTS)[number])) {
     return { ok: false, message: "Invalid time slot." };
+  }
+
+  const scheduleError = validateBookingScheduleFromInput(dateInput, timeLabel);
+  if (scheduleError) {
+    return { ok: false, message: scheduleError };
   }
 
   const validStatuses = [

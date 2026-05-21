@@ -14,6 +14,16 @@ import {
 
 import { getDetailerAvailability } from "@/lib/booking-availability";
 import { BOOKING_TIME_SLOTS } from "@/lib/bookings/constants";
+import {
+  dateInputFromParts,
+  dateLabelFromParts,
+  getCentralTodayDateInput,
+  isDateLabelSelectable,
+  isSameDayCutoffActive,
+  isTimeSlotSelectable,
+  isTodayDateLabel,
+  validateBookingSchedule,
+} from "@/lib/bookings/scheduling-limits";
 import type { DetailerAvailabilitySnapshot } from "@/lib/bookings/detailer-availability";
 import { submitBooking } from "@/lib/submit-booking";
 import {
@@ -247,6 +257,8 @@ export function BookingFlow() {
     if (target === 3) {
       if (!state.date || !state.time)
         return setError("Please pick a date and time before continuing.");
+      const scheduleError = validateBookingSchedule(state.date, state.time);
+      if (scheduleError) return setError(scheduleError);
       if (availability?.fullyBookedSlots.includes(state.time)) {
         return setError(
           "That time is fully booked. Please pick another time slot.",
@@ -369,7 +381,12 @@ export function BookingFlow() {
           state={state}
           availability={availability}
           availabilityLoading={availabilityLoading}
-          onPickDate={(d) => update("date", d)}
+          onPickDate={(d) => {
+            update("date", d);
+            if (state.time && !isTimeSlotSelectable(d, state.time)) {
+              update("time", "");
+            }
+          }}
           onPickTime={(t) => update("time", t)}
         />
       )}
@@ -756,34 +773,30 @@ function Step2({
     m: today.getMonth(),
   });
 
+  const todayKey = getCentralTodayDateInput();
+
   const days = useMemo(() => {
     const first = new Date(cursor.y, cursor.m, 1).getDay();
     const total = new Date(cursor.y, cursor.m + 1, 0).getDate();
     const cells: { day: number | null; iso: string | null; disabled: boolean; isToday: boolean }[] = [];
     for (let i = 0; i < first; i++)
       cells.push({ day: null, iso: null, disabled: true, isToday: false });
-    const todayDate = new Date();
-    todayDate.setHours(0, 0, 0, 0);
     for (let d = 1; d <= total; d++) {
-      const date = new Date(cursor.y, cursor.m, d);
-      const isToday = date.toDateString() === new Date().toDateString();
-      const past = date < todayDate;
-      const todayBlocked = isToday && new Date().getHours() >= 16;
+      const dateLabel = dateLabelFromParts(cursor.y, cursor.m, d);
+      const dateInput = dateInputFromParts(cursor.y, cursor.m, d);
       cells.push({
         day: d,
-        iso: `${MONTHS[cursor.m]} ${d}, ${cursor.y}`,
-        disabled: past || todayBlocked,
-        isToday,
+        iso: dateLabel,
+        disabled: !isDateLabelSelectable(dateLabel),
+        isToday: dateInput === todayKey,
       });
     }
     return cells;
-  }, [cursor]);
+  }, [cursor, todayKey]);
 
   const blockAllSlots = useMemo(() => {
     if (!state.date) return false;
-    const now = new Date();
-    const todayLabel = `${MONTHS[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
-    return state.date === todayLabel && now.getHours() >= 16;
+    return isTodayDateLabel(state.date) && isSameDayCutoffActive();
   }, [state.date]);
 
   return (
@@ -870,19 +883,22 @@ function Step2({
                 const selected = state.time === t;
                 const fullyBooked =
                   availability?.fullyBookedSlots.includes(t) ?? false;
+                const slotUnavailable =
+                  !isTimeSlotSelectable(state.date, t);
+                const disabled = fullyBooked || slotUnavailable;
                 return (
                   <button
                     key={t}
                     type="button"
-                    disabled={fullyBooked}
+                    disabled={disabled}
                     onClick={() => onPickTime(t)}
                     className={cn(
                       "rounded-[4px] border bg-white/[0.03] px-2.5 py-3 text-center font-mono text-xs font-semibold transition-all",
-                      fullyBooked
+                      disabled
                         ? "cursor-not-allowed border-white/5 text-white/20 line-through"
                         : "cursor-pointer border-border-faint text-text/60 hover:border-y/30 hover:bg-y/[0.04] hover:text-y",
                       selected &&
-                        !fullyBooked &&
+                        !disabled &&
                         "border-y bg-y font-bold text-black",
                     )}
                   >
