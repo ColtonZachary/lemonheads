@@ -7,6 +7,7 @@ import type { UserRole } from "@/lib/auth/types";
 import {
   canChangeHubUserRole,
   canDeactivateHubUser,
+  canDeleteHubUser,
   canInviteHubRole,
   canManageHubUser,
   type HubAccessTarget,
@@ -62,6 +63,40 @@ function writeClientForActor(
   return getSupabaseAdmin();
 }
 
+async function countActiveAdmins(
+  client: SupabaseClient,
+): Promise<number> {
+  const { count, error } = await client
+    .from("profiles")
+    .select("*", { count: "exact", head: true })
+    .eq("role", "admin")
+    .eq("active", true);
+
+  if (error) {
+    console.error("[hub-managers] count admins:", error.message);
+    return 0;
+  }
+  return count ?? 0;
+}
+
+/** Deletes Supabase Auth user (profiles row cascades). Frees email for a new invite. */
+async function purgeHubUser(
+  admin: SupabaseClient,
+  profileId: string,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  await admin
+    .from("staff_members")
+    .update({ profile_id: null })
+    .eq("profile_id", profileId);
+
+  const { error: authError } = await admin.auth.admin.deleteUser(profileId);
+  if (authError) {
+    return { ok: false, message: authError.message };
+  }
+
+  return { ok: true };
+}
+
 export async function inviteHubUser(
   _prev: HubManagersActionState,
   formData: FormData,
@@ -93,6 +128,38 @@ export async function inviteHubUser(
       ok: false,
       message: "Server is missing SUPABASE_SERVICE_ROLE_KEY for invites.",
     };
+  }
+
+  const { data: existingProfile } = await admin
+    .from("profiles")
+    .select("id, role, active")
+    .ilike("email", email)
+    .maybeSingle();
+
+  if (existingProfile) {
+    const existingTarget: HubAccessTarget = {
+      id: existingProfile.id,
+      role: existingProfile.role as UserRole,
+      active: existingProfile.active,
+    };
+    if (!canDeleteHubUser(ctx.profile, existingTarget)) {
+      return {
+        ok: false,
+        message:
+          "That email is already registered. An admin must permanently delete the old account before re-inviting.",
+      };
+    }
+    if (existingTarget.role === "admin") {
+      const adminCount = await countActiveAdmins(admin);
+      if (adminCount <= 1 && existingProfile.active) {
+        return {
+          ok: false,
+          message: "Cannot replace the only active admin. Add another admin first.",
+        };
+      }
+    }
+    const purged = await purgeHubUser(admin, existingProfile.id);
+    if (!purged.ok) return { ok: false, message: purged.message };
   }
 
   const appUrl = getAppBaseUrl();
@@ -174,6 +241,50 @@ export async function removeHubAccess(
 
   revalidatePath(MANAGERS_PATH);
   return { ok: true, message: "Hub access removed. They can no longer sign in." };
+}
+
+export async function deleteHubUserPermanently(
+  profileId: string,
+  _prev: HubManagersActionState,
+  _formData: FormData,
+): Promise<HubManagersActionState> {
+  void _formData;
+  const ctx = await requireHubAccessActor();
+  if ("error" in ctx) return { ok: false, message: ctx.error };
+
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return {
+      ok: false,
+      message: "Server is missing SUPABASE_SERVICE_ROLE_KEY to delete users.",
+    };
+  }
+
+  const target = await loadTargetProfile(profileId, admin);
+  if ("error" in target) return { ok: false, message: target.error };
+
+  if (!canDeleteHubUser(ctx.profile, target)) {
+    return { ok: false, message: "You cannot delete this account." };
+  }
+
+  if (target.role === "admin") {
+    const adminCount = await countActiveAdmins(admin);
+    if (adminCount <= 1) {
+      return {
+        ok: false,
+        message: "Cannot delete the only active admin account.",
+      };
+    }
+  }
+
+  const purged = await purgeHubUser(admin, profileId);
+  if (!purged.ok) return { ok: false, message: purged.message };
+
+  revalidatePath(MANAGERS_PATH);
+  return {
+    ok: true,
+    message: "User deleted. You can invite that email again.",
+  };
 }
 
 export async function updateHubProfile(

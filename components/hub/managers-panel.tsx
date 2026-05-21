@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 
 import {
+  deleteHubUserPermanently,
   inviteHubUser,
   removeHubAccess,
   updateHubProfile,
@@ -11,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   canDeactivateHubUser,
+  canDeleteHubUser,
   canInviteHubRole,
 } from "@/lib/hub/hub-access-permissions";
 import type { UserRole } from "@/lib/auth/types";
@@ -49,10 +51,15 @@ function ProfileEditForm({
     removeHubAccess.bind(null, profile.id),
     EMPTY,
   );
+  const [deleteState, deleteAction, deletePending] = useActionState(
+    deleteHubUserPermanently.bind(null, profile.id),
+    EMPTY,
+  );
   const isSelf = profile.id === currentUserId;
   const isAdminViewer = viewerRole === "admin";
-  const mayRemove =
-    profile.active && canDeactivateHubUser({ id: currentUserId, role: viewerRole }, profile);
+  const actor = { id: currentUserId, role: viewerRole };
+  const mayRemove = profile.active && canDeactivateHubUser(actor, profile);
+  const mayDelete = !isSelf && canDeleteHubUser(actor, profile);
 
   return (
     <div className="mt-3 space-y-3 border-t border-white/10 pt-3">
@@ -119,16 +126,38 @@ function ProfileEditForm({
               {removePending ? "Removing…" : "Remove access"}
             </Button>
           ) : null}
+          {mayDelete ? (
+            <Button
+              type="submit"
+              formAction={deleteAction}
+              disabled={deletePending}
+              variant="outline"
+              className="h-auto min-h-0 border-red-500/40 px-3 py-1.5 text-xs text-red-300 hover:bg-red-500/15"
+              onClick={(e) => {
+                if (
+                  !confirm(
+                    `Permanently delete ${profile.full_name} (${profile.email})? They can be invited again with the same email.`,
+                  )
+                ) {
+                  e.preventDefault();
+                }
+              }}
+            >
+              {deletePending ? "Deleting…" : "Delete permanently"}
+            </Button>
+          ) : null}
         </div>
       </form>
-      {(state.message || removeState.message) && (
+      {(state.message || removeState.message || deleteState.message) && (
         <p
           className={cn(
             "font-mono text-xs",
-            state.ok || removeState.ok ? "text-y" : "text-red-200",
+            state.ok || removeState.ok || deleteState.ok
+              ? "text-y"
+              : "text-red-200",
           )}
         >
-          {removeState.message || state.message}
+          {deleteState.message || removeState.message || state.message}
         </p>
       )}
     </div>
@@ -252,7 +281,7 @@ export function ManagersPanel({
       {inactive.length > 0 && (
         <section>
           <h3 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
-            Access removed ({inactive.length})
+            Access removed ({inactive.length}) — delete permanently to re-use email
           </h3>
           <ul className="mt-4 space-y-4">
             {inactive.map((profile) => (

@@ -40,6 +40,14 @@ export function canDeactivateHubUser(
   return false;
 }
 
+/** Same rules as deactivate — removes Auth user so the email can be invited again. */
+export function canDeleteHubUser(
+  actor: Pick<Profile, "id" | "role">,
+  target: HubAccessTarget,
+): boolean {
+  return canDeactivateHubUser(actor, target);
+}
+
 export function canChangeHubUserRole(
   actor: Pick<Profile, "role">,
   target: HubAccessTarget,

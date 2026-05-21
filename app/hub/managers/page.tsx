@@ -32,8 +32,8 @@ export default async function HubManagersPage() {
       <h1 className="font-display text-5xl tracking-[0.04em] text-y">HUB ACCESS</h1>
       <p className="mt-2 max-w-2xl text-sm text-text/45">
         {access.isAdmin
-          ? "Invite hub users, change roles, or remove access for admins, managers, and detailers."
-          : "Manage detailer sign-in — remove access when someone should no longer use the hub."}
+          ? "Invite hub users, change roles, remove access, or delete permanently to free an email for a new invite."
+          : "Manage detailers — remove access or delete permanently to re-invite the same email."}
       </p>
 
       <div className="mt-10 max-w-2xl">
