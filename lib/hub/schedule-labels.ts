@@ -78,6 +78,17 @@ export function dateInputToLabel(dateInput: string): string {
   return `${MONTH_NAMES[m - 1]} ${d}, ${y}`;
 }
 
+/** Sticky day heading for the bookings scroll list (e.g. THURSDAY, MAY 21, 2026). */
+export function formatBookingsDayHeading(dateInput: string): string {
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: BUSINESS_TIME_ZONE,
+    weekday: "long",
+  })
+    .format(new Date(`${dateInput}T12:00:00`))
+    .toUpperCase();
+  return `${weekday}, ${dateInputToLabel(dateInput).toUpperCase()}`;
+}
+
 export function bookingDurationHours(startsAt: string, endsAt: string): number {
   const ms = new Date(endsAt).getTime() - new Date(startsAt).getTime();
   const hours = ms / (60 * 60 * 1000);

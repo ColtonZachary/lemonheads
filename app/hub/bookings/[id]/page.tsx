@@ -29,8 +29,11 @@ export default async function HubBookingDetailPage({
       addons, plastic_shine, customer_notes,
       status, starts_at, ends_at,
       detailer_name, detailer_auto_assigned,
-      price_display, price_cents, price_override_cents, final_price_cents,
-      manager_notes, cancellation_reason, cancelled_at, deleted_at
+      price_display, price_cents, price_override_cents,
+      estimated_price_cents, discount_cents, final_price_cents,
+      promo_code_id,
+      manager_notes, cancellation_reason, cancelled_at, deleted_at,
+      promo_codes ( code )
     `,
     )
     .eq("id", id)

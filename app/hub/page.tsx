@@ -70,6 +70,11 @@ export default async function HubDashboardPage() {
             </Link>
           </li>
           <li>
+            <Link href="/hub/promos" className="hover:text-y">
+              → Promo codes
+            </Link>
+          </li>
+          <li>
             <Link href="/hub/staff" className="hover:text-y">
               → Staff roster
             </Link>

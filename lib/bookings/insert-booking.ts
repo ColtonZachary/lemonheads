@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import type { VehicleKey } from "@/lib/data";
 import type { BookingInput } from "@/lib/booking-types";
 import { fetchBookableDetailerNames } from "@/lib/bookings/bookable-detailers";
+import { computeBookingPricing } from "@/lib/promos/booking-pricing";
+import { incrementPromoUse } from "@/lib/promos/promo-validate";
 import {
   fetchBookingsForDate,
   resolveDetailerAssignment,
@@ -159,13 +162,29 @@ export async function insertBooking(
     return { ok: false, error: assignment.message };
   }
 
-  const priceCents = parsePriceCents(data.estimatedTotal);
+  const serviceKey = data.serviceKey?.trim() ?? "";
+  const vehicleKey = data.vehicleKey?.trim() as VehicleKey;
+  const pricing = await computeBookingPricing(client, {
+    packageKey: serviceKey,
+    vehicleKey,
+    addonNames: data.addons ?? [],
+    promoCode: data.promoCode?.trim() || undefined,
+  });
+
+  if (!pricing.ok) {
+    return { ok: false, error: pricing.message };
+  }
+
   const row = {
     ...buildBookingRow(referenceId, data, assignment),
     status: options?.status ?? "pending",
     manager_notes: options?.managerNotes ?? "",
-    estimated_price_cents: priceCents,
-    final_price_cents: priceCents,
+    estimated_price_cents: pricing.subtotalCents,
+    discount_cents: pricing.discountCents,
+    final_price_cents: pricing.totalCents,
+    promo_code_id: pricing.promoCodeId,
+    price_cents: pricing.totalCents,
+    price_display: formatCentsDisplay(pricing.totalCents),
   };
 
   const { data: inserted, error } = await client
@@ -179,10 +198,18 @@ export async function insertBooking(
     return { ok: false, error: error.message };
   }
 
+  if (pricing.promoCodeId) {
+    await incrementPromoUse(client, pricing.promoCodeId);
+  }
+
   return {
     ok: true,
     bookingId: inserted.id,
     detailerName: assignment.detailerName,
     detailerAutoAssigned: assignment.detailerAutoAssigned,
   };
+}
+
+function formatCentsDisplay(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
 }

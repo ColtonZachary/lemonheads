@@ -1,5 +1,6 @@
 import { centralDateKey } from "@/lib/bookings/scheduling-limits";
 import { BUSINESS_TIME_ZONE } from "@/lib/bookings/parse-schedule";
+import { getBookingPriceDisplay } from "@/lib/hub/booking-price-display";
 import { formatCentralDate, formatCentralTime } from "@/lib/hub/format";
 
 export type HubBookingListRow = {
@@ -13,6 +14,8 @@ export type HubBookingListRow = {
   starts_at: string;
   ends_at: string;
   status: string;
+  estimated_price_cents: number | null;
+  discount_cents: number | null;
   final_price_cents: number | null;
   price_display: string;
   deleted_at: string | null;
@@ -95,11 +98,9 @@ export function groupBookingsByDateAndDetailer(
 }
 
 export function formatBookingPrice(row: HubBookingListRow): string {
-  if (row.price_display) return row.price_display;
-  if (row.final_price_cents != null) {
-    return `$${(row.final_price_cents / 100).toFixed(0)}`;
-  }
-  return "—";
+  const { original, final } = getBookingPriceDisplay(row);
+  if (original) return `${original} → ${final}`;
+  return final;
 }
 
 export function formatBookingTimeRange(row: HubBookingListRow): string {

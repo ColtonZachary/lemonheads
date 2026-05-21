@@ -1,31 +1,64 @@
 import Link from "next/link";
 
+import { BookingPriceDisplay } from "@/components/hub/booking-price-display";
+import { formatBookingsDayHeading } from "@/lib/hub/schedule-labels";
 import {
-  formatBookingPrice,
   formatBookingTimeRange,
   type HubDateGroup,
 } from "@/lib/hub/group-bookings";
+import { cn } from "@/lib/utils";
 
-export function BookingsGroupedList({ groups }: { groups: HubDateGroup[] }) {
+export function BookingsGroupedList({
+  groups,
+  hideDayHeaders = false,
+  emptyMessage,
+  highlightDate,
+}: {
+  groups: HubDateGroup[];
+  /** Hide per-day title when the parent already shows the active day. */
+  hideDayHeaders?: boolean;
+  emptyMessage?: string;
+  /** Matches the availability picker date — subtle highlight on that day section. */
+  highlightDate?: string;
+}) {
   if (!groups.length) {
     return (
-      <p className="mt-12 rounded-md border border-white/10 p-10 text-center font-mono text-xs text-text/40">
-        No bookings yet.{" "}
-        <Link href="/hub/bookings/new" className="text-y/80 hover:text-y">
-          Create one
-        </Link>
-        .
+      <p className="mt-8 rounded-md border border-white/10 p-10 text-center font-mono text-xs text-text/40">
+        {emptyMessage ?? (
+          <>
+            No bookings yet.{" "}
+            <Link href="/hub/bookings/new" className="text-y/80 hover:text-y">
+              Create one
+            </Link>
+            .
+          </>
+        )}
       </p>
     );
   }
 
   return (
-    <div className="mt-8 space-y-10">
+    <div className={hideDayHeaders ? "mt-4 space-y-6" : "mt-8 space-y-10"}>
       {groups.map((day) => (
-        <section key={day.dateKey}>
-          <h2 className="sticky top-0 z-10 border-b border-y/20 bg-dk/95 py-3 font-display text-2xl tracking-[0.06em] text-y backdrop-blur-sm">
-            {day.dateLabel}
-          </h2>
+        <section
+          key={day.dateKey}
+          id={`bookings-day-${day.dateKey}`}
+          className={cn(
+            highlightDate === day.dateKey && "scroll-mt-24",
+          )}
+        >
+          {!hideDayHeaders && (
+            <h2
+              className={cn(
+                "sticky top-0 z-10 border-b py-3 font-display text-2xl tracking-[0.06em] backdrop-blur-sm",
+                highlightDate === day.dateKey
+                  ? "border-y/40 bg-y/[0.08] text-y"
+                  : "border-y/20 bg-dk/95 text-y",
+              )}
+            >
+              {formatBookingsDayHeading(day.dateKey)}
+            </h2>
+          )}
 
           <div className="mt-4 space-y-6">
             {day.detailers.map((detailer) => (
@@ -87,7 +120,9 @@ export function BookingsGroupedList({ groups }: { groups: HubDateGroup[] }) {
                             {b.status}
                             {b.deleted_at ? " · deleted" : ""}
                           </td>
-                          <td className="px-4 py-3">{formatBookingPrice(b)}</td>
+                          <td className="px-4 py-3">
+                            <BookingPriceDisplay booking={b} stacked />
+                          </td>
                         </tr>
                       ))}
                     </tbody>

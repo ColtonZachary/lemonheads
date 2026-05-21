@@ -25,6 +25,7 @@ import {
   validateBookingSchedule,
 } from "@/lib/bookings/scheduling-limits";
 import type { DetailerAvailabilitySnapshot } from "@/lib/bookings/detailer-availability";
+import { applyPromoForBooking } from "@/app/actions/promo";
 import { submitBooking } from "@/lib/submit-booking";
 import {
   BookingCardCapture,
@@ -84,6 +85,10 @@ interface BookingState {
 
   /** Optional: customer saves a card via Stripe for post-service payment */
   saveCardOnFile: boolean;
+
+  promoCodeInput: string;
+  appliedPromo: { code: string; discountCents: number } | null;
+  promoMessage: string | null;
 }
 
 const VEHICLE_TOP: { key: VehicleKey | "suv"; label: string; icon: IconName }[] = [
@@ -132,6 +137,9 @@ function emptyState(
     vehicleInfo: "",
     notes: "",
     saveCardOnFile: false,
+    promoCodeInput: "",
+    appliedPromo: null,
+    promoMessage: null,
   };
 }
 
@@ -206,8 +214,19 @@ export function BookingFlow({
       }, 0),
     [state.addons, addons],
   );
+  const subtotal = pkgPrice !== null ? pkgPrice + addonTotal : null;
+  const discountDollars = (state.appliedPromo?.discountCents ?? 0) / 100;
   const total =
-    pkgPrice !== null ? pkgPrice + addonTotal : null;
+    subtotal !== null ? Math.max(0, subtotal - discountDollars) : null;
+
+  const addonKey = Array.from(state.addons).sort().join("|");
+
+  useEffect(() => {
+    setState((s) => {
+      if (!s.appliedPromo && !s.promoMessage) return s;
+      return { ...s, appliedPromo: null, promoMessage: null };
+    });
+  }, [state.packageKey, state.vehicleKey, addonKey]);
 
   useEffect(() => {
     if (!state.date || !pkg) {
@@ -326,6 +345,8 @@ export function BookingFlow({
         zip: state.zip,
         requestedDetailer: state.detailer,
         addons: Array.from(state.addons),
+        vehicleKey: state.vehicleKey,
+        promoCode: state.appliedPromo?.code ?? "",
         estimatedTotal: total !== null ? formatCurrency(total) : "TBD",
         plasticCondition: state.plasticCondition,
         earlyContact: state.earlyContact,
@@ -374,6 +395,25 @@ export function BookingFlow({
           toggleAddon={toggleAddon}
           packages={packages}
           addons={addons}
+          onApplyPromo={(result) => {
+            if (result.ok) {
+              setState((s) => ({
+                ...s,
+                appliedPromo: {
+                  code: result.code,
+                  discountCents: result.discountCents,
+                },
+                promoMessage: `${result.code} applied — you save ${formatCurrency(result.discountCents / 100)}.`,
+              }));
+              setError(null);
+            } else {
+              setState((s) => ({
+                ...s,
+                appliedPromo: null,
+                promoMessage: result.message,
+              }));
+            }
+          }}
         />
       )}
 
@@ -410,6 +450,7 @@ export function BookingFlow({
               pkg={pkg}
               pkgPrice={pkgPrice}
               addonTotal={addonTotal}
+              subtotal={subtotal}
               total={total}
             />
           </div>
@@ -496,13 +537,38 @@ function Step1({
   toggleAddon,
   packages,
   addons,
+  onApplyPromo,
 }: {
   state: BookingState;
   update: <K extends keyof BookingState>(k: K, v: BookingState[K]) => void;
   toggleAddon: (name: string) => void;
   packages: SitePackage[];
   addons: PublicCatalog["addons"];
+  onApplyPromo: (
+    result:
+      | {
+          ok: true;
+          code: string;
+          discountCents: number;
+        }
+      | { ok: false; message: string },
+  ) => void;
 }) {
+  const [promoPending, startPromoTransition] = useTransition();
+  const canApplyPromo = Boolean(state.packageKey && state.vehicleKey);
+
+  const handleApplyPromo = () => {
+    if (!canApplyPromo) return;
+    startPromoTransition(async () => {
+      const result = await applyPromoForBooking({
+        code: state.promoCodeInput,
+        packageKey: state.packageKey,
+        vehicleKey: state.vehicleKey as VehicleKey,
+        addonNames: Array.from(state.addons),
+      });
+      onApplyPromo(result);
+    });
+  };
   const [suvOpen, setSuvOpen] = useState(
     state.vehicleKey === "suv2" || state.vehicleKey === "suv3",
   );
@@ -698,6 +764,56 @@ function Step1({
               )}
             </span>
           </div>
+        )}
+      </FormSection>
+
+      <FormSection title="Promo Code">
+        <p className="mb-4 font-mono text-xs tracking-[0.06em] text-text/35">
+          Have a code? Enter it below and tap Apply. Select your service and vehicle
+          first.
+        </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <label className="min-w-0 flex-1">
+            <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-text/40">
+              Code
+            </span>
+            <input
+              type="text"
+              value={state.promoCodeInput}
+              onChange={(e) =>
+                update("promoCodeInput", e.target.value.toUpperCase())
+              }
+              placeholder="SUMMER25"
+              className="mt-1 w-full rounded border border-white/15 bg-dk px-3 py-2 font-mono text-sm uppercase tracking-[0.08em]"
+              autoComplete="off"
+            />
+          </label>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!canApplyPromo || promoPending || !state.promoCodeInput.trim()}
+            className="h-auto min-h-0 shrink-0 px-5 py-2"
+            onClick={handleApplyPromo}
+          >
+            {promoPending ? "Checking…" : "Apply"}
+          </Button>
+        </div>
+        {!canApplyPromo && (
+          <p className="mt-2 font-mono text-[10px] text-text/35">
+            Select a service and vehicle type to apply a code.
+          </p>
+        )}
+        {state.promoMessage && (
+          <p
+            className={cn(
+              "mt-3 rounded-md border px-4 py-3 font-mono text-xs",
+              state.appliedPromo
+                ? "border-y/30 bg-y/10 text-y"
+                : "border-red-500/30 bg-red-500/10 text-red-200",
+            )}
+          >
+            {state.promoMessage}
+          </p>
         )}
       </FormSection>
 
@@ -1229,14 +1345,17 @@ function Step4({
   pkg,
   pkgPrice,
   addonTotal,
+  subtotal,
   total,
 }: {
   state: BookingState;
   pkg: SitePackage | null;
   pkgPrice: number | null;
   addonTotal: number;
+  subtotal: number | null;
   total: number | null;
 }) {
+  const discountDollars = (state.appliedPromo?.discountCents ?? 0) / 100;
   return (
     <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
       <FormSection title="Booking Summary" className="mb-0">
@@ -1289,6 +1408,9 @@ function Step4({
               value={Array.from(state.addons).join(", ")}
             />
           )}
+          {state.appliedPromo && (
+            <SummaryRow label="Promo" value={state.appliedPromo.code} />
+          )}
           <SummaryRow label="Plastic Conditioning" value={state.plasticCondition} />
           <SummaryRow label="OK for Early Contact" value={state.earlyContact} />
           {state.saveCardOnFile && (
@@ -1310,6 +1432,15 @@ function Step4({
             />
             {addonTotal > 0 && (
               <BreakdownRow label="Add-Ons" value={`+${formatCurrency(addonTotal)}`} />
+            )}
+            {subtotal !== null && discountDollars > 0 && (
+              <>
+                <BreakdownRow label="Subtotal" value={formatCurrency(subtotal)} />
+                <BreakdownRow
+                  label={`Promo (${state.appliedPromo?.code})`}
+                  value={`−${formatCurrency(discountDollars)}`}
+                />
+              </>
             )}
             <div className="h-px bg-white/[0.06]" />
             <div className="flex items-baseline justify-between">

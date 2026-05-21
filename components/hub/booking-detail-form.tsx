@@ -12,6 +12,7 @@ import {
 } from "@/app/actions/hub-bookings";
 import { HubDatePicker } from "@/components/hub/hub-date-picker";
 import { HubTimeSelect } from "@/components/hub/hub-time-select";
+import { BookingPriceDisplay } from "@/components/hub/booking-price-display";
 import { Button } from "@/components/ui/button";
 import { centralScheduleLabels } from "@/lib/hub/schedule-labels";
 
@@ -49,7 +50,11 @@ export type HubBookingDetail = {
   price_display: string;
   price_cents: number | null;
   price_override_cents: number | null;
+  estimated_price_cents: number | null;
+  discount_cents: number | null;
   final_price_cents: number | null;
+  promo_code_id: string | null;
+  promo_codes: { code: string } | { code: string }[] | null;
   manager_notes: string;
   cancellation_reason: string;
   cancelled_at: string | null;
@@ -105,9 +110,31 @@ export function BookingDetailForm({
 
   const isDeleted = Boolean(booking.deleted_at);
   const isCancelled = booking.status === "cancelled";
+  const promoCode = Array.isArray(booking.promo_codes)
+    ? booking.promo_codes[0]?.code
+    : booking.promo_codes?.code;
 
   return (
     <div className="space-y-10">
+      <section className="rounded-md border border-y/15 bg-y/[0.04] px-5 py-4">
+        <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
+          Pricing
+        </h2>
+        <div className="mt-3">
+          <BookingPriceDisplay booking={booking} />
+        </div>
+        {promoCode && (booking.discount_cents ?? 0) > 0 && (
+          <p className="mt-2 font-mono text-[10px] text-text/45">
+            Promo code: <span className="text-y/80">{promoCode}</span>
+          </p>
+        )}
+        {booking.price_override_cents != null && (
+          <p className="mt-1 font-mono text-[10px] text-text/35">
+            Manager price override applied
+          </p>
+        )}
+      </section>
+
       <div className="grid gap-6 md:grid-cols-2">
         <section className="rounded-md border border-white/10 bg-card2/40 p-5">
           <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">

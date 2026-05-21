@@ -37,6 +37,15 @@ export function getCentralTodayDateInput(): string {
   return centralDateKey(new Date());
 }
 
+/** Shift a Central calendar date (YYYY-MM-DD) by N days. */
+export function addDaysToDateInput(dateInput: string, deltaDays: number): string {
+  const match = dateInput.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return dateInput;
+  const probe = new Date(`${dateInput}T12:00:00`);
+  probe.setDate(probe.getDate() + deltaDays);
+  return centralDateKey(probe);
+}
+
 export function dateLabelFromParts(
   year: number,
   monthIndex: number,
