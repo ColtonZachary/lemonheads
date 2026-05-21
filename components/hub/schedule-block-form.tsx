@@ -9,6 +9,8 @@ import {
 import { HubDatePicker } from "@/components/hub/hub-date-picker";
 import { HubTimeRangeSelect } from "@/components/hub/hub-time-select";
 import { Button } from "@/components/ui/button";
+import { BOOKING_TIME_SLOTS } from "@/lib/bookings/constants";
+import { cn } from "@/lib/utils";
 
 const EMPTY: HubBlockActionState = { ok: false, message: "" };
 
@@ -17,13 +19,27 @@ const fieldClass =
 const labelClass =
   "font-mono text-[9px] uppercase tracking-[0.12em] text-text/40";
 
+type BlockMode = "single" | "range";
+
 export function ScheduleBlockForm({
   staff,
 }: {
   staff: { id: string; display_name: string }[];
 }) {
   const [state, action, pending] = useActionState(createScheduleBlock, EMPTY);
-  const [dateInput, setDateInput] = useState("");
+  const [mode, setMode] = useState<BlockMode>("single");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [allDay, setAllDay] = useState(true);
+
+  const timeDateInput = startDate;
+
+  const handleStartDateChange = (value: string) => {
+    setStartDate(value);
+    if (mode === "range" && endDate && endDate < value) {
+      setEndDate(value);
+    }
+  };
 
   if (!staff.length) {
     return (
@@ -36,12 +52,44 @@ export function ScheduleBlockForm({
 
   return (
     <form action={action} className="rounded-md border border-white/10 p-6">
+      <input type="hidden" name="block_mode" value={mode} />
+
       <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-y">
         Block time
       </h2>
       <p className="mt-1 font-mono text-[9px] text-text/35">
-        PTO, lunch, training, etc. · Central time
+        PTO, vacation, lunch, etc. · Central time
       </p>
+
+      <div className="mt-4 flex gap-1 rounded border border-white/10 p-0.5 w-fit">
+        <button
+          type="button"
+          onClick={() => setMode("single")}
+          className={cn(
+            "cursor-pointer rounded px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.1em]",
+            mode === "single"
+              ? "bg-y/15 text-y"
+              : "text-text/40 hover:text-text/70",
+          )}
+        >
+          Single day
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setMode("range");
+            setAllDay(true);
+          }}
+          className={cn(
+            "cursor-pointer rounded px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.1em]",
+            mode === "range"
+              ? "bg-y/15 text-y"
+              : "text-text/40 hover:text-text/70",
+          )}
+        >
+          Multiple days
+        </button>
+      </div>
 
       <div className="mt-5 grid gap-5 sm:grid-cols-2">
         <label className="block sm:col-span-2">
@@ -58,32 +106,94 @@ export function ScheduleBlockForm({
           </select>
         </label>
 
-        <HubDatePicker
-          name="appointment_date"
-          label="Date"
-          disablePast
-          onDateChange={setDateInput}
-        />
+        {mode === "single" ? (
+          <HubDatePicker
+            name="appointment_date"
+            label="Date"
+            disablePast
+            onDateChange={handleStartDateChange}
+          />
+        ) : (
+          <>
+            <HubDatePicker
+              name="appointment_date"
+              label="From date"
+              disablePast
+              onDateChange={handleStartDateChange}
+            />
+            <HubDatePicker
+              name="appointment_date_end"
+              label="Through date"
+              disablePast
+              defaultValue={endDate}
+              onDateChange={setEndDate}
+            />
+          </>
+        )}
 
-        <label className="block">
+        <label className="block sm:col-span-2">
           <span className={labelClass}>Reason *</span>
           <input
             name="reason"
             required
-            placeholder="PTO, doctor appointment, lunch"
+            placeholder={
+              mode === "range"
+                ? "Vacation, medical leave, out of town"
+                : "PTO, doctor appointment, lunch"
+            }
             className={fieldClass}
           />
         </label>
 
-        <HubTimeRangeSelect
-          dateInput={dateInput}
-          startName="start_time"
-          endName="end_time"
-        />
+        <label className="flex items-center gap-2 sm:col-span-2 text-sm">
+          <input
+            type="checkbox"
+            name="all_day"
+            checked={allDay}
+            onChange={(e) => setAllDay(e.target.checked)}
+            className="size-4"
+          />
+          <span>
+            All day each day
+            <span className="ml-1 font-mono text-[9px] text-text/35">
+              (8:00 AM – 4:00 PM Central)
+            </span>
+          </span>
+        </label>
+
+        {!allDay ? (
+          <div className="contents">
+            <HubTimeRangeSelect
+              dateInput={timeDateInput}
+              startName="start_time"
+              endName="end_time"
+            />
+          </div>
+        ) : (
+          <>
+            <input type="hidden" name="start_time" value={BOOKING_TIME_SLOTS[0]} />
+            <input
+              type="hidden"
+              name="end_time"
+              value={BOOKING_TIME_SLOTS[BOOKING_TIME_SLOTS.length - 1]}
+            />
+          </>
+        )}
       </div>
 
+      {mode === "range" && (
+        <p className="mt-4 font-mono text-[9px] text-text/35">
+          Creates one block per day in the range (shown on the team calendar each
+          day).
+        </p>
+      )}
+
       <Button type="submit" className="mt-6" disabled={pending}>
-        {pending ? "Saving…" : "Add block"}
+        {pending
+          ? "Saving…"
+          : mode === "range"
+            ? "Add blocks"
+            : "Add block"}
       </Button>
 
       {state.message && (
