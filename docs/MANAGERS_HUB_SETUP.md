@@ -467,7 +467,7 @@ Long term: point your main domain to **Vercel** and retire GitHub Pages when rea
 | 6 | ~~Packages / add-ons / locations CRUD~~ | `/hub/catalog/*` ✅ |
 | 7 | ~~Promo codes (hub CRUD + `/book` apply)~~ | `/hub/promos` ✅ |
 | 8 | ~~Customer history by email/phone~~ | `/hub/customers` ✅ |
-| 9 | Reports (revenue, utilization) | `/hub/reports` |
+| 9 | ~~Reports (revenue, utilization)~~ | `/hub/reports` ✅ |
 | 10 | Notifications queue (email now, SMS via Twilio later) | `/hub/settings/notifications` |
 | 11 | Public `/book` reads Supabase catalog + rules | packages/add-ons/locations ✅ · scheduling rules TBD |
 | 12 | Stripe invoices | after hub stable |
