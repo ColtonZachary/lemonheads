@@ -60,8 +60,8 @@ export default async function HubDashboardPage() {
             </Link>
           </li>
           <li>
-            <Link href="/hub/settings" className="hover:text-y">
-              → Rules, blackouts, capacity
+            <Link href="/hub/settings/rules" className="hover:text-y">
+              → Rules & blackouts
             </Link>
           </li>
         </ul>
