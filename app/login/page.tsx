@@ -36,11 +36,13 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(
     errorParam === "profile"
       ? "Your account is not set up in the hub. Ask an admin to add your profile."
-      : errorParam === "config"
-        ? "Supabase is not configured."
-        : errorParam
-          ? "Sign-in failed. Try again."
-          : null,
+      : errorParam === "invite"
+        ? "Invite link expired or invalid. Ask an admin to send a new invite."
+        : errorParam === "config"
+          ? "Supabase is not configured."
+          : errorParam
+            ? "Sign-in failed. Try again."
+            : null,
   );
   const [loading, setLoading] = useState(false);
 

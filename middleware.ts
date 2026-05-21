@@ -11,5 +11,7 @@ export const config = {
     "/hub/:path*",
     "/login",
     "/auth/callback",
+    "/auth/confirm",
+    "/auth/set-password",
   ],
 };

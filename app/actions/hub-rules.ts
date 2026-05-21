@@ -10,6 +10,7 @@ export type HubRulesActionState = {
 };
 
 const RULES_PATH = "/hub/settings/rules";
+const BOOK_PATH = "/book";
 
 export async function createBlackoutDate(
   _prev: HubRulesActionState,
@@ -43,6 +44,7 @@ export async function createBlackoutDate(
   }
 
   revalidatePath(RULES_PATH);
+  revalidatePath(BOOK_PATH);
   return { ok: true, message: "Blackout date added." };
 }
 
@@ -63,6 +65,7 @@ export async function deleteBlackoutDate(
   if (error) return { ok: false, message: error.message };
 
   revalidatePath(RULES_PATH);
+  revalidatePath(BOOK_PATH);
   return { ok: true, message: "Blackout removed." };
 }
 
@@ -99,5 +102,6 @@ export async function updateLeadTimeRule(
   if (error) return { ok: false, message: error.message };
 
   revalidatePath(RULES_PATH);
+  revalidatePath(BOOK_PATH);
   return { ok: true, message: "Lead-time rule saved." };
 }

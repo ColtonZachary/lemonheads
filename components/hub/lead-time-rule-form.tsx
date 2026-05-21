@@ -41,8 +41,8 @@ export function LeadTimeRuleForm({ rule }: { rule: LeadTimeRuleRow }) {
         Same-day booking cutoff
       </h2>
       <p className="mt-1 font-mono text-[9px] text-text/35">
-        After this time (Central), customers cannot book for today on the public site
-        (enforcement wired in a later step).
+        After this time (Central), customers cannot book for today on /book and hub
+        bookings use the same rule.
       </p>
 
       <div className="mt-5 grid gap-5 sm:grid-cols-2">

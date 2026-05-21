@@ -4,6 +4,8 @@ import { Suspense } from "react";
 import { BookingFlow } from "@/components/book/booking-flow";
 import { SectionLabel } from "@/components/ui/section";
 import { fetchBookableDetailersWithPhotos } from "@/lib/bookings/bookable-detailers";
+import { fetchActiveCoverageRules } from "@/lib/bookings/service-area-coverage";
+import { fetchSchedulingRules } from "@/lib/bookings/scheduling-rules";
 import { fetchPublicCatalog } from "@/lib/catalog/public-catalog";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -15,9 +17,11 @@ export const metadata: Metadata = {
 
 export default async function BookPage() {
   const supabase = await createSupabaseServerClient();
-  const [detailers, catalog] = await Promise.all([
+  const [detailers, catalog, schedulingRules, coverageRules] = await Promise.all([
     supabase ? fetchBookableDetailersWithPhotos(supabase) : undefined,
     fetchPublicCatalog(supabase),
+    fetchSchedulingRules(supabase),
+    supabase ? fetchActiveCoverageRules(supabase) : [],
   ]);
 
   return (
@@ -34,7 +38,12 @@ export default async function BookPage() {
 
       <div className="mx-auto max-w-[820px] px-[5%] pb-24">
         <Suspense fallback={<BookingFallback />}>
-          <BookingFlow detailers={detailers} catalog={catalog} />
+          <BookingFlow
+            detailers={detailers}
+            catalog={catalog}
+            schedulingRules={schedulingRules}
+            coverageRules={coverageRules}
+          />
         </Suspense>
       </div>
     </>

@@ -55,13 +55,28 @@ This copies current `lib/data.ts` packages, add-ons, locations, and team into Su
 1. Supabase Dashboard → **Authentication** → **Providers**
 2. Enable **Email** (password sign-in)
 3. **Authentication** → **URL configuration**
-   - Site URL (local): `http://localhost:3000`
-   - Redirect URLs: add `http://localhost:3000/auth/callback`
-4. For production (after Vercel deploy), add:
-   - Site URL: `https://your-app.vercel.app`
-   - Redirect: `https://your-app.vercel.app/auth/callback`
+   - **Site URL** must be the **hub app** (Vercel), not the marketing/GitHub Pages site.
+   - Local Site URL: `http://localhost:3000`
+   - Redirect URLs (add all):
+     - `http://localhost:3000/auth/callback`
+     - `http://localhost:3000/auth/confirm`
+     - `http://localhost:3000/auth/set-password`
+4. For production (this project):
+   - Site URL: `https://lemonheads.vercel.app` (same as `NEXT_PUBLIC_APP_URL`)
+   - Redirect URLs:
+     - `https://lemonheads.vercel.app/auth/callback`
+     - `https://lemonheads.vercel.app/auth/confirm`
+     - `https://lemonheads.vercel.app/auth/set-password`
+
+5. **Authentication** → **Email Templates** → **Invite user** — set the action link to:
+   ```html
+   <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite&next=/auth/set-password">Accept invitation</a>
+   ```
+   (If you keep the default “Accept invitation” link and users land on the public website with no password screen, Site URL or redirect URLs are wrong.)
 
 Optional: disable public sign-ups under **Auth** → **Settings** → turn off “Allow new users to sign up” after managers exist, and invite only via dashboard.
+
+**Invite flow for new staff:** email → Accept invitation → **Set password** page → `/hub`. Later logins use `/login` with that email + password.
 
 ---
 
@@ -468,21 +483,47 @@ Long term: point your main domain to **Vercel** and retire GitHub Pages when rea
 | 7 | ~~Promo codes (hub CRUD + `/book` apply)~~ | `/hub/promos` ✅ |
 | 8 | ~~Customer history by email/phone~~ | `/hub/customers` ✅ |
 | 9 | ~~Reports (revenue, utilization)~~ | `/hub/reports` ✅ |
-| 10 | Notifications queue (email now, SMS via Twilio later) | `/hub/settings/notifications` |
-| 11 | Public `/book` reads Supabase catalog + rules | packages/add-ons/locations ✅ · scheduling rules TBD |
+| 10 | Notifications (email now · **customer SMS deferred**) | Resend ✅ · Twilio code in repo, env off until ready |
+| 11 | ~~Public `/book` reads Supabase catalog + rules~~ | catalog ✅ · cutoff + blackouts ✅ · capacity TBD |
 | 12 | Stripe invoices | after hub stable |
 
 ---
 
-## Phase 9 — SMS notifications (later)
+## Phase 9 — Customer SMS (deferred)
 
-Schema includes `notification_events`. When ready:
+**Status:** Code is in the repo (`lib/twilio.ts`, `lib/notifications/customer-sms.ts`) but **not required** until you choose a path. Leave Twilio env vars unset — bookings and email work as today.
 
-1. Twilio account → phone number
-2. Add `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` to Vercel
-3. Wire a small server job or Supabase Edge Function to process the queue
+**Options to decide later:**
 
-Email notifications can use existing **Resend** on `booking.created` / `booking.updated`.
+| Option | Notes |
+|--------|--------|
+| **Twilio** (new or ported number) | Wire env vars + redeploy; fastest if you add a dedicated SMS number |
+| **Port 833 off Grasshopper** | Same number for voice + SMS API; longer setup, toll-free verification |
+| **Grasshopper only** | Manual texts from app; no reliable outbound API for `/book` |
+| **Hybrid** | Keep Grasshopper for calls; separate number for auto confirmations |
+
+When enabled, customers would receive SMS on:
+
+- New booking (`/book` or hub create)
+- Hub reschedule (date/time change)
+- Hub cancel
+- Hub confirm (`pending` → `confirmed`)
+
+Each send is logged in `notification_events` (channel `sms`).
+
+**Vercel env (Production + Preview):**
+
+| Variable | Example |
+|----------|---------|
+| `TWILIO_ACCOUNT_SID` | From Twilio Console |
+| `TWILIO_AUTH_TOKEN` | From Twilio Console |
+| `TWILIO_FROM_NUMBER` | E.164, e.g. `+14055551234` |
+
+Or set `TWILIO_MESSAGING_SERVICE_SID` instead of `TWILIO_FROM_NUMBER` if you use a Messaging Service.
+
+Redeploy after adding env vars. Without them, bookings still succeed; SMS is skipped and logged.
+
+Email notifications use **Resend** (`RESEND_*` env) to your inbox + customer email on `/book`.
 
 ---
 

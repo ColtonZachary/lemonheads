@@ -19,6 +19,10 @@ import {
   fetchActiveCoverageRules,
   validateBookingLocationCoverage,
 } from "@/lib/bookings/service-area-coverage";
+import {
+  fetchSchedulingRules,
+  resolveServiceAreaSlugsForLocation,
+} from "@/lib/bookings/scheduling-rules";
 import { validateBookingSchedule } from "@/lib/bookings/scheduling-limits";
 import { syncCustomerFromBooking } from "@/lib/hub/sync-customer-from-booking";
 
@@ -114,12 +118,27 @@ export async function insertBooking(
     }
   | { ok: false; error: string }
 > {
-  const scheduleError = validateBookingSchedule(data.date, data.time);
+  const [schedulingRules, coverageRules] = await Promise.all([
+    fetchSchedulingRules(client),
+    fetchActiveCoverageRules(client),
+  ]);
+
+  const serviceAreaSlugs = resolveServiceAreaSlugsForLocation(
+    data.zip ?? "",
+    data.city ?? "",
+    coverageRules,
+  );
+
+  const scheduleError = validateBookingSchedule(
+    data.date,
+    data.time,
+    schedulingRules,
+    serviceAreaSlugs,
+  );
   if (scheduleError) {
     return { ok: false, error: scheduleError };
   }
 
-  const coverageRules = await fetchActiveCoverageRules(client);
   const coverageResult = validateBookingLocationCoverage(
     data.location,
     data.zip ?? "",

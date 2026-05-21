@@ -24,6 +24,11 @@ import {
   isTodayDateLabel,
   validateBookingSchedule,
 } from "@/lib/bookings/scheduling-limits";
+import {
+  resolveServiceAreaSlugsForLocation,
+  type SchedulingRulesSnapshot,
+} from "@/lib/bookings/scheduling-rules";
+import type { ServiceAreaCoverageRule } from "@/lib/bookings/service-area-coverage";
 import type { DetailerAvailabilitySnapshot } from "@/lib/bookings/detailer-availability";
 import { applyPromoForBooking } from "@/app/actions/promo";
 import { submitBooking } from "@/lib/submit-booking";
@@ -150,9 +155,13 @@ function emptyState(
 export function BookingFlow({
   detailers: detailersProp,
   catalog,
+  schedulingRules,
+  coverageRules,
 }: {
   detailers?: DetailerCardInfo[];
   catalog: PublicCatalog;
+  schedulingRules: SchedulingRulesSnapshot;
+  coverageRules: ServiceAreaCoverageRule[];
 }) {
   const { packages, addons, locationTypes } = catalog;
   const packageByKey = useMemo(() => packagesByKey(packages), [packages]);
@@ -221,6 +230,16 @@ export function BookingFlow({
 
   const addonKey = Array.from(state.addons).sort().join("|");
 
+  const serviceAreaSlugs = useMemo(
+    () =>
+      resolveServiceAreaSlugsForLocation(
+        state.zip,
+        state.city,
+        coverageRules,
+      ),
+    [state.zip, state.city, coverageRules],
+  );
+
   useEffect(() => {
     setState((s) => {
       if (!s.appliedPromo && !s.promoMessage) return s;
@@ -275,7 +294,12 @@ export function BookingFlow({
     if (target === 3) {
       if (!state.date || !state.time)
         return setError("Please pick a date and time before continuing.");
-      const scheduleError = validateBookingSchedule(state.date, state.time);
+      const scheduleError = validateBookingSchedule(
+        state.date,
+        state.time,
+        schedulingRules,
+        serviceAreaSlugs,
+      );
       if (scheduleError) return setError(scheduleError);
       if (availability?.fullyBookedSlots.includes(state.time)) {
         return setError(
@@ -290,6 +314,20 @@ export function BookingFlow({
       if (!state.email) return setError("Please enter an email address.");
       if (!state.locationType)
         return setError("Please pick a service location type.");
+      if (state.date && state.time) {
+        const slugs = resolveServiceAreaSlugsForLocation(
+          state.zip,
+          state.city,
+          coverageRules,
+        );
+        const scheduleError = validateBookingSchedule(
+          state.date,
+          state.time,
+          schedulingRules,
+          slugs,
+        );
+        if (scheduleError) return setError(scheduleError);
+      }
       if (availability?.fullyBookedSlots.includes(state.time)) {
         return setError(
           "That time is fully booked. Please pick another time slot.",
@@ -420,11 +458,15 @@ export function BookingFlow({
       {step === 2 && (
         <Step2
           state={state}
+          schedulingRules={schedulingRules}
           availability={availability}
           availabilityLoading={availabilityLoading}
           onPickDate={(d) => {
             update("date", d);
-            if (state.time && !isTimeSlotSelectable(d, state.time)) {
+            if (
+              state.time &&
+              !isTimeSlotSelectable(d, state.time, schedulingRules)
+            ) {
               update("time", "");
             }
           }}
@@ -877,14 +919,23 @@ function PrefQuestion({
    STEP 2 — Calendar + Time picker
 ─────────────────────────────────────────────────────────────────────*/
 
+function formatCutoffHour(hour: number): string {
+  if (hour === 0) return "12:00 AM";
+  if (hour < 12) return `${hour}:00 AM`;
+  if (hour === 12) return "12:00 PM";
+  return `${hour - 12}:00 PM`;
+}
+
 function Step2({
   state,
+  schedulingRules,
   availability,
   availabilityLoading,
   onPickDate,
   onPickTime,
 }: {
   state: BookingState;
+  schedulingRules: SchedulingRulesSnapshot;
   availability: DetailerAvailabilitySnapshot | null;
   availabilityLoading: boolean;
   onPickDate: (d: string) => void;
@@ -910,17 +961,21 @@ function Step2({
       cells.push({
         day: d,
         iso: dateLabel,
-        disabled: !isDateLabelSelectable(dateLabel),
+        disabled: !isDateLabelSelectable(dateLabel, schedulingRules),
         isToday: dateInput === todayKey,
       });
     }
     return cells;
-  }, [cursor, todayKey]);
+  }, [cursor, todayKey, schedulingRules]);
 
   const blockAllSlots = useMemo(() => {
     if (!state.date) return false;
-    return isTodayDateLabel(state.date) && isSameDayCutoffActive();
-  }, [state.date]);
+    return (
+      isTodayDateLabel(state.date) && isSameDayCutoffActive(schedulingRules)
+    );
+  }, [state.date, schedulingRules]);
+
+  const cutoffLabel = formatCutoffHour(schedulingRules.sameDayCutoffHour);
 
   return (
     <>
@@ -993,8 +1048,8 @@ function Step2({
         <FormSection title={`Pick a Time — ${state.date}`}>
           {blockAllSlots ? (
             <p className="py-4 font-mono text-xs tracking-[0.08em] text-y/60">
-              Same-day bookings are unavailable after 4:00 PM. Please pick a
-              future date.
+              Same-day bookings are unavailable after {cutoffLabel} Central.
+              Please pick a future date.
             </p>
           ) : availabilityLoading ? (
             <p className="py-4 font-mono text-xs tracking-[0.08em] text-text/40">
@@ -1006,8 +1061,11 @@ function Step2({
                 const selected = state.time === t;
                 const fullyBooked =
                   availability?.fullyBookedSlots.includes(t) ?? false;
-                const slotUnavailable =
-                  !isTimeSlotSelectable(state.date, t);
+                const slotUnavailable = !isTimeSlotSelectable(
+                  state.date,
+                  t,
+                  schedulingRules,
+                );
                 const disabled = fullyBooked || slotUnavailable;
                 return (
                   <button

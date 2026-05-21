@@ -26,6 +26,11 @@ import { fetchBookableDetailerNames } from "@/lib/bookings/bookable-detailers";
 import { fetchActiveWeeklyBlocks } from "@/lib/bookings/weekly-blocks";
 import { parseBookingSchedule } from "@/lib/bookings/parse-schedule";
 import {
+  fetchSchedulingRules,
+  resolveServiceAreaSlugsForLocation,
+} from "@/lib/bookings/scheduling-rules";
+import { fetchActiveCoverageRules } from "@/lib/bookings/service-area-coverage";
+import {
   validateBookingScheduleFromInput,
   validateScheduleChangeFromInput,
 } from "@/lib/bookings/scheduling-limits";
@@ -42,6 +47,14 @@ import {
   parseHubBookingCreateDraft,
   type HubBookingCreateDraft,
 } from "@/lib/hub/booking-create-draft";
+import {
+  notifyCustomerBookingCancelled,
+  notifyCustomerBookingConfirmed,
+  notifyCustomerBookingCreated,
+  notifyCustomerBookingRescheduled,
+  type CustomerBookingSmsData,
+} from "@/lib/notifications/customer-sms";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type HubBookingActionState = {
@@ -146,10 +159,22 @@ export async function updateHubBooking(
     return { ok: false, message: "Invalid appointment date." };
   }
 
+  const [schedulingRules, coverageRules] = await Promise.all([
+    fetchSchedulingRules(supabase),
+    fetchActiveCoverageRules(supabase),
+  ]);
+  const serviceAreaSlugs = resolveServiceAreaSlugsForLocation(
+    existing.zip ?? "",
+    existing.city ?? "",
+    coverageRules,
+  );
+
   const scheduleError = validateScheduleChangeFromInput(
     dateInput,
     timeLabel,
     existing.starts_at,
+    schedulingRules,
+    serviceAreaSlugs,
   );
   if (scheduleError) {
     return { ok: false, message: scheduleError };
@@ -267,6 +292,37 @@ export async function updateHubBooking(
     },
     after: patch,
   });
+
+  const smsAdmin = getSupabaseAdmin();
+  const smsData: CustomerBookingSmsData = {
+    phone: existing.phone,
+    customerName: existing.customer_name,
+    service: existing.service_name,
+    date: dateLabel,
+    time: timeLabel,
+    referenceId: existing.reference_id,
+    detailerName: detailerName ?? "Auto-Assigned",
+    bookingId,
+  };
+  const scheduleChanged = existing.starts_at !== patch.starts_at;
+  const becameCancelled =
+    status === "cancelled" && existing.status !== "cancelled";
+  const becameConfirmed =
+    status === "confirmed" && existing.status === "pending";
+
+  if (becameCancelled) {
+    void notifyCustomerBookingCancelled(smsAdmin, smsData).then((r) => {
+      if (!r.ok) console.warn("[hub-booking] cancel SMS:", r.error);
+    });
+  } else if (scheduleChanged) {
+    void notifyCustomerBookingRescheduled(smsAdmin, smsData).then((r) => {
+      if (!r.ok) console.warn("[hub-booking] reschedule SMS:", r.error);
+    });
+  } else if (becameConfirmed) {
+    void notifyCustomerBookingConfirmed(smsAdmin, smsData).then((r) => {
+      if (!r.ok) console.warn("[hub-booking] confirm SMS:", r.error);
+    });
+  }
 
   revalidatePath("/hub/bookings");
   revalidatePath(`/hub/bookings/${bookingId}`);
@@ -416,7 +472,24 @@ export async function createHubBooking(
     return createBookingFailed("Invalid time slot.", formData);
   }
 
-  const scheduleError = validateBookingScheduleFromInput(dateInput, timeLabel);
+  const [schedulingRules, coverageRules] = await Promise.all([
+    fetchSchedulingRules(supabase),
+    fetchActiveCoverageRules(supabase),
+  ]);
+  const city = String(formData.get("city") ?? "");
+  const zip = String(formData.get("zip") ?? "");
+  const serviceAreaSlugs = resolveServiceAreaSlugsForLocation(
+    zip,
+    city,
+    coverageRules,
+  );
+
+  const scheduleError = validateBookingScheduleFromInput(
+    dateInput,
+    timeLabel,
+    schedulingRules,
+    serviceAreaSlugs,
+  );
   if (scheduleError) {
     return createBookingFailed(scheduleError, formData);
   }
@@ -486,6 +559,19 @@ export async function createHubBooking(
       detailer: saved.detailerName,
     },
   );
+
+  void notifyCustomerBookingCreated(getSupabaseAdmin(), {
+    phone: parsed.data.phone,
+    customerName: parsed.data.customerName,
+    service: parsed.data.service,
+    date: parsed.data.date,
+    time: parsed.data.time,
+    referenceId,
+    detailerName: saved.detailerName,
+    bookingId: saved.bookingId,
+  }).then((r) => {
+    if (!r.ok) console.warn("[hub-booking] create SMS:", r.error);
+  });
 
   revalidatePath("/hub/bookings");
   revalidatePath("/hub/calendar");

@@ -13,6 +13,7 @@ import {
   type BookingEmailData,
 } from "@/lib/email-templates";
 import { insertBooking } from "@/lib/bookings/insert-booking";
+import { notifyCustomerBookingCreated } from "@/lib/notifications/customer-sms";
 import { FROM_EMAIL, TO_EMAIL, getResend } from "@/lib/resend";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -60,6 +61,7 @@ export async function submitBooking(
   const bookingId = `LH-${Date.now().toString(36).toUpperCase()}`;
 
   const supabase = getSupabaseAdmin();
+  let savedBookingId: string | undefined;
   if (supabase) {
     const saved = await insertBooking(supabase, bookingId, data);
     if (!saved.ok) {
@@ -69,6 +71,7 @@ export async function submitBooking(
       };
     }
     assignedDetailer = saved.detailerName;
+    savedBookingId = saved.bookingId;
     emailPayload.requestedDetailer = saved.detailerName;
   } else {
     console.warn(
@@ -80,6 +83,18 @@ export async function submitBooking(
     if (!resend) {
       // No API key configured — log so dev can see the payload
       console.log("[booking] would send →", emailPayload);
+      void notifyCustomerBookingCreated(supabase, {
+        phone: data.phone,
+        customerName: data.customerName,
+        service: data.service,
+        date: data.date,
+        time: data.time,
+        referenceId: bookingId,
+        detailerName: assignedDetailer,
+        bookingId: savedBookingId,
+      }).then((sms) => {
+        if (!sms.ok) console.warn("[booking] customer SMS:", sms.error);
+      });
       return {
         status: "success",
         bookingId,
@@ -102,6 +117,19 @@ export async function submitBooking(
       to: data.email,
       subject: `You're booked with Lemonhead's — ${data.date} at ${data.time}`,
       html: renderBookingConfirmationToCustomer(emailPayload),
+    });
+
+    void notifyCustomerBookingCreated(supabase, {
+      phone: data.phone,
+      customerName: data.customerName,
+      service: data.service,
+      date: data.date,
+      time: data.time,
+      referenceId: bookingId,
+      detailerName: assignedDetailer,
+      bookingId: savedBookingId,
+    }).then((sms) => {
+      if (!sms.ok) console.warn("[booking] customer SMS:", sms.error);
     });
 
     return {

@@ -54,7 +54,7 @@ export function HubNav({ access }: { access: HubAccess }) {
         </Link>
       ))}
 
-      {access.isAdmin && (
+      {access.isManager && (
         <Link
           href="/hub/managers"
           className={cn(
@@ -64,7 +64,7 @@ export function HubNav({ access }: { access: HubAccess }) {
               : "text-text/50 hover:bg-white/[0.04] hover:text-text",
           )}
         >
-          Managers
+          Hub access
         </Link>
       )}
 

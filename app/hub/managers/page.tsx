@@ -1,18 +1,22 @@
 import { ManagersPanel, type HubProfileRow } from "@/components/hub/managers-panel";
 import { requireHubAccess } from "@/lib/auth/require-hub";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function HubManagersPage() {
-  const access = await requireHubAccess();
-  if (!access.isAdmin) redirect("/hub");
+  const access = await requireHubAccess({ managerOnly: true });
+  if (access.profile.role !== "admin" && access.profile.role !== "manager") {
+    redirect("/hub/calendar");
+  }
 
   const supabase = await createSupabaseServerClient();
-  const { data: profiles } = await supabase!
-    .from("profiles")
-    .select("id, role, full_name, email, phone, active")
-    .order("role")
-    .order("full_name");
+  let query = supabase!.from("profiles").select("id, role, full_name, email, phone, active");
+
+  if (!access.isAdmin) {
+    query = query.eq("role", "detailer");
+  }
+
+  const { data: profiles } = await query.order("role").order("full_name");
 
   const rows: HubProfileRow[] = (profiles ?? []).map((p) => ({
     id: p.id,
@@ -27,12 +31,17 @@ export default async function HubManagersPage() {
     <div>
       <h1 className="font-display text-5xl tracking-[0.04em] text-y">HUB ACCESS</h1>
       <p className="mt-2 max-w-2xl text-sm text-text/45">
-        Invite managers and admins, set roles, or deactivate sign-in without deleting
-        their Supabase account.
+        {access.isAdmin
+          ? "Invite hub users, change roles, or remove access for admins, managers, and detailers."
+          : "Manage detailer sign-in — remove access when someone should no longer use the hub."}
       </p>
 
       <div className="mt-10 max-w-2xl">
-        <ManagersPanel profiles={rows} currentUserId={access.profile.id} />
+        <ManagersPanel
+          profiles={rows}
+          currentUserId={access.profile.id}
+          viewerRole={access.profile.role}
+        />
       </div>
     </div>
   );

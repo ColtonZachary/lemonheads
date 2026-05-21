@@ -3,10 +3,20 @@ import {
   BUSINESS_TIME_ZONE,
   parseBookingSchedule,
 } from "@/lib/bookings/parse-schedule";
+import type { SchedulingRulesSnapshot } from "@/lib/bookings/scheduling-rules";
+import { isDateInputBlackout } from "@/lib/bookings/scheduling-rules";
 import { dateInputToLabel } from "@/lib/hub/schedule-labels";
 
-/** Same-day bookings close after this hour (Central, 24h). */
+/** Default when hub rule is missing (matches migration seed). */
 export const SAME_DAY_CUTOFF_HOUR = 16;
+
+function cutoffHour(rules?: SchedulingRulesSnapshot): number {
+  return rules?.sameDayCutoffHour ?? SAME_DAY_CUTOFF_HOUR;
+}
+
+function sameDayCutoffEnabled(rules?: SchedulingRulesSnapshot): boolean {
+  return rules?.sameDayCutoffEnabled !== false;
+}
 
 const MONTH_NAMES = [
   "January",
@@ -74,8 +84,31 @@ export function centralHourNow(): number {
   );
 }
 
-export function isSameDayCutoffActive(): boolean {
-  return centralHourNow() >= SAME_DAY_CUTOFF_HOUR;
+export function isSameDayCutoffActive(
+  rules?: SchedulingRulesSnapshot,
+): boolean {
+  if (!sameDayCutoffEnabled(rules)) return false;
+  return centralHourNow() >= cutoffHour(rules);
+}
+
+function dateInputFromLabel(dateLabel: string): string | null {
+  try {
+    return parseBookingSchedule(dateLabel, BOOKING_TIME_SLOTS[0], 0.25)
+      .appointmentDate;
+  } catch {
+    return null;
+  }
+}
+
+function isBlackoutDateLabel(
+  dateLabel: string,
+  rules?: SchedulingRulesSnapshot,
+  serviceAreaSlugs: string[] = [],
+): boolean {
+  if (!rules) return false;
+  const dateInput = dateInputFromLabel(dateLabel);
+  if (!dateInput) return false;
+  return isDateInputBlackout(dateInput, rules, serviceAreaSlugs);
 }
 
 export function isPastDateInput(dateInput: string): boolean {
@@ -130,17 +163,24 @@ export function isTimeSlotInPast(dateLabel: string, timeSlot: string): boolean {
   return new Date(startsAt).getTime() <= Date.now();
 }
 
-export function isDateLabelSelectable(dateLabel: string): boolean {
+export function isDateLabelSelectable(
+  dateLabel: string,
+  rules?: SchedulingRulesSnapshot,
+  serviceAreaSlugs: string[] = [],
+): boolean {
+  if (isBlackoutDateLabel(dateLabel, rules, serviceAreaSlugs)) return false;
   if (isPastDateLabel(dateLabel)) return false;
-  if (isTodayDateLabel(dateLabel) && isSameDayCutoffActive()) return false;
+  if (isTodayDateLabel(dateLabel) && isSameDayCutoffActive(rules)) return false;
   return true;
 }
 
 export function isTimeSlotSelectable(
   dateLabel: string,
   timeSlot: string,
+  rules?: SchedulingRulesSnapshot,
+  serviceAreaSlugs: string[] = [],
 ): boolean {
-  if (!isDateLabelSelectable(dateLabel)) return false;
+  if (!isDateLabelSelectable(dateLabel, rules, serviceAreaSlugs)) return false;
   if (isTimeSlotInPast(dateLabel, timeSlot)) return false;
   return true;
 }
@@ -156,17 +196,31 @@ export function isTimeSlotSelectableForDateInput(
   }
 }
 
+function formatCutoffMessage(hour: number): string {
+  const h = hour % 24;
+  if (h === 0) return "12:00 AM";
+  if (h < 12) return `${h}:00 AM`;
+  if (h === 12) return "12:00 PM";
+  return `${h - 12}:00 PM`;
+}
+
 export function validateBookingSchedule(
   dateLabel: string,
   timeSlot: string,
+  rules?: SchedulingRulesSnapshot,
+  serviceAreaSlugs: string[] = [],
 ): string | null {
-  if (!isDateLabelSelectable(dateLabel)) {
+  if (isBlackoutDateLabel(dateLabel, rules, serviceAreaSlugs)) {
+    return "We are closed that day. Please pick another date.";
+  }
+  if (!isDateLabelSelectable(dateLabel, rules, serviceAreaSlugs)) {
     if (isPastDateLabel(dateLabel)) {
       return "That date has already passed. Please pick a future date.";
     }
-    return "Same-day bookings are unavailable after 4:00 PM Central. Pick a future date.";
+    const cutoff = cutoffHour(rules);
+    return `Same-day bookings are unavailable after ${formatCutoffMessage(cutoff)} Central. Pick a future date.`;
   }
-  if (!isTimeSlotSelectable(dateLabel, timeSlot)) {
+  if (!isTimeSlotSelectable(dateLabel, timeSlot, rules, serviceAreaSlugs)) {
     if (isTimeSlotInPast(dateLabel, timeSlot)) {
       return "That time has already passed. Please pick a later time or another day.";
     }
@@ -178,9 +232,16 @@ export function validateBookingSchedule(
 export function validateBookingScheduleFromInput(
   dateInput: string,
   timeSlot: string,
+  rules?: SchedulingRulesSnapshot,
+  serviceAreaSlugs: string[] = [],
 ): string | null {
   try {
-    return validateBookingSchedule(dateInputToLabel(dateInput), timeSlot);
+    return validateBookingSchedule(
+      dateInputToLabel(dateInput),
+      timeSlot,
+      rules,
+      serviceAreaSlugs,
+    );
   } catch {
     return "Invalid date or time.";
   }
@@ -191,6 +252,8 @@ export function validateScheduleChangeFromInput(
   dateInput: string,
   timeSlot: string,
   existingStartsAt: string | null | undefined,
+  rules?: SchedulingRulesSnapshot,
+  serviceAreaSlugs: string[] = [],
 ): string | null {
   try {
     const label = dateInputToLabel(dateInput);
@@ -201,7 +264,12 @@ export function validateScheduleChangeFromInput(
   } catch {
     return "Invalid date or time.";
   }
-  return validateBookingScheduleFromInput(dateInput, timeSlot);
+  return validateBookingScheduleFromInput(
+    dateInput,
+    timeSlot,
+    rules,
+    serviceAreaSlugs,
+  );
 }
 
 export function validateBlockScheduleFromInput(
@@ -229,7 +297,11 @@ export function validateBlockScheduleFromInput(
   return null;
 }
 
-export function listTimeSlotStates(dateLabel: string | null) {
+export function listTimeSlotStates(
+  dateLabel: string | null,
+  rules?: SchedulingRulesSnapshot,
+  serviceAreaSlugs: string[] = [],
+) {
   if (!dateLabel) {
     return BOOKING_TIME_SLOTS.map((slot) => ({
       slot,
@@ -239,11 +311,17 @@ export function listTimeSlotStates(dateLabel: string | null) {
   }
 
   return BOOKING_TIME_SLOTS.map((slot) => {
-    const selectable = isTimeSlotSelectable(dateLabel, slot);
+    const selectable = isTimeSlotSelectable(
+      dateLabel,
+      slot,
+      rules,
+      serviceAreaSlugs,
+    );
     let reason: "past" | "cutoff" | "ok" = "ok";
     if (!selectable) {
-      if (!isDateLabelSelectable(dateLabel)) reason = "cutoff";
-      else if (isTimeSlotInPast(dateLabel, slot)) reason = "past";
+      if (!isDateLabelSelectable(dateLabel, rules, serviceAreaSlugs)) {
+        reason = "cutoff";
+      } else if (isTimeSlotInPast(dateLabel, slot)) reason = "past";
       else reason = "cutoff";
     }
     return { slot, selectable, reason };
