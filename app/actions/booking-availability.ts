@@ -10,6 +10,7 @@ import {
 } from "@/lib/bookings/detailer-availability";
 import { parseBookingSchedule } from "@/lib/bookings/parse-schedule";
 import { DETAILER_NAMES } from "@/lib/data";
+import { fetchActiveWeeklyBlocks } from "@/lib/bookings/weekly-blocks";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export async function getDetailerAvailability(
@@ -32,13 +33,17 @@ export async function getDetailerAvailability(
       BOOKING_TIME_SLOTS[0],
       durationHours,
     );
-    const existing = await fetchBookingsForDate(client, probe.appointmentDate);
+    const [existing, weeklyBlocks] = await Promise.all([
+      fetchBookingsForDate(client, probe.appointmentDate),
+      fetchActiveWeeklyBlocks(client),
+    ]);
     return buildAvailabilitySnapshot(
       dateLabel,
       durationHours,
       BOOKING_TIME_SLOTS,
       DETAILER_NAMES,
       existing,
+      weeklyBlocks,
     );
   } catch (err) {
     console.error("[booking-availability]", err);

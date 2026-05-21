@@ -21,6 +21,7 @@ import {
   findAvailableDetailer,
   isDetailerAvailable,
 } from "@/lib/bookings/detailer-availability";
+import { fetchActiveWeeklyBlocks } from "@/lib/bookings/weekly-blocks";
 import { parseBookingSchedule } from "@/lib/bookings/parse-schedule";
 import {
   validateBookingScheduleFromInput,
@@ -152,9 +153,16 @@ export async function updateHubBooking(
   let detailerName: string | null = null;
   let detailerAutoAssigned = false;
 
-  const dayBookings = await fetchBookingsForDate(supabase, schedule.appointmentDate, {
-    excludeBookingId: bookingId,
-  });
+  const [dayBookings, weeklyBlocks] = await Promise.all([
+    fetchBookingsForDate(supabase, schedule.appointmentDate, {
+      excludeBookingId: bookingId,
+    }),
+    fetchActiveWeeklyBlocks(supabase),
+  ]);
+  const availabilityOpts = {
+    weeklyBlocks,
+    appointmentDateInput: schedule.appointmentDate,
+  };
 
   if (autoAssign) {
     const assigned = findAvailableDetailer(
@@ -162,6 +170,7 @@ export async function updateHubBooking(
       dayBookings,
       schedule.startsAt,
       schedule.endsAt,
+      availabilityOpts,
     );
     if (!assigned) {
       return {
@@ -182,11 +191,12 @@ export async function updateHubBooking(
         dayBookings,
         schedule.startsAt,
         schedule.endsAt,
+        availabilityOpts,
       )
     ) {
       return {
         ok: false,
-        message: `${detailerChoice} is already booked for that time.`,
+        message: `${detailerChoice} is not available at that time (may be booked or on a recurring day off).`,
       };
     }
     detailerName = detailerChoice;

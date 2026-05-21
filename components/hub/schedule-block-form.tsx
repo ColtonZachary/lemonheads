@@ -7,9 +7,11 @@ import {
   type HubBlockActionState,
 } from "@/app/actions/hub-blocks";
 import { HubDatePicker } from "@/components/hub/hub-date-picker";
+import { HubMultiDatePicker } from "@/components/hub/hub-multi-date-picker";
 import { HubTimeRangeSelect } from "@/components/hub/hub-time-select";
 import { Button } from "@/components/ui/button";
 import { BOOKING_TIME_SLOTS } from "@/lib/bookings/constants";
+import { WEEKDAY_LABELS } from "@/lib/bookings/weekly-blocks";
 import { cn } from "@/lib/utils";
 
 const EMPTY: HubBlockActionState = { ok: false, message: "" };
@@ -19,7 +21,14 @@ const fieldClass =
 const labelClass =
   "font-mono text-[9px] uppercase tracking-[0.12em] text-text/40";
 
-type BlockMode = "single" | "range";
+type BlockMode = "single" | "range" | "custom" | "weekly";
+
+const MODES: { id: BlockMode; label: string }[] = [
+  { id: "single", label: "Single day" },
+  { id: "range", label: "Date range" },
+  { id: "custom", label: "Pick days" },
+  { id: "weekly", label: "Every week" },
+];
 
 export function ScheduleBlockForm({
   staff,
@@ -30,9 +39,11 @@ export function ScheduleBlockForm({
   const [mode, setMode] = useState<BlockMode>("single");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [customDates, setCustomDates] = useState<string[]>([]);
   const [allDay, setAllDay] = useState(true);
 
-  const timeDateInput = startDate;
+  const timeDateInput =
+    mode === "custom" ? (customDates[0] ?? "") : startDate;
 
   const handleStartDateChange = (value: string) => {
     setStartDate(value);
@@ -50,6 +61,9 @@ export function ScheduleBlockForm({
     );
   }
 
+  const showTimedBlock = mode !== "weekly";
+  const showAllDayOption = mode !== "weekly";
+
   return (
     <form action={action} className="rounded-md border border-white/10 p-6">
       <input type="hidden" name="block_mode" value={mode} />
@@ -58,37 +72,28 @@ export function ScheduleBlockForm({
         Block time
       </h2>
       <p className="mt-1 font-mono text-[9px] text-text/35">
-        PTO, vacation, lunch, etc. · Central time
+        One-off days, ranges, scattered days, or recurring weekly (e.g. no Sundays)
       </p>
 
-      <div className="mt-4 flex gap-1 rounded border border-white/10 p-0.5 w-fit">
-        <button
-          type="button"
-          onClick={() => setMode("single")}
-          className={cn(
-            "cursor-pointer rounded px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.1em]",
-            mode === "single"
-              ? "bg-y/15 text-y"
-              : "text-text/40 hover:text-text/70",
-          )}
-        >
-          Single day
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setMode("range");
-            setAllDay(true);
-          }}
-          className={cn(
-            "cursor-pointer rounded px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.1em]",
-            mode === "range"
-              ? "bg-y/15 text-y"
-              : "text-text/40 hover:text-text/70",
-          )}
-        >
-          Multiple days
-        </button>
+      <div className="mt-4 flex flex-wrap gap-1 rounded border border-white/10 p-0.5">
+        {MODES.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => {
+              setMode(m.id);
+              if (m.id === "weekly") setAllDay(true);
+            }}
+            className={cn(
+              "cursor-pointer rounded px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-[0.1em]",
+              mode === m.id
+                ? "bg-y/15 text-y"
+                : "text-text/40 hover:text-text/70",
+            )}
+          >
+            {m.label}
+          </button>
+        ))}
       </div>
 
       <div className="mt-5 grid gap-5 sm:grid-cols-2">
@@ -106,14 +111,16 @@ export function ScheduleBlockForm({
           </select>
         </label>
 
-        {mode === "single" ? (
+        {mode === "single" && (
           <HubDatePicker
             name="appointment_date"
             label="Date"
             disablePast
             onDateChange={handleStartDateChange}
           />
-        ) : (
+        )}
+
+        {mode === "range" && (
           <>
             <HubDatePicker
               name="appointment_date"
@@ -125,10 +132,39 @@ export function ScheduleBlockForm({
               name="appointment_date_end"
               label="Through date"
               disablePast
-              defaultValue={endDate}
               onDateChange={setEndDate}
             />
           </>
+        )}
+
+        {mode === "custom" && (
+          <HubMultiDatePicker onSelectionChange={setCustomDates} />
+        )}
+
+        {mode === "weekly" && (
+          <fieldset className="block sm:col-span-2">
+            <legend className={labelClass}>Off every week on *</legend>
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {WEEKDAY_LABELS.map((label, index) => (
+                <label
+                  key={label}
+                  className="flex cursor-pointer items-center gap-2 rounded border border-white/10 px-3 py-2 text-sm hover:border-white/20"
+                >
+                  <input
+                    type="checkbox"
+                    name="weekday"
+                    value={String(index)}
+                    className="size-4"
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+            <p className="mt-2 font-mono text-[9px] text-text/35">
+              Example: check Sunday only, or Tuesday + Thursday. Applies every
+              week; bookings skip those days for this detailer.
+            </p>
+          </fieldset>
         )}
 
         <label className="block sm:col-span-2">
@@ -137,31 +173,35 @@ export function ScheduleBlockForm({
             name="reason"
             required
             placeholder={
-              mode === "range"
-                ? "Vacation, medical leave, out of town"
-                : "PTO, doctor appointment, lunch"
+              mode === "weekly"
+                ? "Does not work Sundays"
+                : mode === "custom"
+                  ? "Scattered PTO days"
+                  : "Vacation, medical leave"
             }
             className={fieldClass}
           />
         </label>
 
-        <label className="flex items-center gap-2 sm:col-span-2 text-sm">
-          <input
-            type="checkbox"
-            name="all_day"
-            checked={allDay}
-            onChange={(e) => setAllDay(e.target.checked)}
-            className="size-4"
-          />
-          <span>
-            All day each day
-            <span className="ml-1 font-mono text-[9px] text-text/35">
-              (8:00 AM – 4:00 PM Central)
+        {showAllDayOption && (
+          <label className="flex items-center gap-2 sm:col-span-2 text-sm">
+            <input
+              type="checkbox"
+              name="all_day"
+              checked={allDay}
+              onChange={(e) => setAllDay(e.target.checked)}
+              className="size-4"
+            />
+            <span>
+              All day each selected day
+              <span className="ml-1 font-mono text-[9px] text-text/35">
+                (8:00 AM – 4:00 PM Central)
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
+        )}
 
-        {!allDay ? (
+        {showTimedBlock && !allDay && (
           <div className="contents">
             <HubTimeRangeSelect
               dateInput={timeDateInput}
@@ -169,7 +209,9 @@ export function ScheduleBlockForm({
               endName="end_time"
             />
           </div>
-        ) : (
+        )}
+
+        {showTimedBlock && allDay && (
           <>
             <input type="hidden" name="start_time" value={BOOKING_TIME_SLOTS[0]} />
             <input
@@ -181,19 +223,12 @@ export function ScheduleBlockForm({
         )}
       </div>
 
-      {mode === "range" && (
-        <p className="mt-4 font-mono text-[9px] text-text/35">
-          Creates one block per day in the range (shown on the team calendar each
-          day).
-        </p>
+      {mode === "weekly" && (
+        <input type="hidden" name="appointment_date" value="" />
       )}
 
       <Button type="submit" className="mt-6" disabled={pending}>
-        {pending
-          ? "Saving…"
-          : mode === "range"
-            ? "Add blocks"
-            : "Add block"}
+        {pending ? "Saving…" : mode === "weekly" ? "Save weekly pattern" : "Add block(s)"}
       </Button>
 
       {state.message && (

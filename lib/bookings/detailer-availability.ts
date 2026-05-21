@@ -3,6 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { BLOCKING_BOOKING_STATUSES } from "@/lib/bookings/constants";
 import { parseBookingSchedule } from "@/lib/bookings/parse-schedule";
 import type { BookingInput } from "@/lib/booking-types";
+import {
+  isDetailerBlockedByWeeklyRule,
+  type StaffWeeklyBlock,
+} from "@/lib/bookings/weekly-blocks";
 
 export type ExistingBookingWindow = {
   starts_at: string;
@@ -54,7 +58,23 @@ export function isDetailerAvailable(
   existing: ExistingBookingWindow[],
   startsAt: string,
   endsAt: string,
+  options?: {
+    weeklyBlocks?: StaffWeeklyBlock[];
+    appointmentDateInput?: string;
+  },
 ): boolean {
+  if (
+    options?.weeklyBlocks?.length &&
+    options.appointmentDateInput &&
+    isDetailerBlockedByWeeklyRule(
+      detailerName,
+      options.appointmentDateInput,
+      options.weeklyBlocks,
+    )
+  ) {
+    return false;
+  }
+
   return !existing.some(
     (row) =>
       bookingBlocksDetailer(row, detailerName) &&
@@ -67,10 +87,14 @@ export function findAvailableDetailer(
   existing: ExistingBookingWindow[],
   startsAt: string,
   endsAt: string,
+  options?: {
+    weeklyBlocks?: StaffWeeklyBlock[];
+    appointmentDateInput?: string;
+  },
 ): string | null {
   return (
     detailerNames.find((name) =>
-      isDetailerAvailable(name, existing, startsAt, endsAt),
+      isDetailerAvailable(name, existing, startsAt, endsAt, options),
     ) ?? null
   );
 }
@@ -105,12 +129,17 @@ export function resolveDetailerAssignment(
   data: BookingInput,
   existing: ExistingBookingWindow[],
   detailerNames: readonly string[],
+  weeklyBlocks: StaffWeeklyBlock[] = [],
 ): DetailerAssignment {
   const schedule = parseBookingSchedule(
     data.date,
     data.time,
     data.durationHours,
   );
+  const availabilityOpts = {
+    weeklyBlocks,
+    appointmentDateInput: schedule.appointmentDate,
+  };
   const requested = data.requestedDetailer?.trim() ?? "";
 
   if (requested) {
@@ -120,6 +149,7 @@ export function resolveDetailerAssignment(
         existing,
         schedule.startsAt,
         schedule.endsAt,
+        availabilityOpts,
       )
     ) {
       return {
@@ -140,6 +170,7 @@ export function resolveDetailerAssignment(
     existing,
     schedule.startsAt,
     schedule.endsAt,
+    availabilityOpts,
   );
   if (!assigned) {
     return {
@@ -163,7 +194,17 @@ export function buildAvailabilitySnapshot(
   timeSlots: readonly string[],
   detailerNames: readonly string[],
   existing: ExistingBookingWindow[],
+  weeklyBlocks: StaffWeeklyBlock[] = [],
 ): DetailerAvailabilitySnapshot {
+  const { appointmentDate } = parseBookingSchedule(
+    dateLabel,
+    timeSlots[0] ?? "8:00 AM",
+    durationHours,
+  );
+  const availabilityOpts = {
+    weeklyBlocks,
+    appointmentDateInput: appointmentDate,
+  };
   const busySlotsByDetailer: Record<string, string[]> = {};
   for (const name of detailerNames) {
     busySlotsByDetailer[name] = [];
@@ -182,6 +223,7 @@ export function buildAvailabilitySnapshot(
           existing,
           schedule.startsAt,
           schedule.endsAt,
+          availabilityOpts,
         )
       ) {
         busySlotsByDetailer[detailer].push(slot);

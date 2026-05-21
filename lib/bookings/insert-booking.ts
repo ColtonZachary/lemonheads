@@ -6,6 +6,7 @@ import {
   fetchBookingsForDate,
   resolveDetailerAssignment,
 } from "@/lib/bookings/detailer-availability";
+import { fetchActiveWeeklyBlocks } from "@/lib/bookings/weekly-blocks";
 import {
   parseBookingSchedule,
   parsePriceCents,
@@ -123,7 +124,13 @@ export async function insertBooking(
     };
   }
 
-  const assignment = resolveDetailerAssignment(data, existing, DETAILER_NAMES);
+  const weeklyBlocks = await fetchActiveWeeklyBlocks(client);
+  const assignment = resolveDetailerAssignment(
+    data,
+    existing,
+    DETAILER_NAMES,
+    weeklyBlocks,
+  );
   if (!assignment.ok) {
     return { ok: false, error: assignment.message };
   }

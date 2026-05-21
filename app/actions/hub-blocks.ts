@@ -81,15 +81,64 @@ export async function createScheduleBlock(
     return { ok: false, message: "Invalid time slot." };
   }
 
-  const dateList =
-    blockMode === "range"
-      ? (() => {
-          if (!endDate) {
-            return { error: "Select an end date for the range." } as const;
-          }
-          return dateInputsInRange(startDate, endDate);
-        })()
-      : { dates: [startDate] };
+  if (blockMode === "weekly") {
+    const weekdays = formData
+      .getAll("weekday")
+      .map((v) => Number.parseInt(String(v), 10))
+      .filter((n) => n >= 0 && n <= 6);
+
+    const { error: deleteError } = await supabase
+      .from("staff_weekly_blocks")
+      .delete()
+      .eq("staff_member_id", staffMemberId);
+
+    if (deleteError) return { ok: false, message: deleteError.message };
+
+    if (weekdays.length > 0) {
+      const { error: insertError } = await supabase
+        .from("staff_weekly_blocks")
+        .insert(
+          weekdays.map((day_of_week) => ({
+            staff_member_id: staffMemberId,
+            day_of_week,
+            all_day: true,
+            reason,
+            created_by: profile.id,
+          })),
+        );
+
+      if (insertError) return { ok: false, message: insertError.message };
+    }
+
+    revalidatePath("/hub/blocks");
+    revalidatePath("/hub/calendar");
+
+    return {
+      ok: true,
+      message:
+        weekdays.length === 0
+          ? "Weekly days off cleared for this team member."
+          : `Recurring block set for ${weekdays.length} day${weekdays.length === 1 ? "" : "s"} each week.`,
+    };
+  }
+
+  let dateList: { dates: string[] } | { error: string };
+
+  if (blockMode === "custom") {
+    const picked = formData.getAll("selected_dates").map(String).filter(Boolean);
+    const unique = [...new Set(picked)].sort();
+    if (!unique.length) {
+      return { ok: false, message: "Select at least one day on the calendar." };
+    }
+    dateList = { dates: unique };
+  } else if (blockMode === "range") {
+    if (!endDate) {
+      return { ok: false, message: "Select an end date for the range." };
+    }
+    dateList = dateInputsInRange(startDate, endDate);
+  } else {
+    dateList = { dates: startDate ? [startDate] : [] };
+  }
 
   if ("error" in dateList) {
     return { ok: false, message: dateList.error };
@@ -175,4 +224,26 @@ export async function deleteScheduleBlock(
   revalidatePath("/hub/calendar");
 
   return { ok: true, message: "Block removed." };
+}
+
+export async function deleteWeeklyBlock(
+  blockId: string,
+  _prev: HubBlockActionState,
+  _formData: FormData,
+): Promise<HubBlockActionState> {
+  void _formData;
+  const ctx = await requireManagerSupabase();
+  if ("error" in ctx) return { ok: false, message: ctx.error };
+
+  const { error } = await ctx.supabase
+    .from("staff_weekly_blocks")
+    .delete()
+    .eq("id", blockId);
+
+  if (error) return { ok: false, message: error.message };
+
+  revalidatePath("/hub/blocks");
+  revalidatePath("/hub/calendar");
+
+  return { ok: true, message: "Weekly block removed." };
 }
