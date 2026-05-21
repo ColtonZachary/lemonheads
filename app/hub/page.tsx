@@ -45,6 +45,11 @@ export default async function HubDashboardPage() {
             </Link>
           </li>
           <li>
+            <Link href="/hub/blocks" className="hover:text-y">
+              → Schedule blocks (PTO)
+            </Link>
+          </li>
+          <li>
             <Link href="/hub/bookings" className="hover:text-y">
               → Manage bookings
             </Link>

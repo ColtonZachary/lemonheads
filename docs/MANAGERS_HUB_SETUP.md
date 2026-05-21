@@ -460,7 +460,7 @@ Long term: point your main domain to **Vercel** and retire GitHub Pages when rea
 | # | Feature | Hub UI |
 |---|---------|--------|
 | 1 | ~~Booking edit + cancel/delete + audit log~~ | `/hub/bookings/[id]` ✅ |
-| 2 | Schedule blocks (PTO / block time) | `/hub/blocks` |
+| 2 | ~~Schedule blocks (PTO / block time)~~ | `/hub/blocks` ✅ |
 | 3 | Blackout dates & lead-time rules editor | `/hub/settings/rules` |
 | 4 | Capacity per city & service-area zip validation | `/hub/settings/coverage` |
 | 5 | Staff + **managers** CRUD | `/hub/staff`, `/hub/managers` |

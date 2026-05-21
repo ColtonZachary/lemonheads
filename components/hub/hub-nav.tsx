@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 const managerLinks = [
   { href: "/hub", label: "Dashboard" },
   { href: "/hub/calendar", label: "Calendar" },
+  { href: "/hub/blocks", label: "Blocks" },
   { href: "/hub/bookings", label: "Bookings" },
   { href: "/hub/customers", label: "Customers" },
   { href: "/hub/staff", label: "Staff" },
