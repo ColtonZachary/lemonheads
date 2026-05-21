@@ -36,7 +36,7 @@ export default async function BookPage() {
         </p>
       </header>
 
-      <div className="mx-auto max-w-[820px] px-[5%] pb-24">
+      <div className="mx-auto w-full max-w-[980px] px-[5%] pb-24">
         <Suspense fallback={<BookingFallback />}>
           <BookingFlow
             detailers={detailers}

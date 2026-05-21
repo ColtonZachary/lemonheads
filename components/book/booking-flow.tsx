@@ -423,7 +423,12 @@ export function BookingFlow({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div
+      className={cn(
+        "flex flex-col gap-4",
+        step === 4 && "gap-6 sm:gap-8",
+      )}
+    >
       <Stepper step={step} />
 
       {step === 1 && (
@@ -1415,31 +1420,36 @@ function Step4({
 }) {
   const discountDollars = (state.appliedPromo?.discountCents ?? 0) / 100;
   return (
-    <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
-      <FormSection title="Booking Summary" className="mb-0">
-        <dl className="rounded-md border border-y/15 bg-y/[0.04] p-6">
-          <SummaryRow label="Service" value={pkg?.name ?? "Not selected"} />
+    <div className="flex flex-col gap-8 sm:gap-10">
+      <FormSection title="Booking Summary" className="mb-0" size="large">
+        <dl className="rounded-md border border-y/15 bg-y/[0.04] p-6 sm:p-8">
+          <SummaryRow large label="Service" value={pkg?.name ?? "Not selected"} />
           <SummaryRow
+            large
             label="Vehicle"
             value={`${vehicleLabel(state.vehicleKey)}${
               state.vehicleInfo ? ` — ${state.vehicleInfo}` : ""
             }`}
           />
           <SummaryRow
+            large
             label="Date & Time"
             value={`${state.date}${state.time ? ` at ${state.time}` : ""}`}
           />
           <SummaryRow
+            large
             label="Location"
             value={`${state.locationType}${
               state.address ? ` · ${state.address}, ${state.city}` : ""
             }`}
           />
           <SummaryRow
+            large
             label="Name"
             value={`${state.firstName} ${state.lastName}`}
           />
           <SummaryRow
+            large
             label="Contact"
             value={
               state.phone || state.email ? (
@@ -1457,88 +1467,93 @@ function Step4({
             }
           />
           <SummaryRow
+            large
             label="Detailer"
             value={state.detailer || "No preference"}
           />
           {state.addons.size > 0 && (
             <SummaryRow
+              large
               label="Add-Ons"
               value={Array.from(state.addons).join(", ")}
             />
           )}
           {state.appliedPromo && (
-            <SummaryRow label="Promo" value={state.appliedPromo.code} />
+            <SummaryRow large label="Promo" value={state.appliedPromo.code} />
           )}
-          <SummaryRow label="Plastic Conditioning" value={state.plasticCondition} />
-          <SummaryRow label="OK for Early Contact" value={state.earlyContact} />
+          <SummaryRow large label="Plastic Conditioning" value={state.plasticCondition} />
+          <SummaryRow large label="OK for Early Contact" value={state.earlyContact} />
           {state.saveCardOnFile && (
             <SummaryRow
+              large
               label="Card on file"
               value="Saved securely with Stripe when you confirm"
             />
           )}
         </dl>
 
-        <div className="mt-4 overflow-hidden rounded-md border border-y/20">
-          <div className="border-b border-y/10 bg-y/[0.04] px-4 py-3 font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-muted">
+        <div className="mt-6 overflow-hidden rounded-md border border-y/20">
+          <div className="border-b border-y/10 bg-y/[0.04] px-5 py-4 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-muted sm:px-6">
             Price Breakdown
           </div>
-          <div className="flex flex-col gap-2.5 px-4 py-3.5">
+          <div className="flex flex-col gap-3 px-5 py-5 sm:gap-4 sm:px-6 sm:py-6">
             <BreakdownRow
+              large
               label="Package"
               value={pkgPrice !== null ? formatCurrency(pkgPrice) : "—"}
             />
             {addonTotal > 0 && (
-              <BreakdownRow label="Add-Ons" value={`+${formatCurrency(addonTotal)}`} />
+              <BreakdownRow large label="Add-Ons" value={`+${formatCurrency(addonTotal)}`} />
             )}
             {subtotal !== null && discountDollars > 0 && (
               <>
-                <BreakdownRow label="Subtotal" value={formatCurrency(subtotal)} />
+                <BreakdownRow large label="Subtotal" value={formatCurrency(subtotal)} />
                 <BreakdownRow
+                  large
                   label={`Promo (${state.appliedPromo?.code})`}
                   value={`−${formatCurrency(discountDollars)}`}
                 />
               </>
             )}
             <div className="h-px bg-white/[0.06]" />
-            <div className="flex items-baseline justify-between">
-              <span className="font-mono text-[11px] font-bold uppercase tracking-[0.15em] text-y">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
+              <span className="font-mono text-xs font-bold uppercase tracking-[0.15em] text-y sm:text-sm">
                 Estimated Total
               </span>
-              <span className="font-display text-[36px] leading-none tracking-[0.03em] text-y">
+              <span className="font-display text-[44px] leading-none tracking-[0.03em] text-y sm:text-[52px]">
                 {total !== null ? formatCurrency(total) : "—"}
               </span>
             </div>
-            <div className="font-mono text-[10px] leading-[1.6] tracking-[0.04em] text-text/35">
+            <p className="font-mono text-xs leading-relaxed tracking-[0.04em] text-text/45 sm:text-sm">
               No charge today. Final total may vary based on vehicle condition
               and selected add-ons.
-            </div>
+            </p>
           </div>
         </div>
       </FormSection>
 
-      <FormSection title="Payment & Next Steps" className="mb-0">
-        <div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.05em] text-muted">
-          <Icon name="shield" className="h-3.5 w-3.5" />
+      <FormSection title="Payment & Next Steps" className="mb-0" size="large">
+        <div className="flex items-center gap-3 font-mono text-sm tracking-[0.05em] text-text/60">
+          <Icon name="shield" className="h-5 w-5 shrink-0 text-y/70" />
           {state.saveCardOnFile
             ? "Card saved on file — pay after service as usual"
             : "We collect payment after service"}
         </div>
 
-        <div className="my-5 flex flex-col gap-3">
+        <div className="my-6 flex flex-col gap-4 sm:my-8 sm:gap-5">
           <Step4Bullet num="1" label="Submit this booking request" />
           <Step4Bullet num="2" label="A Lemonhead's team member confirms by phone or text" />
           <Step4Bullet num="3" label="We arrive at your address and start the detail" />
           <Step4Bullet num="4" label="Pay through the app or a secure digital invoice" />
         </div>
 
-        <div className="rounded-md border border-red-500/25 bg-red-500/[0.05] p-4">
-          <div className="flex items-start gap-2.5">
+        <div className="rounded-md border border-red-500/25 bg-red-500/[0.05] p-5 sm:p-6">
+          <div className="flex items-start gap-3">
             <Icon
               name="alert"
-              className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-400"
+              className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-400"
             />
-            <p className="font-mono text-[11px] leading-[1.7] tracking-[0.04em] text-red-300/90">
+            <p className="text-sm leading-relaxed text-red-300/90 sm:text-base sm:leading-relaxed">
               A 10% gratuity is added to invoices left unpaid after 48 hours.
               Submitting this request reserves the slot pending confirmation.
             </p>
@@ -1551,35 +1566,80 @@ function Step4({
 
 function Step4Bullet({ num, label }: { num: string; label: string }) {
   return (
-    <div className="flex items-start gap-3">
-      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border border-y/30 bg-y/10 font-mono text-[10px] font-bold text-y">
+    <div className="flex items-start gap-4">
+      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-y/30 bg-y/10 font-mono text-sm font-bold text-y">
         {num}
       </span>
-      <span className="text-sm leading-[1.6] text-text/70">{label}</span>
+      <span className="pt-1 text-base leading-relaxed text-text/80 sm:text-lg">
+        {label}
+      </span>
     </div>
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: ReactNode }) {
+function SummaryRow({
+  label,
+  value,
+  large,
+}: {
+  label: string;
+  value: ReactNode;
+  large?: boolean;
+}) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-white/5 py-2.5 text-[13px] last:border-b-0">
-      <dt className="shrink-0 pt-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white/80">
+    <div
+      className={cn(
+        "flex flex-col gap-1 border-b border-white/5 py-3 last:border-b-0 sm:flex-row sm:items-start sm:justify-between sm:gap-6",
+        large && "gap-2 py-4 sm:py-5",
+      )}
+    >
+      <dt
+        className={cn(
+          "shrink-0 font-mono uppercase tracking-[0.1em] text-white/80",
+          large ? "text-xs sm:text-sm" : "pt-0.5 text-[10px]",
+        )}
+      >
         {label}
       </dt>
-      <dd className="min-w-0 flex-1 text-right font-semibold leading-snug break-words">
+      <dd
+        className={cn(
+          "min-w-0 font-semibold leading-snug break-words text-text/90",
+          large
+            ? "text-base sm:text-right sm:text-lg"
+            : "flex-1 text-right text-[13px]",
+        )}
+      >
         {value ?? "—"}
       </dd>
     </div>
   );
 }
 
-function BreakdownRow({ label, value }: { label: string; value: string }) {
+function BreakdownRow({
+  label,
+  value,
+  large,
+}: {
+  label: string;
+  value: string;
+  large?: boolean;
+}) {
   return (
-    <div className="flex justify-between text-[13px]">
-      <span className="font-mono text-[11px] tracking-[0.04em] text-text/50">
+    <div
+      className={cn(
+        "flex justify-between gap-4",
+        large ? "text-base sm:text-lg" : "text-[13px]",
+      )}
+    >
+      <span
+        className={cn(
+          "font-mono tracking-[0.04em] text-text/50",
+          large ? "text-sm sm:text-base" : "text-[11px]",
+        )}
+      >
         {label}
       </span>
-      <span className="font-semibold">{value}</span>
+      <span className="font-semibold text-text/90">{value}</span>
     </div>
   );
 }
@@ -1676,20 +1736,33 @@ function FormSection({
   title,
   className,
   children,
+  size = "default",
 }: {
   title: React.ReactNode;
   className?: string;
   children: React.ReactNode;
+  size?: "default" | "large";
 }) {
+  const isLarge = size === "large";
   return (
     <section
       className={cn(
-        "relative overflow-hidden rounded-lg border border-border-faint bg-card p-8 sm:p-10 mb-4",
+        "relative mb-4 overflow-hidden rounded-lg border border-border-faint bg-card",
         "before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-y before:to-transparent",
+        isLarge ? "p-8 sm:p-10 lg:p-12" : "p-8 sm:p-10",
         className,
       )}
     >
-      <h2 className="mb-6 font-display text-2xl tracking-[0.06em]">{title}</h2>
+      <h2
+        className={cn(
+          "font-display tracking-[0.06em] text-y",
+          isLarge
+            ? "mb-8 text-3xl sm:mb-10 sm:text-4xl"
+            : "mb-6 text-2xl",
+        )}
+      >
+        {title}
+      </h2>
       {children}
     </section>
   );
@@ -1717,7 +1790,12 @@ function FormNav({
       ) : (
         <span />
       )}
-      <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-muted">
+      <span
+        className={cn(
+          "font-mono uppercase tracking-[0.15em] text-muted",
+          step === 4 ? "text-xs sm:text-sm" : "text-[9px]",
+        )}
+      >
         Step {step} of 4
       </span>
       {step < 4 ? (
@@ -1730,6 +1808,7 @@ function FormNav({
           onClick={onSubmit}
           disabled={isPending}
           size="lg"
+          className="min-h-12 px-8 text-base sm:min-h-14 sm:px-10 sm:text-lg"
         >
           {isPending ? "Sending…" : "Confirm Booking"}
           {!isPending && <Icon name="arrowRight" className="h-3.5 w-3.5" />}
