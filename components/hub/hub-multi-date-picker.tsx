@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   buildCalendarMonth,
@@ -34,13 +34,15 @@ export function HubMultiDatePicker({
     [selected],
   );
 
+  useEffect(() => {
+    onSelectionChange?.(sorted);
+  }, [sorted, onSelectionChange]);
+
   const toggle = (dateInput: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(dateInput)) next.delete(dateInput);
       else next.add(dateInput);
-      const list = [...next].sort();
-      onSelectionChange?.(list);
       return next;
     });
   };
