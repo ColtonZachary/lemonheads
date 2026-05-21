@@ -12,6 +12,10 @@ import {
   parseBookingSchedule,
   parsePriceCents,
 } from "@/lib/bookings/parse-schedule";
+import {
+  fetchActiveCoverageRules,
+  validateBookingLocationCoverage,
+} from "@/lib/bookings/service-area-coverage";
 import { validateBookingSchedule } from "@/lib/bookings/scheduling-limits";
 
 export type BookingInsertRow = {
@@ -87,6 +91,8 @@ export function buildBookingRow(
 export type BookingInsertOptions = {
   status?: "pending" | "confirmed" | "in_progress" | "completed" | "cancelled";
   managerNotes?: string;
+  /** Use customer-facing copy when location is outside service area (default true). */
+  coverageCustomerFacing?: boolean;
 };
 
 export async function insertBooking(
@@ -106,6 +112,18 @@ export async function insertBooking(
   const scheduleError = validateBookingSchedule(data.date, data.time);
   if (scheduleError) {
     return { ok: false, error: scheduleError };
+  }
+
+  const coverageRules = await fetchActiveCoverageRules(client);
+  const coverageResult = validateBookingLocationCoverage(
+    data.location,
+    data.zip ?? "",
+    data.city ?? "",
+    coverageRules,
+    { customerFacing: options?.coverageCustomerFacing !== false },
+  );
+  if (!coverageResult.ok) {
+    return { ok: false, error: coverageResult.message };
   }
 
   const { appointmentDate } = parseBookingSchedule(

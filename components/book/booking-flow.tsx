@@ -1071,6 +1071,13 @@ function Step3({
               value={state.zip}
               onChange={(e) => update("zip", e.target.value)}
             />
+            {state.locationType &&
+              state.locationType !== "Drop off at your Edmond location" && (
+                <p className="mt-1.5 font-mono text-[9px] leading-relaxed text-text/35">
+                  We service metro areas around OKC, Tulsa, and Enid. ZIP prefixes
+                  like 731 or 741 cover whole regions — not every code listed.
+                </p>
+              )}
           </FieldGroup>
         </FormRow>
         <FormRow cols={1} className="mb-3.5">

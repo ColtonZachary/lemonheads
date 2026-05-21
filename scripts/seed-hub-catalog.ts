@@ -67,6 +67,41 @@ async function main() {
     if (error) console.warn("service_areas", slug, error.message);
   }
 
+  const defaultCoverage: Record<string, { zips: string[]; cities: string[] }> = {
+    "oklahoma-city": { zips: ["731", "730"], cities: ["Oklahoma City"] },
+    tulsa: { zips: ["741"], cities: ["Tulsa"] },
+    enid: { zips: ["737"], cities: ["Enid"] },
+  };
+
+  for (const loc of LOCATIONS) {
+    const slug = loc.city.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const rules = defaultCoverage[slug];
+    if (!rules) continue;
+
+    for (const zip_prefix of rules.zips) {
+      const { error } = await supabase.from("service_area_coverage").insert({
+        service_area_slug: slug,
+        zip_prefix,
+        city_name: null,
+        active: true,
+      });
+      if (error && error.code !== "23505") {
+        console.warn("service_area_coverage zip", slug, zip_prefix, error.message);
+      }
+    }
+    for (const city_name of rules.cities) {
+      const { error } = await supabase.from("service_area_coverage").insert({
+        service_area_slug: slug,
+        zip_prefix: null,
+        city_name,
+        active: true,
+      });
+      if (error && error.code !== "23505") {
+        console.warn("service_area_coverage city", slug, city_name, error.message);
+      }
+    }
+  }
+
   for (let i = 0; i < LOCATION_TYPES.length; i++) {
     const { error } = await supabase.from("booking_location_types").upsert(
       { label: LOCATION_TYPES[i], active: true, sort_order: i },
@@ -135,7 +170,9 @@ async function main() {
     if (error) console.warn("staff_members", slug, error.message);
   }
 
-  console.log("[hub:seed] Done — service areas, packages, add-ons, staff, location types.");
+  console.log(
+    "[hub:seed] Done — service areas, coverage rules, packages, add-ons, staff, location types.",
+  );
 }
 
 main().catch((e) => {

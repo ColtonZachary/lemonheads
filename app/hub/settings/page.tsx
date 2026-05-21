@@ -10,10 +10,10 @@ const settingsLinks = [
     done: true,
   },
   {
-    href: "/hub/settings",
-    title: "Coverage & capacity",
-    description: "Service-area zips and max jobs per city",
-    done: false,
+    href: "/hub/settings/coverage",
+    title: "Service areas",
+    description: "ZIP prefixes and city names we service for mobile bookings",
+    done: true,
   },
 ] as const;
 
