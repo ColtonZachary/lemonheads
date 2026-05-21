@@ -20,6 +20,7 @@ import {
   validateBookingLocationCoverage,
 } from "@/lib/bookings/service-area-coverage";
 import { validateBookingSchedule } from "@/lib/bookings/scheduling-limits";
+import { syncCustomerFromBooking } from "@/lib/hub/sync-customer-from-booking";
 
 export type BookingInsertRow = {
   reference_id: string;
@@ -46,6 +47,7 @@ export type BookingInsertRow = {
   price_display: string;
   customer_notes: string;
   card_on_file: boolean;
+  customer_id?: string | null;
 };
 
 export function buildBookingRow(
@@ -175,6 +177,12 @@ export async function insertBooking(
     return { ok: false, error: pricing.message };
   }
 
+  const customerId = await syncCustomerFromBooking(
+    client,
+    data,
+    assignment.schedule.startsAt,
+  );
+
   const row = {
     ...buildBookingRow(referenceId, data, assignment),
     status: options?.status ?? "pending",
@@ -185,6 +193,7 @@ export async function insertBooking(
     promo_code_id: pricing.promoCodeId,
     price_cents: pricing.totalCents,
     price_display: formatCentsDisplay(pricing.totalCents),
+    ...(customerId ? { customer_id: customerId } : {}),
   };
 
   const { data: inserted, error } = await client
