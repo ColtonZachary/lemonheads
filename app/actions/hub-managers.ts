@@ -351,10 +351,6 @@ export async function updateHubProfile(
     active,
   };
 
-  if (ctx.profile.role === "manager") {
-    patch.role = "detailer";
-  }
-
   const { error } = await writeClient
     .from("profiles")
     .update(patch)

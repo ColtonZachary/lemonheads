@@ -93,7 +93,18 @@ function ProfileEditForm({
               </select>
             </label>
           ) : (
-            <input type="hidden" name="role" value="detailer" />
+            <label className="block">
+              <span className={labelClass}>Role</span>
+              <select
+                name="role"
+                defaultValue={profile.role}
+                className={fieldClass}
+                disabled={isSelf}
+              >
+                <option value="manager">manager</option>
+                <option value="detailer">detailer</option>
+              </select>
+            </label>
           )}
           <label className="flex items-end gap-2 pb-2 text-sm">
             <input
@@ -174,6 +185,10 @@ export function ManagersPanel({
   viewerRole: UserRole;
 }) {
   const isAdmin = viewerRole === "admin";
+  const canInvite =
+    isAdmin ||
+    canInviteHubRole(viewerRole, "manager") ||
+    canInviteHubRole(viewerRole, "detailer");
   const [inviteState, inviteAction, invitePending] = useActionState(
     inviteHubUser,
     EMPTY,
@@ -184,7 +199,7 @@ export function ManagersPanel({
 
   return (
     <div className="space-y-10">
-      {isAdmin || canInviteHubRole(viewerRole, "detailer") ? (
+      {canInvite ? (
         <form action={inviteAction} className="rounded-md border border-white/10 p-6">
           <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-y">
             Invite hub user
@@ -192,7 +207,7 @@ export function ManagersPanel({
           <p className="mt-1 text-sm text-text/45">
             {isAdmin
               ? "Sends a Supabase email invite. They click Accept invitation, set a password, then sign in at /login."
-              : "Invite a detailer — they set a password from the email, then use /login."}
+              : "Invite a manager or detailer — they set a password from the email, then use /login."}
           </p>
           <p className="mt-2 font-mono text-[9px] leading-relaxed text-text/35">
             Supabase → Authentication → URL configuration: Site URL must be your
@@ -224,10 +239,10 @@ export function ManagersPanel({
                   <option value="detailer">detailer</option>
                 </select>
               ) : (
-                <>
-                  <input type="hidden" name="role" value="detailer" />
-                  <p className="mt-2 font-mono text-sm text-text/50">detailer</p>
-                </>
+                <select name="role" className={fieldClass} defaultValue="manager">
+                  <option value="manager">manager</option>
+                  <option value="detailer">detailer</option>
+                </select>
               )}
             </label>
           </div>

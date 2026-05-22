@@ -13,7 +13,7 @@ export default async function HubManagersPage() {
   let query = supabase!.from("profiles").select("id, role, full_name, email, phone, active");
 
   if (!access.isAdmin) {
-    query = query.eq("role", "detailer");
+    query = query.in("role", ["manager", "detailer"]);
   }
 
   const { data: profiles } = await query.order("role").order("full_name");
@@ -33,7 +33,7 @@ export default async function HubManagersPage() {
       <p className="mt-2 max-w-2xl text-sm text-text/45">
         {access.isAdmin
           ? "Invite hub users, change roles, remove access, or delete permanently to free an email for a new invite."
-          : "Manage detailers — remove access or delete permanently to re-invite the same email."}
+          : "Invite managers and detailers, update access, or delete permanently to re-invite the same email. Admin accounts are admin-only."}
       </p>
 
       <div className="mt-10 max-w-2xl">

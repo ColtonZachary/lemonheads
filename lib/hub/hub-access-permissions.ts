@@ -11,13 +11,17 @@ export function canViewHubAccessPage(role: UserRole): boolean {
   return role === "admin" || role === "manager";
 }
 
-/** Managers only see detailer accounts on the hub access page. */
+/** Admins see everyone; managers see managers and detailers only. */
 export function filterProfilesForViewer(
   profiles: HubAccessTarget[],
   viewerRole: UserRole,
 ): HubAccessTarget[] {
   if (viewerRole === "admin") return profiles;
-  return profiles.filter((p) => p.role === "detailer");
+  return profiles.filter((p) => p.role === "detailer" || p.role === "manager");
+}
+
+function isManagerScopedTarget(role: UserRole): boolean {
+  return role === "detailer" || role === "manager";
 }
 
 export function canManageHubUser(
@@ -26,7 +30,7 @@ export function canManageHubUser(
 ): boolean {
   if (actor.id === target.id) return true;
   if (actor.role === "admin") return true;
-  if (actor.role === "manager" && target.role === "detailer") return true;
+  if (actor.role === "manager") return isManagerScopedTarget(target.role);
   return false;
 }
 
@@ -36,7 +40,7 @@ export function canDeactivateHubUser(
 ): boolean {
   if (actor.id === target.id) return false;
   if (actor.role === "admin") return true;
-  if (actor.role === "manager" && target.role === "detailer") return true;
+  if (actor.role === "manager") return isManagerScopedTarget(target.role);
   return false;
 }
 
@@ -53,14 +57,18 @@ export function canChangeHubUserRole(
   target: HubAccessTarget,
   newRole: UserRole,
 ): boolean {
-  if (actor.role !== "admin") {
-    return target.role === "detailer" && newRole === "detailer";
+  if (actor.role === "admin") return true;
+  if (actor.role === "manager") {
+    if (newRole === "admin" || target.role === "admin") return false;
+    return newRole === "detailer" || newRole === "manager";
   }
-  return true;
+  return false;
 }
 
 export function canInviteHubRole(actorRole: UserRole, inviteRole: UserRole): boolean {
   if (actorRole === "admin") return true;
-  if (actorRole === "manager") return inviteRole === "detailer";
+  if (actorRole === "manager") {
+    return inviteRole === "detailer" || inviteRole === "manager";
+  }
   return false;
 }
