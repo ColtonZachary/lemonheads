@@ -111,6 +111,10 @@ export function WeekCalendar({
   detailers,
   bookings,
   canManage,
+  canBook,
+  onOpenBook,
+  onBookDay,
+  onBookSlot,
 }: {
   weekMonday: string;
   weekLabel: string;
@@ -118,6 +122,10 @@ export function WeekCalendar({
   detailers: WeekCalendarDetailer[];
   bookings: WeekCalendarBooking[];
   canManage: boolean;
+  canBook?: boolean;
+  onOpenBook?: () => void;
+  onBookDay?: (dateKey: string) => void;
+  onBookSlot?: (dateKey: string, detailerName: string) => void;
 }) {
   const router = useRouter();
   const grid = useMemo(
@@ -152,9 +160,16 @@ export function WeekCalendar({
             Next →
           </Button>
         </div>
-        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-text/40">
-          Central Time · Mon–Sun
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-text/40">
+            Central Time · Mon–Sun
+          </p>
+          {canBook && onOpenBook && (
+            <Button type="button" size="sm" onClick={onOpenBook}>
+              + New booking
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-4 font-mono text-[9px] uppercase tracking-[0.1em] text-text/50">
@@ -187,6 +202,15 @@ export function WeekCalendar({
                 >
                   <div className="text-y/80">{day.weekday}</div>
                   <div className="text-text/50">{day.label}</div>
+                  {canBook && onBookDay && (
+                    <button
+                      type="button"
+                      onClick={() => onBookDay(day.dateKey)}
+                      className="mt-1 font-mono text-[8px] uppercase tracking-[0.1em] text-y/60 hover:text-y hover:underline"
+                    >
+                      + Book
+                    </button>
+                  )}
                 </th>
               ))}
             </tr>
@@ -220,9 +244,19 @@ export function WeekCalendar({
                       >
                         <div className="flex min-h-[72px] flex-col gap-1.5">
                           {dayBookings.length === 0 ? (
-                            <span className="px-1 py-2 font-mono text-[9px] text-text/20">
-                              —
-                            </span>
+                            canBook && onBookSlot ? (
+                              <button
+                                type="button"
+                                onClick={() => onBookSlot(day.dateKey, detailer.name)}
+                                className="flex min-h-[52px] w-full items-center justify-center rounded border border-dashed border-white/10 font-mono text-[9px] uppercase tracking-[0.1em] text-text/25 transition-colors hover:border-y/30 hover:bg-y/[0.04] hover:text-y/70"
+                              >
+                                + Book
+                              </button>
+                            ) : (
+                              <span className="px-1 py-2 font-mono text-[9px] text-text/20">
+                                —
+                              </span>
+                            )
                           ) : (
                             dayBookings.map((b) => (
                               <BookingCard

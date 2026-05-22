@@ -24,30 +24,53 @@ const labelClass =
 
 export function BookingCreateForm({
   detailerNames,
+  initialDraft,
+  formSeed = "new",
+  onSuccess,
+  onCancel,
+  compact,
 }: {
   detailerNames: string[];
+  initialDraft?: Partial<typeof EMPTY_BOOKING_CREATE_DRAFT>;
+  formSeed?: string | number;
+  /** When set, stay on calendar (or parent) instead of navigating away */
+  onSuccess?: (bookingId: string) => void;
+  onCancel?: () => void;
+  compact?: boolean;
 }) {
   const router = useRouter();
   const [state, action, pending] = useActionState(createHubBooking, EMPTY);
   const errorRef = useRef<HTMLDivElement>(null);
 
-  const draft = state.draft ?? EMPTY_BOOKING_CREATE_DRAFT;
+  const baseDraft = useMemo(
+    () => ({ ...EMPTY_BOOKING_CREATE_DRAFT, ...initialDraft }),
+    [initialDraft],
+  );
+  const draft = state.draft ?? baseDraft;
   const [dateInput, setDateInput] = useState(draft.appointment_date);
   const [time, setTime] = useState(draft.time);
 
-  const formKey = useMemo(
-    () =>
-      state.draft
-        ? `restore-${state.draft.appointment_date}-${state.draft.time}-${state.draft.customer_name}-${state.draft.package_key}`
-        : "new",
-    [state.draft],
-  );
+  const formKey = useMemo(() => {
+    if (state.draft) {
+      return `restore-${state.draft.appointment_date}-${state.draft.time}-${state.draft.customer_name}-${state.draft.package_key}`;
+    }
+    return `seed-${formSeed}`;
+  }, [state.draft, formSeed]);
 
   useEffect(() => {
     if (state.ok && state.bookingId) {
-      router.push(`/hub/bookings/${state.bookingId}`);
+      if (onSuccess) {
+        onSuccess(state.bookingId);
+      } else {
+        router.push(`/hub/bookings/${state.bookingId}`);
+      }
     }
-  }, [state.ok, state.bookingId, router]);
+  }, [state.ok, state.bookingId, router, onSuccess]);
+
+  useEffect(() => {
+    setDateInput(draft.appointment_date);
+    setTime(draft.time);
+  }, [formSeed, draft.appointment_date, draft.time]);
 
   useEffect(() => {
     if (!state.ok && state.draft) {
@@ -57,8 +80,12 @@ export function BookingCreateForm({
     }
   }, [state]);
 
+  const sectionClass = compact
+    ? "rounded-md border border-white/10 p-4"
+    : "rounded-md border border-white/10 p-6";
+
   return (
-    <form key={formKey} action={action} className="space-y-10">
+    <form key={formKey} action={action} className={compact ? "space-y-6" : "space-y-10"}>
       {!state.ok && state.message && (
         <div
           ref={errorRef}
@@ -75,7 +102,7 @@ export function BookingCreateForm({
         </div>
       )}
 
-      <section className="rounded-md border border-white/10 p-6">
+      <section className={sectionClass}>
         <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-y">
           Customer
         </h2>
@@ -115,7 +142,7 @@ export function BookingCreateForm({
         </div>
       </section>
 
-      <section className="rounded-md border border-white/10 p-6">
+      <section className={sectionClass}>
         <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-y">
           Service
         </h2>
@@ -194,7 +221,7 @@ export function BookingCreateForm({
         </fieldset>
       </section>
 
-      <section className="rounded-md border border-white/10 p-6">
+      <section className={sectionClass}>
         <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-y">
           Schedule (Central)
         </h2>
@@ -242,7 +269,7 @@ export function BookingCreateForm({
         </div>
       </section>
 
-      <section className="rounded-md border border-white/10 p-6">
+      <section className={sectionClass}>
         <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-y">
           Location
         </h2>
@@ -285,7 +312,7 @@ export function BookingCreateForm({
         </div>
       </section>
 
-      <section className="rounded-md border border-white/10 p-6">
+      <section className={sectionClass}>
         <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-y">
           Notes
         </h2>
@@ -324,9 +351,15 @@ export function BookingCreateForm({
         <Button type="submit" disabled={pending}>
           {pending ? "Creating…" : "Create booking"}
         </Button>
-        <Button asChild variant="outline">
-          <Link href="/hub/bookings">Cancel</Link>
-        </Button>
+        {onCancel ? (
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+        ) : (
+          <Button asChild variant="outline">
+            <Link href="/hub/bookings">Cancel</Link>
+          </Button>
+        )}
       </div>
     </form>
   );

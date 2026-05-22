@@ -1,22 +1,31 @@
-import { WeekCalendar } from "@/components/hub/week-calendar";
+import { Suspense } from "react";
+
+import { CalendarPageClient } from "@/components/hub/calendar-page-client";
 import { requireHubAccess } from "@/lib/auth/require-hub";
-import { addDaysToDateInput } from "@/lib/bookings/scheduling-limits";
 import { parseWeekSearchParam } from "@/lib/hub/week-calendar";
 import {
   fetchDetailerNameForProfile,
   fetchWeekCalendarData,
 } from "@/lib/hub/week-calendar-data";
+import { fetchBookableDetailerNames } from "@/lib/bookings/bookable-detailers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export default async function HubCalendarPage({
+function CalendarFallback() {
+  return (
+    <p className="mt-10 font-mono text-xs text-text/40">Loading calendar…</p>
+  );
+}
+
+async function CalendarContent({
   searchParams,
 }: {
-  searchParams: Promise<{ week?: string }>;
+  searchParams: Promise<{ week?: string; book?: string }>;
 }) {
   const access = await requireHubAccess();
   const supabase = await createSupabaseServerClient();
   const params = await searchParams;
   const weekMonday = parseWeekSearchParam(params.week);
+  const canBook = access.isManager;
 
   let detailerFilter: string | null = null;
   if (!access.isManager) {
@@ -26,36 +35,44 @@ export default async function HubCalendarPage({
     );
   }
 
-  const data = await fetchWeekCalendarData(supabase!, weekMonday, {
-    detailerFilter,
-  });
+  const [data, detailerNames] = await Promise.all([
+    fetchWeekCalendarData(supabase!, weekMonday, { detailerFilter }),
+    canBook ? fetchBookableDetailerNames(supabase!) : Promise.resolve([]),
+  ]);
 
   return (
     <div>
       <h1 className="font-display text-5xl tracking-[0.04em] text-y">CALENDAR</h1>
       <p className="mt-2 max-w-2xl text-sm text-text/45">
         {access.isManager
-          ? "Week at a glance by detailer. Billed jobs show in green — click a job to open it, or use Mark billed on the card."
+          ? "Week at a glance by detailer. Open New booking to add a job without leaving the calendar."
           : "Your schedule for the week. Billed jobs show in green."}
       </p>
 
-      <div className="mt-10">
-        <WeekCalendar
-          weekMonday={data.weekMonday}
-          weekLabel={data.weekLabel}
-          days={data.days}
-          detailers={data.detailers}
-          bookings={data.bookings}
-          canManage={access.isManager}
-        />
-      </div>
-
-      <p className="mt-6 font-mono text-[10px] text-text/30">
-        Showing {data.bookings.length} job
-        {data.bookings.length === 1 ? "" : "s"} ·{" "}
-        {addDaysToDateInput(weekMonday, 0)} through{" "}
-        {addDaysToDateInput(weekMonday, 6)}
-      </p>
+      <CalendarPageClient
+        weekMonday={data.weekMonday}
+        weekLabel={data.weekLabel}
+        days={data.days}
+        detailers={data.detailers}
+        bookings={data.bookings}
+        bookingCount={data.bookings.length}
+        canManage={access.isManager}
+        canBook={canBook}
+        detailerNames={detailerNames}
+        initialBookOpen={params.book === "1"}
+      />
     </div>
+  );
+}
+
+export default function HubCalendarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ week?: string; book?: string }>;
+}) {
+  return (
+    <Suspense fallback={<CalendarFallback />}>
+      <CalendarContent searchParams={searchParams} />
+    </Suspense>
   );
 }
