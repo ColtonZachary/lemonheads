@@ -14,29 +14,25 @@ export function StaffPhotoField({
       <span className={labelClass}>
         Headshot{optional ? " (optional)" : " *"}
       </span>
-      {currentUrl ? (
-        <div className="mt-2 mb-3 flex items-center gap-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+      <div className="mt-1.5 flex flex-wrap items-center gap-3">
+        {currentUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={currentUrl}
             alt=""
-            className="size-20 rounded-full border-2 border-y/25 object-cover object-top"
+            className="size-12 shrink-0 rounded-full border border-y/25 object-cover object-top"
           />
-          <span className="text-xs text-text/45">
-            Choose a new file below to replace this photo.
-          </span>
-        </div>
-      ) : null}
-      <input
-        type="file"
-        name="photo"
-        accept="image/jpeg,image/png,image/webp,image/gif"
-        required={!optional && !currentUrl}
-        className="mt-1 block w-full cursor-pointer font-mono text-xs text-text/50 file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-y/15 file:px-3 file:py-1.5 file:text-[10px] file:uppercase file:tracking-[0.08em] file:text-y"
-      />
-      <p className="mt-1.5 font-mono text-[9px] leading-relaxed text-text/35">
-        Used on Meet the Team and the booking detailer picker. Square photos look
-        best. JPEG, PNG, or WebP · max 10 MB.
+        ) : null}
+        <input
+          type="file"
+          name="photo"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          required={!optional && !currentUrl}
+          className="min-w-0 flex-1 cursor-pointer font-mono text-[10px] text-text/50 file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-y/15 file:px-2 file:py-1 file:text-[9px] file:uppercase file:text-y"
+        />
+      </div>
+      <p className="mt-1 font-mono text-[9px] text-text/35">
+        Team page & booking picker · square · 10 MB max
       </p>
     </label>
   );
