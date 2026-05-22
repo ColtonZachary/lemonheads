@@ -32,7 +32,7 @@ export default async function HubBookingDetailPage({
       price_display, price_cents, price_override_cents,
       estimated_price_cents, discount_cents, final_price_cents,
       promo_code_id,
-      manager_notes, cancellation_reason, cancelled_at, deleted_at,
+      manager_notes, cancellation_reason, cancelled_at, deleted_at, billed_at,
       promo_codes ( code )
     `,
     )

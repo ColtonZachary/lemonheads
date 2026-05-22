@@ -137,6 +137,7 @@ export async function updateHubBooking(
   const detailerChoice = String(formData.get("detailer") ?? "");
   const managerNotes = String(formData.get("manager_notes") ?? "");
   const priceOverrideRaw = String(formData.get("price_override") ?? "");
+  const billedChecked = String(formData.get("billed") ?? "") === "on";
 
   const validStatuses = [
     "pending",
@@ -258,7 +259,7 @@ export async function updateHubBooking(
     existing.price_cents ??
     existing.estimated_price_cents;
 
-  const patch = {
+  const patch: Record<string, unknown> = {
     status,
     appointment_date: schedule.appointmentDate,
     starts_at: schedule.startsAt,
@@ -272,6 +273,9 @@ export async function updateHubBooking(
       finalPriceCents != null
         ? `$${(finalPriceCents / 100).toFixed(0)}`
         : existing.price_display,
+    billed_at: billedChecked
+      ? (existing.billed_at as string | null) ?? new Date().toISOString()
+      : null,
   };
 
   const { error: updateError } = await supabase

@@ -59,6 +59,7 @@ export type HubBookingDetail = {
   cancellation_reason: string;
   cancelled_at: string | null;
   deleted_at: string | null;
+  billed_at: string | null;
 };
 
 function ActionBanner({ state }: { state: HubBookingActionState }) {
@@ -110,6 +111,7 @@ export function BookingDetailForm({
 
   const isDeleted = Boolean(booking.deleted_at);
   const isCancelled = booking.status === "cancelled";
+  const isBilled = Boolean(booking.billed_at);
   const promoCode = Array.isArray(booking.promo_codes)
     ? booking.promo_codes[0]?.code
     : booking.promo_codes?.code;
@@ -200,6 +202,21 @@ export function BookingDetailForm({
                   </option>
                 ))}
               </select>
+            </label>
+
+            <label className="flex items-end gap-2 pb-2 text-sm">
+              <input
+                type="checkbox"
+                name="billed"
+                defaultChecked={isBilled}
+                className="size-4 accent-emerald-500"
+              />
+              <span>
+                Customer billed{" "}
+                <span className="font-mono text-[10px] text-text/40">
+                  (shows green on calendar)
+                </span>
+              </span>
             </label>
 
             <label className="block">
