@@ -144,6 +144,12 @@ export async function createScheduleBlock(
   if (allDay) {
     startTime = ALL_DAY_START;
     endTime = ALL_DAY_END;
+  } else if (!startTime.trim() || !endTime.trim()) {
+    return {
+      ok: false,
+      message:
+        "Select when the block starts and ends, or check All day for a full-day block.",
+    };
   }
 
   if (

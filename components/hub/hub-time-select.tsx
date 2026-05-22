@@ -99,14 +99,21 @@ export function HubTimeRangeSelect({
   dateInput,
   startName,
   endName,
-  startLabel = "Start (CT)",
-  endLabel = "End (CT)",
+  startLabel = "Block starts",
+  endLabel = "Block ends",
+  required = true,
+  disabled = false,
+  onRangeChange,
 }: {
   dateInput: string;
   startName: string;
   endName: string;
   startLabel?: string;
   endLabel?: string;
+  /** When false (e.g. all-day block), times are not required. */
+  required?: boolean;
+  disabled?: boolean;
+  onRangeChange?: (start: string, end: string) => void;
 }) {
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
@@ -157,33 +164,39 @@ export function HubTimeRangeSelect({
     if (endIdx <= startIdx) setEnd("");
   }, [start, end]);
 
-  const disabled = !dateInput;
+  useEffect(() => {
+    onRangeChange?.(start, end);
+  }, [start, end, onRangeChange]);
+
+  const dateMissing = !dateInput;
+  const fieldsDisabled = disabled || dateMissing;
 
   return (
     <>
       <HubTimeSelect
         dateInput={dateInput}
-        name={startName}
+        name={disabled ? "start_time_unused" : startName}
         label={startLabel}
         value={start}
         onValueChange={setStart}
-        required
+        required={required && !disabled}
         onDateInputRequired
       />
       <label className="block">
         <span className={labelClass}>
-          {endLabel} *
+          {endLabel}
+          {required && !disabled ? " *" : ""}
         </span>
         <select
-          name={endName}
-          required
+          name={disabled ? undefined : endName}
+          required={required && !disabled}
           value={end}
-          disabled={disabled || !start}
+          disabled={fieldsDisabled || !start}
           onChange={(e) => setEnd(e.target.value)}
-          className={cn(fieldClass, (disabled || !start) && "opacity-50")}
+          className={cn(fieldClass, (fieldsDisabled || !start) && "opacity-50")}
         >
           <option value="">
-            {!dateInput
+            {dateMissing
               ? "Pick a date first…"
               : !start
                 ? "Pick start time…"

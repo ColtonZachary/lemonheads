@@ -90,14 +90,14 @@ export default async function HubBlocksPage() {
   }));
 
   return (
-    <div className="max-w-[1400px]">
+    <div className="max-w-4xl">
       <h1 className="font-display text-5xl tracking-[0.04em] text-y">SCHEDULE</h1>
-      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-text/45">
-        Set when each detailer can be booked online and in the hub — vacation,
-        regular days off, or one-time extra shifts.
+      <p className="mt-2 text-sm text-text/45">
+        When each detailer can be booked — weekly off-days, PTO, and one-time
+        exceptions.
       </p>
 
-      <div className="mt-8">
+      <div className="mt-6">
         <ScheduleBlocksHub
           staff={staff ?? []}
           weeklyRows={weeklyRows}

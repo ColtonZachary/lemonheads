@@ -69,16 +69,18 @@ export function ScheduleRulesPanel({
     blocked: filteredGroups.reduce((n, g) => n + g.blocks.length, 0),
   };
 
+  const totalRules = counts.weekly + counts.exceptions + counts.blocked;
+
   return (
-    <section className="rounded-lg border border-white/10 bg-card/30">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+    <section>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
             Active rules
           </h2>
-          <p className="mt-0.5 text-xs text-text/40">
-            {counts.weekly} weekly · {counts.exceptions} exceptions ·{" "}
-            {counts.blocked} blocked
+          <p className="mt-0.5 text-[10px] text-text/35">
+            {totalRules} total · {counts.weekly} weekly · {counts.exceptions}{" "}
+            exceptions · {counts.blocked} blocked
           </p>
         </div>
         {staff.length > 1 ? (
@@ -86,7 +88,7 @@ export function ScheduleRulesPanel({
             value={staffFilter}
             onChange={(e) => setStaffFilter(e.target.value)}
             aria-label="Filter by detailer"
-            className="rounded border border-white/15 bg-dk px-2.5 py-1.5 font-mono text-xs"
+            className="rounded border border-white/15 bg-dk px-2 py-1 font-mono text-[10px]"
           >
             <option value="all">All detailers</option>
             {staff.map((s) => (
@@ -98,51 +100,57 @@ export function ScheduleRulesPanel({
         ) : null}
       </div>
 
-      <div
-        className="flex gap-1 overflow-x-auto border-b border-white/10 px-3 py-2"
-        role="tablist"
-      >
-        {RULES_TABS.map((item) => {
-          const count =
-            item.id === "weekly"
-              ? counts.weekly
-              : item.id === "exceptions"
-                ? counts.exceptions
-                : counts.blocked;
-          const filtered = tabCount[item.id];
-          return (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              aria-selected={tab === item.id}
-              onClick={() => setTab(item.id)}
-              className={cn(
-                "cursor-pointer shrink-0 rounded px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors",
-                tab === item.id
-                  ? "bg-y/15 text-y"
-                  : "text-text/45 hover:bg-white/[0.04] hover:text-text/70",
-              )}
-            >
-              {item.label}
-              <span className="ml-1.5 text-text/35">
-                {staffFilter === "all" ? count : filtered}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      <div className="overflow-hidden rounded-lg border border-white/10 bg-card/30">
+        <div
+          className="flex gap-0.5 overflow-x-auto border-b border-white/10 px-2 py-1.5"
+          role="tablist"
+        >
+          {RULES_TABS.map((item) => {
+            const count =
+              item.id === "weekly"
+                ? counts.weekly
+                : item.id === "exceptions"
+                  ? counts.exceptions
+                  : counts.blocked;
+            const filtered = tabCount[item.id];
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                aria-selected={tab === item.id}
+                onClick={() => setTab(item.id)}
+                className={cn(
+                  "cursor-pointer shrink-0 rounded px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors",
+                  tab === item.id
+                    ? "bg-y/15 text-y"
+                    : "text-text/45 hover:bg-white/[0.04] hover:text-text/70",
+                )}
+              >
+                {item.label}
+                <span className="ml-1 text-text/35">
+                  {staffFilter === "all" ? count : filtered}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
-      <div className="max-h-52 overflow-y-auto px-4 py-3">
-        {tab === "weekly" && (
-          <WeeklyBlocksList blocks={filteredWeekly} variant="panel" />
-        )}
-        {tab === "exceptions" && (
-          <OpenDayOverridesList overrides={filteredOpen} variant="panel" />
-        )}
-        {tab === "blocked" && (
-          <ScheduleBlocksList groups={filteredGroups} embedded variant="panel" />
-        )}
+        <div className="max-h-56 overflow-y-auto px-3 py-2">
+          {tab === "weekly" && (
+            <WeeklyBlocksList blocks={filteredWeekly} variant="panel" />
+          )}
+          {tab === "exceptions" && (
+            <OpenDayOverridesList overrides={filteredOpen} variant="panel" />
+          )}
+          {tab === "blocked" && (
+            <ScheduleBlocksList
+              groups={filteredGroups}
+              embedded
+              variant="panel"
+            />
+          )}
+        </div>
       </div>
     </section>
   );

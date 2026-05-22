@@ -9,15 +9,43 @@ import {
 import { Button } from "@/components/ui/button";
 import type { StaffDateOverride } from "@/lib/bookings/date-overrides";
 import { dateInputToLabel } from "@/lib/hub/schedule-labels";
-import { cn } from "@/lib/utils";
 
 const EMPTY: HubBlockActionState = { ok: false, message: "" };
 
-function DeleteOpenDayButton({ id }: { id: string }) {
+function DeleteOpenDayButton({ id, compact }: { id: string; compact?: boolean }) {
   const [state, action, pending] = useActionState(
     deleteOpenDayOverride.bind(null, id),
     EMPTY,
   );
+
+  if (compact) {
+    return (
+      <form
+        action={action}
+        className="inline"
+        onSubmit={(e) => {
+          if (
+            !confirm(
+              "Remove this exception? They will not be bookable on this date if their weekly schedule says off.",
+            )
+          ) {
+            e.preventDefault();
+          }
+        }}
+      >
+        <button
+          type="submit"
+          disabled={pending}
+          className="cursor-pointer font-mono text-[9px] text-text/40 hover:text-red-300 disabled:opacity-50"
+        >
+          {pending ? "…" : "Remove"}
+        </button>
+        {!state.ok && state.message && (
+          <span className="ml-1 font-mono text-[9px] text-red-300">{state.message}</span>
+        )}
+      </form>
+    );
+  }
 
   return (
     <form
@@ -64,6 +92,40 @@ export function OpenDayOverridesList({
     );
   }
 
+  const sorted = [...overrides].sort((a, b) =>
+    a.override_date.localeCompare(b.override_date),
+  );
+
+  if (variant === "panel") {
+    return (
+      <ul className="divide-y divide-white/5">
+        {sorted.map((o) => (
+          <li
+            key={o.id}
+            className="flex flex-wrap items-center justify-between gap-2 py-2"
+          >
+            <div className="min-w-0 text-[11px] text-text/55">
+              <span className="font-mono text-xs text-y/85">
+                {o.staff_members?.display_name ?? "—"}
+              </span>
+              <span className="mx-1.5 text-text/25">·</span>
+              <span className="text-emerald-200/80">
+                {dateInputToLabel(o.override_date)}
+              </span>
+              {o.reason ? (
+                <>
+                  <span className="mx-1.5 text-text/25">·</span>
+                  {o.reason}
+                </>
+              ) : null}
+            </div>
+            <DeleteOpenDayButton id={o.id} compact />
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
   const byStaff = new Map<string, StaffDateOverride[]>();
   for (const o of overrides) {
     const name = o.staff_members?.display_name ?? "Unknown";
@@ -73,14 +135,11 @@ export function OpenDayOverridesList({
   }
 
   return (
-    <ul className={variant === "panel" ? "space-y-2" : "space-y-4"}>
+    <ul className="space-y-4">
       {[...byStaff.entries()].map(([name, staffOverrides]) => (
         <li
           key={name}
-          className={cn(
-            "rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04]",
-            variant === "panel" ? "px-3 py-2" : "px-4 py-3.5",
-          )}
+          className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04] px-4 py-3.5"
         >
           <div className="font-mono text-sm text-y/85">{name}</div>
           <ul className="mt-3 space-y-2">
