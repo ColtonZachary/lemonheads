@@ -8,6 +8,7 @@ import {
   createHubBooking,
   type HubBookingActionState,
 } from "@/app/actions/hub-bookings";
+import { CustomerBookingLookup } from "@/components/hub/customer-booking-lookup";
 import { HubDatePicker } from "@/components/hub/hub-date-picker";
 import { HubTimeSelect } from "@/components/hub/hub-time-select";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,9 @@ export function BookingCreateForm({
   const draft = state.draft ?? baseDraft;
   const [dateInput, setDateInput] = useState(draft.appointment_date);
   const [time, setTime] = useState(draft.time);
+  const [customerName, setCustomerName] = useState(draft.customer_name);
+  const [phone, setPhone] = useState(draft.phone);
+  const [email, setEmail] = useState(draft.email);
 
   const formKey = useMemo(() => {
     if (state.draft) {
@@ -70,12 +74,25 @@ export function BookingCreateForm({
   useEffect(() => {
     setDateInput(draft.appointment_date);
     setTime(draft.time);
-  }, [formSeed, draft.appointment_date, draft.time]);
+    setCustomerName(draft.customer_name);
+    setPhone(draft.phone);
+    setEmail(draft.email);
+  }, [
+    formSeed,
+    draft.appointment_date,
+    draft.time,
+    draft.customer_name,
+    draft.phone,
+    draft.email,
+  ]);
 
   useEffect(() => {
     if (!state.ok && state.draft) {
       setDateInput(state.draft.appointment_date);
       setTime(state.draft.time);
+      setCustomerName(state.draft.customer_name);
+      setPhone(state.draft.phone);
+      setEmail(state.draft.email);
       errorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [state]);
@@ -106,7 +123,15 @@ export function BookingCreateForm({
         <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-y">
           Customer
         </h2>
-        <div className="mt-5 grid gap-5 sm:grid-cols-2">
+        <CustomerBookingLookup
+          compact={compact}
+          onSelect={(pick) => {
+            setCustomerName(pick.displayName);
+            setPhone(pick.phone);
+            setEmail(pick.email);
+          }}
+        />
+        <div className="grid gap-5 sm:grid-cols-2">
           <label className="block">
             <span className={labelClass}>Name *</span>
             <input
@@ -114,7 +139,8 @@ export function BookingCreateForm({
               required
               className={fieldClass}
               placeholder="Jane Smith"
-              defaultValue={draft.customer_name}
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
             />
           </label>
           <label className="block">
@@ -125,7 +151,8 @@ export function BookingCreateForm({
               required
               className={fieldClass}
               placeholder="405-555-0100"
-              defaultValue={draft.phone}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
             />
           </label>
           <label className="block sm:col-span-2">
@@ -136,7 +163,8 @@ export function BookingCreateForm({
               required
               className={fieldClass}
               placeholder="jane@example.com"
-              defaultValue={draft.email}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </label>
         </div>
