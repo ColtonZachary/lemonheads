@@ -15,6 +15,12 @@ const settingsLinks = [
     description: "ZIP prefixes and city names we service for mobile bookings",
     done: true,
   },
+  {
+    href: "/hub/settings/appearance",
+    title: "Hub colors",
+    description: "Accent, backgrounds, text, and borders for your hub view",
+    done: true,
+  },
 ] as const;
 
 export default async function HubSettingsPage() {
