@@ -20,6 +20,9 @@ function revalidateStaffPaths() {
   revalidatePath(STAFF_PATH);
   revalidatePath("/hub/bookings/new");
   revalidatePath("/hub/blocks");
+  revalidatePath("/hub/reports");
+  revalidatePath("/hub/pay");
+  revalidatePath("/hub/settings/pay-rates");
   revalidatePath("/team");
   revalidatePath("/book");
 }
@@ -110,6 +113,8 @@ export async function updateStaffMember(
   const role_label = String(formData.get("role_label") ?? "").trim();
   const bio = String(formData.get("bio") ?? "").trim();
   const is_detailer = String(formData.get("is_detailer") ?? "") === "on";
+  const is_senior_detailer =
+    is_detailer && String(formData.get("is_senior_detailer") ?? "") === "on";
   const is_bookable = String(formData.get("is_bookable") ?? "") === "on";
   const sort_order = parseSortOrder(String(formData.get("sort_order") ?? "0"));
   const active = String(formData.get("active") ?? "") === "on";
@@ -135,6 +140,7 @@ export async function updateStaffMember(
       role_label,
       bio,
       is_detailer,
+      is_senior_detailer,
       is_bookable: is_detailer ? is_bookable : false,
       sort_order,
       active,

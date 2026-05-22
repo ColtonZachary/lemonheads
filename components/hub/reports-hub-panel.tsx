@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { getCentralTodayDateInput } from "@/lib/bookings/scheduling-limits";
+import { ReportsDetailerPaySection } from "@/components/hub/reports-detailer-pay";
+import type { DetailerPayReport } from "@/lib/hub/detailer-pay-report";
 import {
   formatReportCents,
   formatReportHours,
@@ -35,44 +37,62 @@ function StatCard({
   );
 }
 
-function presetHref(preset: string) {
-  return `/hub/reports?preset=${preset}`;
-}
-
 export function ReportsPeriodForm({
   from,
   to,
   preset,
+  action = "/hub/reports",
+  showThisWeek,
 }: {
   from: string;
   to: string;
   preset?: string;
+  action?: string;
+  showThisWeek?: boolean;
 }) {
   const today = getCentralTodayDateInput();
   const monthStart = `${today.slice(0, 7)}-01`;
 
+  function presetLink(p: string) {
+    return `${action}?preset=${p}`;
+  }
+
   return (
     <div className="mt-8 space-y-4 rounded-md border border-white/10 bg-card2 p-5">
       <div className="flex flex-wrap gap-2">
+        {showThisWeek ? (
+          <Button
+            asChild
+            variant={preset === "thisWeek" ? "primary" : "outline"}
+            size="sm"
+            className={cn(preset === "thisWeek" && "border-y/40")}
+          >
+            <Link href={presetLink("thisWeek")}>This week</Link>
+          </Button>
+        ) : null}
         <Button
           asChild
-          variant={!preset ? "primary" : "outline"}
+          variant={
+            !preset && from === monthStart && to === today ? "primary" : "outline"
+          }
           size="sm"
-          className={cn(!preset && "border-y/40")}
+          className={cn(
+            !preset && from === monthStart && to === today && "border-y/40",
+          )}
         >
-          <Link href={`/hub/reports?from=${monthStart}&to=${today}`}>
+          <Link href={`${action}?from=${monthStart}&to=${today}`}>
             This month
           </Link>
         </Button>
         <Button asChild variant={preset === "last30" ? "primary" : "outline"} size="sm">
-          <Link href={presetHref("last30")}>Last 30 days</Link>
+          <Link href={presetLink("last30")}>Last 30 days</Link>
         </Button>
         <Button asChild variant={preset === "lastMonth" ? "primary" : "outline"} size="sm">
-          <Link href={presetHref("lastMonth")}>Last month</Link>
+          <Link href={presetLink("lastMonth")}>Last month</Link>
         </Button>
       </div>
 
-      <form method="get" action="/hub/reports" className="flex flex-wrap items-end gap-4">
+      <form method="get" action={action} className="flex flex-wrap items-end gap-4">
         <label className="block">
           <span className={labelClass}>From (Central)</span>
           <input
@@ -80,7 +100,7 @@ export function ReportsPeriodForm({
             name="from"
             required
             defaultValue={from}
-            className={fieldClass}
+            className={cn(fieldClass, "hub-date-input")}
           />
         </label>
         <label className="block">
@@ -90,7 +110,7 @@ export function ReportsPeriodForm({
             name="to"
             required
             defaultValue={to}
-            className={fieldClass}
+            className={cn(fieldClass, "hub-date-input")}
           />
         </label>
         <Button type="submit">Update range</Button>
@@ -165,7 +185,19 @@ function BreakdownTable({
   );
 }
 
-export function ReportsHubPanel({ report }: { report: HubReportsSnapshot }) {
+export function ReportsHubPanel({
+  report,
+  detailerPay,
+  payWeekLabel,
+  payWeekPrevHref,
+  payWeekNextHref,
+}: {
+  report: HubReportsSnapshot;
+  detailerPay: DetailerPayReport;
+  payWeekLabel: string;
+  payWeekPrevHref: string;
+  payWeekNextHref: string;
+}) {
   const { summary } = report;
 
   return (
@@ -226,6 +258,13 @@ export function ReportsHubPanel({ report }: { report: HubReportsSnapshot }) {
           rows={report.byCity}
         />
       </div>
+
+      <ReportsDetailerPaySection
+        pay={detailerPay}
+        payWeekLabel={payWeekLabel}
+        payWeekPrevHref={payWeekPrevHref}
+        payWeekNextHref={payWeekNextHref}
+      />
     </div>
   );
 }

@@ -184,7 +184,7 @@ export function HubDatePicker({
             const parsed = parseDateInput(e.target.value);
             if (parsed) setCursor({ y: parsed.y, m: parsed.m });
           }}
-          className={fieldClass}
+          className={cn(fieldClass, "hub-date-input")}
         />
       )}
     </div>

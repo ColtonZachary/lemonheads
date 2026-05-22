@@ -186,7 +186,7 @@ function PromoEditForm({
             name="valid_from"
             type="date"
             defaultValue={dateInputValue(promo.valid_from)}
-            className={fieldClass}
+            className={cn(fieldClass, "hub-date-input")}
           />
         </label>
         <label className="block">
@@ -195,7 +195,7 @@ function PromoEditForm({
             name="valid_until"
             type="date"
             defaultValue={dateInputValue(promo.valid_until)}
-            className={fieldClass}
+            className={cn(fieldClass, "hub-date-input")}
           />
         </label>
         <label className="flex items-end gap-2 pb-2 text-sm sm:col-span-2">
@@ -322,11 +322,19 @@ export function PromoCodesPanel({
           </label>
           <label className="block">
             <span className={labelClass}>Valid from (optional)</span>
-            <input name="valid_from" type="date" className={fieldClass} />
+            <input
+              name="valid_from"
+              type="date"
+              className={cn(fieldClass, "hub-date-input")}
+            />
           </label>
           <label className="block">
             <span className={labelClass}>Valid until (optional)</span>
-            <input name="valid_until" type="date" className={fieldClass} />
+            <input
+              name="valid_until"
+              type="date"
+              className={cn(fieldClass, "hub-date-input")}
+            />
           </label>
           <PackageScopeFields packageOptions={packageOptions} defaultScope="all" />
         </div>

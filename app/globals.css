@@ -98,6 +98,24 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
+/* Native date inputs on dark hub fields — visible calendar icon */
+.hub-date-input {
+  color-scheme: dark;
+}
+
+.hub-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 1;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 0.125rem;
+  filter: invert(1) brightness(1.15);
+}
+
+.hub-date-input::-webkit-calendar-picker-indicator:hover {
+  filter: invert(1) brightness(1.35);
+}
+
 /* ────────────────────────────────────────────────────────────
    FILM GRAIN OVERLAY (rendered globally via <Grain />)
 ─────────────────────────────────────────────────────────────*/

@@ -1,21 +1,49 @@
 import { ReportsHubPanel, ReportsPeriodForm } from "@/components/hub/reports-hub-panel";
 import { requireHubAccess } from "@/lib/auth/require-hub";
+import { fetchDetailerPayReport } from "@/lib/hub/detailer-pay-report";
 import {
+  buildReportsPageHref,
   fetchHubReports,
   resolveReportDateRange,
 } from "@/lib/hub/reports-db";
+import {
+  parseWeekSearchParam,
+  weekRangeLabel,
+} from "@/lib/hub/week-calendar";
+import { addDaysToDateInput } from "@/lib/bookings/scheduling-limits";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function HubReportsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; preset?: string }>;
+  searchParams: Promise<{
+    from?: string;
+    to?: string;
+    preset?: string;
+    payWeek?: string;
+  }>;
 }) {
   await requireHubAccess({ managerOnly: true });
   const sp = await searchParams;
   const { from, to } = resolveReportDateRange(sp);
+  const payWeekMonday = parseWeekSearchParam(sp.payWeek);
+  const payWeekSunday = addDaysToDateInput(payWeekMonday, 6);
+  const payWeekLabel = weekRangeLabel(payWeekMonday);
+  const periodQuery = { from: sp.from, to: sp.to, preset: sp.preset };
+  const payWeekPrevHref = buildReportsPageHref({
+    ...periodQuery,
+    payWeek: addDaysToDateInput(payWeekMonday, -7),
+  });
+  const payWeekNextHref = buildReportsPageHref({
+    ...periodQuery,
+    payWeek: addDaysToDateInput(payWeekMonday, 7),
+  });
+
   const supabase = await createSupabaseServerClient();
-  const report = await fetchHubReports(supabase!, from, to);
+  const [report, detailerPay] = await Promise.all([
+    fetchHubReports(supabase!, from, to),
+    fetchDetailerPayReport(supabase!, payWeekMonday, payWeekSunday),
+  ]);
 
   return (
     <div>
@@ -30,7 +58,13 @@ export default async function HubReportsPage({
         preset={sp.preset}
       />
 
-      <ReportsHubPanel report={report} />
+      <ReportsHubPanel
+        report={report}
+        detailerPay={detailerPay}
+        payWeekLabel={payWeekLabel}
+        payWeekPrevHref={payWeekPrevHref}
+        payWeekNextHref={payWeekNextHref}
+      />
     </div>
   );
 }

@@ -19,7 +19,10 @@ const managerLinks = [
   { href: "/hub/settings", label: "Settings" },
 ] as const;
 
-const detailerLinks = [{ href: "/hub/calendar", label: "My schedule" }] as const;
+const detailerLinks = [
+  { href: "/hub/calendar", label: "My schedule" },
+  { href: "/hub/pay", label: "My pay" },
+] as const;
 
 export function HubNav({ access }: { access: HubAccess }) {
   const pathname = usePathname();
@@ -68,18 +71,19 @@ export function HubNav({ access }: { access: HubAccess }) {
         </Link>
       )}
 
-      <Link
-        href="/hub/settings/appearance"
-        className={cn(
-          "rounded-[4px] px-3 py-2 font-mono text-[11px] uppercase tracking-[0.1em] transition-colors",
-          pathname === "/hub/settings/appearance"
-            ? "bg-y/15 text-y"
-            : "text-text/50 hover:bg-white/[0.04] hover:text-text",
-          access.isManager ? "" : "mt-4",
-        )}
-      >
-        Hub colors
-      </Link>
+      {!access.isManager && (
+        <Link
+          href="/hub/settings/appearance"
+          className={cn(
+            "mt-4 rounded-[4px] px-3 py-2 font-mono text-[11px] uppercase tracking-[0.1em] transition-colors",
+            pathname === "/hub/settings/appearance"
+              ? "bg-y/15 text-y"
+              : "text-text/50 hover:bg-white/[0.04] hover:text-text",
+          )}
+        >
+          Hub colors
+        </Link>
+      )}
 
       <form action="/auth/signout" method="post" className="mt-auto px-2 pt-8">
         <button

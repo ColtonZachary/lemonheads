@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { formatHubPriceCents } from "@/lib/hub/booking-price-display";
+import { weekStartMonday } from "@/lib/hub/detailer-pay-report";
 import type { CatalogAddonRow } from "@/lib/hub/catalog-db";
 import { fetchCatalogAddons } from "@/lib/hub/catalog-db";
 import {
@@ -134,6 +135,10 @@ export function resolveReportDateRange(sp: {
     return { from, to: lastPrev };
   }
 
+  if (sp.preset === "thisWeek") {
+    return { from: weekStartMonday(today), to: today };
+  }
+
   const from = valid(sp.from) ? sp.from! : `${today.slice(0, 7)}-01`;
   const to = valid(sp.to) ? sp.to! : today;
   if (from > to) return { from: to, to: from };
@@ -244,12 +249,26 @@ export async function fetchHubReports(
     return buildReportsSnapshot([], from, to, catalog);
   }
 
-  return buildReportsSnapshot(
-    (bookingsResult.data ?? []) as ReportBookingRow[],
-    from,
-    to,
-    catalog,
-  );
+  const rows = (bookingsResult.data ?? []) as ReportBookingRow[];
+  return buildReportsSnapshot(rows, from, to, catalog);
+}
+
+/** Preserve revenue period filters when changing detailer pay week. */
+export function buildReportsPageHref(opts: {
+  from?: string;
+  to?: string;
+  preset?: string;
+  payWeek: string;
+}): string {
+  const p = new URLSearchParams();
+  if (opts.preset) {
+    p.set("preset", opts.preset);
+  } else {
+    if (opts.from) p.set("from", opts.from);
+    if (opts.to) p.set("to", opts.to);
+  }
+  p.set("payWeek", opts.payWeek);
+  return `/hub/reports?${p.toString()}`;
 }
 
 export function formatReportCents(cents: number): string {

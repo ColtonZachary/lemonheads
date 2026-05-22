@@ -43,6 +43,11 @@ function StaffBadgesWithBlocks({
           Detailer
         </span>
       ) : null}
+      {member.is_detailer && member.is_senior_detailer ? (
+        <span className="rounded bg-y/10 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.08em] text-y/75">
+          Senior
+        </span>
+      ) : null}
       {member.is_bookable ? (
         <span className="rounded bg-y/10 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.08em] text-y/70">
           Bookable
@@ -168,6 +173,17 @@ function StaffEditForm({
           />
           Bookable
         </label>
+        {member.is_detailer ? (
+          <label className="flex items-center gap-1.5">
+            <input
+              type="checkbox"
+              name="is_senior_detailer"
+              defaultChecked={member.is_senior_detailer}
+              className="size-3.5"
+            />
+            Senior detailer (higher package pay)
+          </label>
+        ) : null}
         <label className="flex items-center gap-1.5">
           <input
             type="checkbox"

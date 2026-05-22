@@ -144,7 +144,9 @@ export function WeekCalendar({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => router.push(`/hub/calendar?week=${prevWeek}`)}
+            onClick={() =>
+              router.push(`/hub/calendar?week=${prevWeek}`, { scroll: false })
+            }
           >
             ← Prev
           </Button>
@@ -155,7 +157,9 @@ export function WeekCalendar({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => router.push(`/hub/calendar?week=${nextWeek}`)}
+            onClick={() =>
+              router.push(`/hub/calendar?week=${nextWeek}`, { scroll: false })
+            }
           >
             Next →
           </Button>

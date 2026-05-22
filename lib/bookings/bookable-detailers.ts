@@ -10,6 +10,7 @@ export type StaffMemberRow = {
   role_label: string;
   bio: string;
   is_detailer: boolean;
+  is_senior_detailer: boolean;
   is_bookable: boolean;
   active: boolean;
   sort_order: number;
@@ -45,7 +46,7 @@ export async function fetchStaffMembers(
   const { data, error } = await client
     .from("staff_members")
     .select(
-      "id, slug, display_name, role_label, bio, is_detailer, is_bookable, active, sort_order, profile_id, profiles(email, full_name, role)",
+      "id, slug, display_name, role_label, bio, is_detailer, is_senior_detailer, is_bookable, active, sort_order, profile_id, profiles(email, full_name, role)",
     )
     .order("sort_order")
     .order("display_name");
@@ -64,6 +65,7 @@ export async function fetchStaffMembers(
     role_label: row.role_label,
     bio: row.bio,
     is_detailer: row.is_detailer,
+    is_senior_detailer: Boolean(row.is_senior_detailer),
     is_bookable: row.is_bookable,
     active: row.active,
     sort_order: row.sort_order,
