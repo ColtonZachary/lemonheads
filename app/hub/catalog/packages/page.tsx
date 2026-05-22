@@ -20,12 +20,12 @@ export default async function HubCatalogPackagesPage() {
       </Link>
 
       <h1 className="mt-4 font-display text-5xl tracking-[0.04em] text-y">PACKAGES</h1>
-      <p className="mt-2 max-w-2xl text-sm text-text/45">
-        Edit names, copy, duration, featured flag, and price per vehicle type. Deactivate
-        instead of delete if bookings reference a package.
+      <p className="mt-2 text-sm text-text/45">
+        Site and booking services — edit one package at a time; deactivate instead of delete
+        when bookings reference a package.
       </p>
 
-      <div className="mt-10 max-w-3xl">
+      <div className="mt-6 max-w-4xl">
         <CatalogPackagesPanel packages={packages} />
       </div>
     </div>

@@ -20,12 +20,11 @@ export default async function HubCatalogLocationsPage() {
       </Link>
 
       <h1 className="mt-4 font-display text-5xl tracking-[0.04em] text-y">LOCATION TYPES</h1>
-      <p className="mt-2 max-w-2xl text-sm text-text/45">
-        Choices shown on the booking form for where the vehicle will be (e.g. driveway,
-        apartment garage).
+      <p className="mt-2 text-sm text-text/45">
+        Where customers can have their vehicle detailed — compact list, edit one at a time.
       </p>
 
-      <div className="mt-10 max-w-2xl">
+      <div className="mt-6 max-w-4xl">
         <CatalogLocationsPanel locations={locations} />
       </div>
     </div>

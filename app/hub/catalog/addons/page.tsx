@@ -20,11 +20,11 @@ export default async function HubCatalogAddonsPage() {
       </Link>
 
       <h1 className="mt-4 font-display text-5xl tracking-[0.04em] text-y">ADD-ONS</h1>
-      <p className="mt-2 max-w-2xl text-sm text-text/45">
-        Optional services customers can add when booking. Icon names match the site icon set.
+      <p className="mt-2 text-sm text-text/45">
+        Optional extras on the booking flow — tap Edit on a row to change pricing or copy.
       </p>
 
-      <div className="mt-10 max-w-2xl">
+      <div className="mt-6 max-w-4xl">
         <CatalogAddonsPanel addons={addons} />
       </div>
     </div>
