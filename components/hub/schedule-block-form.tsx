@@ -7,14 +7,15 @@ import {
   type HubBlockActionState,
 } from "@/app/actions/hub-blocks";
 import { HubDatePicker } from "@/components/hub/hub-date-picker";
+import { HubDateRangePicker } from "@/components/hub/hub-date-range-picker";
 import { HubMultiDatePicker } from "@/components/hub/hub-multi-date-picker";
 import { HubTimeRangeSelect } from "@/components/hub/hub-time-select";
 import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icons";
 import { BOOKING_TIME_SLOTS } from "@/lib/bookings/constants";
 import { WEEKDAY_LABELS } from "@/lib/bookings/weekly-blocks";
 import {
   intentToBlockMode,
-  SCHEDULE_INTENTS,
   TIME_OFF_SHAPES,
   type ScheduleIntent,
   type TimeOffShape,
@@ -25,39 +26,70 @@ import { cn } from "@/lib/utils";
 const EMPTY: HubBlockActionState = { ok: false, message: "" };
 
 const fieldClass =
-  "mt-1 w-full rounded border border-white/15 bg-dk px-3 py-2 font-mono text-sm";
+  "mt-1.5 w-full rounded-md border border-white/15 bg-dk px-3 py-2.5 text-sm";
 const labelClass =
   "font-mono text-[9px] uppercase tracking-[0.12em] text-text/40";
 
 const INTENT_FORM_COPY: Record<
   ScheduleIntent,
-  { heading: string; submit: string; stepWhen: string }
+  { submit: string; stepWhen: string }
 > = {
   time_off: {
-    heading: "Block time on the calendar",
     submit: "Save blocked time",
-    stepWhen: "When are they unavailable?",
+    stepWhen: "Which dates?",
   },
   weekly: {
-    heading: "Set regular weekly days off",
     submit: "Save weekly pattern",
-    stepWhen: "Which days each week?",
+    stepWhen: "Which weekdays?",
   },
   exception: {
-    heading: "Allow bookings on one off-day",
-    submit: "Allow bookings this day",
-    stepWhen: "Which date will they work?",
+    submit: "Allow bookings",
+    stepWhen: "Which date?",
   },
 };
+
+function FormStep({
+  number,
+  title,
+  children,
+  active,
+}: {
+  number: number;
+  title: string;
+  children: React.ReactNode;
+  active?: boolean;
+}) {
+  return (
+    <section
+      className={cn(
+        "rounded-lg border p-4 transition-colors",
+        active ? "border-y/25 bg-y/[0.03]" : "border-white/10 bg-white/[0.02]",
+      )}
+    >
+      <div className="mb-3 flex items-center gap-2.5">
+        <span
+          className={cn(
+            "flex size-7 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-bold",
+            active ? "bg-y/20 text-y" : "bg-white/10 text-text/50",
+          )}
+        >
+          {number}
+        </span>
+        <h3 className="text-sm font-medium text-text/85">{title}</h3>
+      </div>
+      {children}
+    </section>
+  );
+}
 
 export function ScheduleBlockForm({
   staff,
   intent,
-  onIntentChange,
+  intentTitle,
 }: {
   staff: { id: string; display_name: string }[];
   intent: ScheduleIntent;
-  onIntentChange: (intent: ScheduleIntent) => void;
+  intentTitle: string;
 }) {
   const [state, action, pending] = useActionState(createScheduleBlock, EMPTY);
   const [timeOffShape, setTimeOffShape] = useState<TimeOffShape>("single");
@@ -78,20 +110,20 @@ export function ScheduleBlockForm({
   const preview = useMemo(() => {
     if (!staffName) return null;
     if (intent === "weekly") {
-      return `${staffName}'s weekly pattern will be saved. Uncheck all days to clear their recurring off-days.`;
+      return `${staffName}'s weekly pattern will be saved. Uncheck all days to clear recurring off-days.`;
     }
     if (intent === "exception" && startDate) {
       return `${staffName} can be booked on ${dateInputToLabel(startDate)} even if that weekday is normally off.`;
     }
     if (intent === "time_off") {
       if (mode === "range" && startDate && endDate) {
-        return `${staffName} will be blocked ${dateInputToLabel(startDate)} through ${dateInputToLabel(endDate)}${allDay ? " (all day each day)" : ""}.`;
+        return `${staffName} blocked ${dateInputToLabel(startDate)} – ${dateInputToLabel(endDate)}${allDay ? ", all day each day" : ""}.`;
       }
       if (mode === "custom" && customDates.length > 0) {
-        return `${staffName} will be blocked on ${customDates.length} selected day${customDates.length === 1 ? "" : "s"}.`;
+        return `${staffName} blocked on ${customDates.length} selected day${customDates.length === 1 ? "" : "s"}.`;
       }
       if (startDate) {
-        return `${staffName} will be blocked on ${dateInputToLabel(startDate)}${allDay ? " (all day)" : ""}.`;
+        return `${staffName} blocked on ${dateInputToLabel(startDate)}${allDay ? " (all day)" : ""}.`;
       }
     }
     return null;
@@ -110,71 +142,55 @@ export function ScheduleBlockForm({
 
   if (!staff.length) {
     return (
-      <p className="rounded-md border border-white/10 p-4 font-mono text-xs text-text/45">
-        No bookable staff in the database. Run{" "}
-        <code className="text-y/70">npm run hub:seed</code> first.
+      <p className="rounded-lg border border-white/10 bg-white/[0.02] p-4 text-sm text-text/45">
+        No active detailers yet. Add staff under{" "}
+        <span className="text-y/80">Staff</span> first.
       </p>
     );
   }
 
   const showTimedBlock = intent === "time_off";
   const showAllDayOption = intent === "time_off";
+  const step2Active = Boolean(staffId);
 
   return (
-    <form action={action} className="rounded-md border border-white/10 p-6 sm:p-7">
+    <form
+      action={action}
+      className="rounded-lg border border-white/10 bg-card/30 p-4 sm:p-5"
+    >
       <input type="hidden" name="block_mode" value={mode} />
 
-      <div className="flex flex-wrap gap-2">
-        {SCHEDULE_INTENTS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onIntentChange(item.id)}
-            className={cn(
-              "cursor-pointer rounded-full border px-3 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors",
-              intent === item.id
-                ? "border-y/40 bg-y/15 text-y"
-                : "border-white/10 text-text/40 hover:text-text/65",
-            )}
-          >
-            {item.title}
-          </button>
-        ))}
-      </div>
-
-      <h2 className="mt-5 font-mono text-[10px] uppercase tracking-[0.15em] text-y">
-        {copy.heading}
-      </h2>
+      <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-y/80">
+        {intentTitle}
+      </p>
 
       {intent === "time_off" && (
-        <div className="mt-4 flex flex-wrap gap-1 rounded border border-white/10 p-0.5">
+        <div className="mt-3 grid grid-cols-3 gap-1 rounded-lg border border-white/10 bg-dk/50 p-1">
           {TIME_OFF_SHAPES.map((shape) => (
             <button
               key={shape.id}
               type="button"
               onClick={() => setTimeOffShape(shape.id)}
-              title={shape.hint}
               className={cn(
-                "cursor-pointer rounded px-3 py-2 text-left transition-colors",
+                "cursor-pointer rounded-md px-2 py-2.5 text-center transition-colors",
                 timeOffShape === shape.id
-                  ? "bg-white/10 text-text/90"
-                  : "text-text/45 hover:text-text/70",
+                  ? "bg-y/15 text-y"
+                  : "text-text/45 hover:bg-white/[0.05] hover:text-text/70",
               )}
             >
-              <span className="block font-mono text-[9px] uppercase tracking-[0.1em]">
-                {shape.label}
+              <span className="block text-xs font-medium">{shape.label}</span>
+              <span className="mt-0.5 block text-[10px] text-text/35">
+                {shape.hint}
               </span>
-              <span className="mt-0.5 block text-[10px] text-text/35">{shape.hint}</span>
             </button>
           ))}
         </div>
       )}
 
-      <div className="mt-6 space-y-6">
-        <div>
-          <p className={labelClass}>Step 1 · Who</p>
-          <label className="mt-2 block">
-            <span className="sr-only">Team member</span>
+      <div className="mt-4 space-y-3">
+        <FormStep number={1} title="Who is this for?" active={!staffId}>
+          <label className="block">
+            <span className={labelClass}>Detailer</span>
             <select
               name="staff_member_id"
               required
@@ -183,7 +199,7 @@ export function ScheduleBlockForm({
               onChange={(e) => setStaffId(e.target.value)}
             >
               <option value="" disabled>
-                Select detailer…
+                Select a team member…
               </option>
               {staff.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -192,56 +208,48 @@ export function ScheduleBlockForm({
               ))}
             </select>
           </label>
-        </div>
+        </FormStep>
 
-        <div>
-          <p className={labelClass}>Step 2 · {copy.stepWhen}</p>
-          <div className="mt-3 grid gap-5 sm:grid-cols-2">
+        <FormStep number={2} title={copy.stepWhen} active={step2Active}>
+          <div className="grid gap-4 sm:grid-cols-2">
             {(mode === "single" || mode === "open_day") && (
               <HubDatePicker
                 name="appointment_date"
-                label={mode === "open_day" ? "Date they will work" : "Date"}
+                label={mode === "open_day" ? "Work date" : "Date"}
                 disablePast
                 onDateChange={handleStartDateChange}
               />
             )}
 
             {mode === "range" && (
-              <>
-                <HubDatePicker
-                  name="appointment_date"
-                  label="First day off"
-                  disablePast
-                  onDateChange={handleStartDateChange}
-                />
-                <HubDatePicker
-                  name="appointment_date_end"
-                  label="Last day off"
-                  disablePast
-                  onDateChange={setEndDate}
-                />
-              </>
+              <HubDateRangePicker
+                onRangeChange={(s, e) => {
+                  setStartDate(s);
+                  setEndDate(e);
+                }}
+              />
             )}
 
             {mode === "custom" && (
               <div className="sm:col-span-2">
                 <HubMultiDatePicker onSelectionChange={setCustomDates} />
                 {customDates.length > 0 && (
-                  <p className="mt-2 font-mono text-[9px] text-y/70">
-                    {customDates.length} day{customDates.length === 1 ? "" : "s"} selected
+                  <p className="mt-2 text-xs text-y/80">
+                    {customDates.length} day
+                    {customDates.length === 1 ? "" : "s"} selected
                   </p>
                 )}
               </div>
             )}
 
             {mode === "weekly" && (
-              <fieldset className="block sm:col-span-2">
+              <fieldset className="sm:col-span-2">
                 <legend className="sr-only">Days off each week</legend>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {WEEKDAY_LABELS.map((label, index) => (
                     <label
                       key={label}
-                      className="flex cursor-pointer items-center gap-2 rounded border border-white/10 px-3 py-2.5 text-sm transition-colors hover:border-amber-500/30 hover:bg-amber-500/5"
+                      className="flex cursor-pointer items-center gap-2 rounded-md border border-white/10 px-3 py-2.5 text-sm transition-colors hover:border-amber-500/30 hover:bg-amber-500/5 has-checked:border-amber-500/40 has-checked:bg-amber-500/10"
                     >
                       <input
                         type="checkbox"
@@ -249,23 +257,61 @@ export function ScheduleBlockForm({
                         value={String(index)}
                         className="size-4 accent-amber-400"
                       />
-                      <span className="text-text/75">{label}</span>
+                      <span className="text-text/80">{label}</span>
                     </label>
                   ))}
                 </div>
-                <p className="mt-3 text-sm text-text/40">
-                  Checked days = not bookable every week. Leave all unchecked to remove
-                  their weekly pattern.
+                <p className="mt-2 text-xs text-text/40">
+                  Checked = not bookable every week. Uncheck all to remove their
+                  pattern.
                 </p>
               </fieldset>
             )}
           </div>
-        </div>
 
-        <div>
-          <p className={labelClass}>Step 3 · Note (required)</p>
-          <label className="mt-2 block">
-            <span className="sr-only">Reason</span>
+          {showAllDayOption && (
+            <label className="mt-4 flex items-start gap-3 rounded-md border border-white/10 bg-dk/40 px-3 py-3 text-sm">
+              <input
+                type="checkbox"
+                name="all_day"
+                checked={allDay}
+                onChange={(e) => setAllDay(e.target.checked)}
+                className="mt-0.5 size-4"
+              />
+              <span>
+                <span className="text-text/85">All day (8 AM – 4 PM Central)</span>
+                <span className="mt-0.5 block text-xs text-text/40">
+                  Uncheck for a partial-day block only
+                </span>
+              </span>
+            </label>
+          )}
+
+          {showTimedBlock && !allDay && (
+            <div className="mt-3">
+              <HubTimeRangeSelect
+                dateInput={timeDateInput}
+                startName="start_time"
+                endName="end_time"
+              />
+            </div>
+          )}
+
+          {showTimedBlock && allDay && (
+            <>
+              <input type="hidden" name="start_time" value={BOOKING_TIME_SLOTS[0]} />
+              <input
+                type="hidden"
+                name="end_time"
+                value={BOOKING_TIME_SLOTS[BOOKING_TIME_SLOTS.length - 1]}
+              />
+            </>
+          )}
+        </FormStep>
+
+        <FormStep number={3} title="Short note" active={step2Active}>
+          <label className="block">
+            <span className={labelClass}>Reason (shown to your team)</span>
             <input
               name="reason"
               required
@@ -273,73 +319,40 @@ export function ScheduleBlockForm({
                 intent === "weekly"
                   ? "Does not work weekends"
                   : intent === "exception"
-                    ? "Requested to work this Saturday"
-                    : mode === "custom"
-                      ? "Scattered PTO"
-                      : "Vacation"
+                    ? "Picking up extra Saturday shift"
+                    : "Vacation"
               }
               className={fieldClass}
             />
           </label>
-        </div>
-
-        {showAllDayOption && (
-          <label className="flex items-start gap-3 rounded border border-white/10 px-4 py-3 text-sm">
-            <input
-              type="checkbox"
-              name="all_day"
-              checked={allDay}
-              onChange={(e) => setAllDay(e.target.checked)}
-              className="mt-0.5 size-4"
-            />
-            <span>
-              <span className="text-text/80">All day on each selected date</span>
-              <span className="mt-1 block font-mono text-[9px] text-text/35">
-                8:00 AM – 4:00 PM Central · uncheck for a partial-day block
-              </span>
-            </span>
-          </label>
-        )}
-
-        {showTimedBlock && !allDay && (
-          <HubTimeRangeSelect
-            dateInput={timeDateInput}
-            startName="start_time"
-            endName="end_time"
-          />
-        )}
-
-        {showTimedBlock && allDay && (
-          <>
-            <input type="hidden" name="start_time" value={BOOKING_TIME_SLOTS[0]} />
-            <input
-              type="hidden"
-              name="end_time"
-              value={BOOKING_TIME_SLOTS[BOOKING_TIME_SLOTS.length - 1]}
-            />
-          </>
-        )}
+        </FormStep>
       </div>
 
       {preview && (
-        <p className="mt-5 rounded border border-y/20 bg-y/5 px-4 py-3 text-sm text-y/90">
-          {preview}
-        </p>
+        <div className="mt-4 flex gap-2 rounded-md border border-y/20 bg-y/5 px-3 py-2.5 text-sm text-y/90">
+          <Icon name="check" className="mt-0.5 size-4 shrink-0" />
+          <span>{preview}</span>
+        </div>
       )}
 
       {mode === "weekly" && <input type="hidden" name="appointment_date" value="" />}
 
-      <Button type="submit" className="mt-6 w-full sm:w-auto" disabled={pending}>
+      <Button
+        type="submit"
+        className="mt-5 w-full sm:w-auto"
+        disabled={pending}
+      >
         {pending ? "Saving…" : copy.submit}
       </Button>
 
       {state.message && (
         <p
-          className={`mt-4 rounded-md border px-4 py-3 font-mono text-xs ${
+          className={cn(
+            "mt-4 rounded-md border px-4 py-3 text-sm",
             state.ok
               ? "border-y/30 bg-y/10 text-y"
-              : "border-red-500/30 bg-red-500/10 text-red-200"
-          }`}
+              : "border-red-500/30 bg-red-500/10 text-red-200",
+          )}
           role="status"
         >
           {state.message}

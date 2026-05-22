@@ -8,6 +8,7 @@ import {
 } from "@/app/actions/hub-blocks";
 import { Button } from "@/components/ui/button";
 import { WEEKDAY_LABELS, type StaffWeeklyBlock } from "@/lib/bookings/weekly-blocks";
+import { cn } from "@/lib/utils";
 
 const EMPTY: HubBlockActionState = { ok: false, message: "" };
 
@@ -40,13 +41,19 @@ function DeleteWeeklyButton({ id }: { id: string }) {
   );
 }
 
-export function WeeklyBlocksList({ blocks }: { blocks: StaffWeeklyBlock[] }) {
+export function WeeklyBlocksList({
+  blocks,
+  variant = "default",
+}: {
+  blocks: StaffWeeklyBlock[];
+  variant?: "default" | "panel";
+}) {
   if (!blocks.length) {
     return (
       <p className="text-sm text-text/40">
-        No weekly pattern yet. Use{" "}
-        <span className="text-text/55">Regular days off</span> above — for example
-        check Saturday and Sunday if they never work weekends.
+        {variant === "panel"
+          ? "No weekly off-days match this filter."
+          : "No weekly pattern yet. Choose Regular days off and check the weekdays they never work."}
       </p>
     );
   }
@@ -60,7 +67,7 @@ export function WeeklyBlocksList({ blocks }: { blocks: StaffWeeklyBlock[] }) {
   }
 
   return (
-    <ul className="space-y-4">
+    <ul className={variant === "panel" ? "space-y-2" : "space-y-4"}>
       {[...byStaff.entries()].map(([name, staffBlocks]) => {
         const sorted = [...staffBlocks].sort((a, b) => a.day_of_week - b.day_of_week);
         const reason = sorted.find((b) => b.reason)?.reason;
@@ -68,7 +75,10 @@ export function WeeklyBlocksList({ blocks }: { blocks: StaffWeeklyBlock[] }) {
         return (
           <li
             key={name}
-            className="rounded border border-amber-500/15 bg-amber-500/[0.03] px-4 py-3"
+            className={cn(
+              "rounded-lg border border-amber-500/20 bg-amber-500/[0.04]",
+              variant === "panel" ? "px-3 py-2" : "px-4 py-3.5",
+            )}
           >
             <div className="font-mono text-sm text-y/85">{name}</div>
             <p className="mt-1 text-sm text-text/50">

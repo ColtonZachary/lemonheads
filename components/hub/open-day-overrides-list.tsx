@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import type { StaffDateOverride } from "@/lib/bookings/date-overrides";
 import { dateInputToLabel } from "@/lib/hub/schedule-labels";
+import { cn } from "@/lib/utils";
 
 const EMPTY: HubBlockActionState = { ok: false, message: "" };
 
@@ -48,15 +49,17 @@ function DeleteOpenDayButton({ id }: { id: string }) {
 
 export function OpenDayOverridesList({
   overrides,
+  variant = "default",
 }: {
   overrides: StaffDateOverride[];
+  variant?: "default" | "panel";
 }) {
   if (!overrides.length) {
     return (
       <p className="text-sm text-text/40">
-        No exceptions yet. Use{" "}
-        <span className="text-text/55">Working an off day</span> when someone wants
-        to work a Saturday (or other day) they are normally off every week.
+        {variant === "panel"
+          ? "No extra work days match this filter."
+          : "No exceptions yet. Use Working an off day when they pick up a shift on a normal off-day."}
       </p>
     );
   }
@@ -70,11 +73,14 @@ export function OpenDayOverridesList({
   }
 
   return (
-    <ul className="space-y-4">
+    <ul className={variant === "panel" ? "space-y-2" : "space-y-4"}>
       {[...byStaff.entries()].map(([name, staffOverrides]) => (
         <li
           key={name}
-          className="rounded border border-emerald-500/15 bg-emerald-500/[0.03] px-4 py-3"
+          className={cn(
+            "rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04]",
+            variant === "panel" ? "px-3 py-2" : "px-4 py-3.5",
+          )}
         >
           <div className="font-mono text-sm text-y/85">{name}</div>
           <ul className="mt-3 space-y-2">
