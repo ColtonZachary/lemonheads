@@ -17,6 +17,7 @@ import {
 } from "@/lib/bookings/parse-schedule";
 import {
   fetchActiveCoverageRules,
+  locationRequiresCoverageCheck,
   validateBookingLocationCoverage,
 } from "@/lib/bookings/service-area-coverage";
 import {
@@ -30,6 +31,11 @@ import {
   filterDetailersForPackage,
   isDetailerBlockedForPackage,
 } from "@/lib/bookings/staff-package-blocks";
+import {
+  fetchDetailerServiceAreasMap,
+  filterDetailersForServiceAreas,
+  isDetailerAllowedInServiceAreas,
+} from "@/lib/bookings/staff-service-areas";
 
 export type BookingInsertRow = {
   reference_id: string;
@@ -177,7 +183,7 @@ export async function insertBooking(
     };
   }
 
-  const [weeklyBlocks, openDayOverrides, detailerNames, packageBlocks] =
+  const [weeklyBlocks, openDayOverrides, detailerNames, packageBlocks, serviceAreasMap] =
     await Promise.all([
       fetchActiveWeeklyBlocks(client),
       fetchActiveDateOverrides(client),
@@ -185,6 +191,7 @@ export async function insertBooking(
       options?.enforceDetailerPackageBlocks === false
         ? Promise.resolve({})
         : fetchDetailerPackageBlocksMap(client),
+      fetchDetailerServiceAreasMap(client),
     ]);
 
   const serviceKey = data.serviceKey?.trim() ?? "";
@@ -209,6 +216,30 @@ export async function insertBooking(
         ok: false,
         error:
           "No detailers are available for this service at that time. Please call 833-536-6648.",
+      };
+    }
+  }
+
+  if (locationRequiresCoverageCheck(data.location) && serviceAreaSlugs.length) {
+    eligibleDetailers = filterDetailersForServiceAreas(
+      eligibleDetailers,
+      serviceAreaSlugs,
+      serviceAreasMap,
+    );
+    if (
+      requested &&
+      !isDetailerAllowedInServiceAreas(serviceAreasMap, requested, serviceAreaSlugs)
+    ) {
+      return {
+        ok: false,
+        error: `${requested} is not scheduled for this service area. Choose another detailer, use auto-assign, or call 833-536-6648.`,
+      };
+    }
+    if (!requested && eligibleDetailers.length === 0) {
+      return {
+        ok: false,
+        error:
+          "No detailers are available in this service area at that time. Please call 833-536-6648.",
       };
     }
   }

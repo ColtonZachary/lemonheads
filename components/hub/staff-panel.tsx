@@ -10,6 +10,10 @@ import {
   type HubStaffActionState,
 } from "@/app/actions/hub-staff";
 import { StaffPackageBlocksField } from "@/components/hub/staff-package-blocks-field";
+import {
+  StaffServiceAreasField,
+  type ServiceAreaOption,
+} from "@/components/hub/staff-service-areas-field";
 import { StaffPhotoField } from "@/components/hub/staff-photo-field";
 import { Button } from "@/components/ui/button";
 import type { StaffMemberRow } from "@/lib/bookings/bookable-detailers";
@@ -26,9 +30,11 @@ const labelClass =
 function StaffBadgesWithBlocks({
   member,
   blockedCount,
+  allowedAreasCount,
 }: {
   member: StaffMemberRow;
   blockedCount: number;
+  allowedAreasCount: number;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -45,6 +51,11 @@ function StaffBadgesWithBlocks({
       {member.is_detailer && blockedCount > 0 ? (
         <span className="rounded bg-red-500/10 px-1.5 py-0.5 font-mono text-[8px] text-red-200/80">
           {blockedCount} pkg blocked
+        </span>
+      ) : null}
+      {member.is_detailer && allowedAreasCount > 0 ? (
+        <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[8px] text-text/55">
+          {allowedAreasCount} area{allowedAreasCount === 1 ? "" : "s"}
         </span>
       ) : null}
       {member.profile_id ? (
@@ -77,11 +88,15 @@ function StaffAvatar({ member }: { member: StaffMemberRow }) {
 function StaffEditForm({
   member,
   packages,
+  serviceAreas,
   blockedPackageKeys,
+  allowedAreaSlugs,
 }: {
   member: StaffMemberRow;
   packages: SitePackage[];
+  serviceAreas: ServiceAreaOption[];
   blockedPackageKeys: string[];
+  allowedAreaSlugs: string[];
 }) {
   const [state, action, pending] = useActionState(
     updateStaffMember.bind(null, member.id),
@@ -168,6 +183,13 @@ function StaffEditForm({
         <StaffPackageBlocksField
           packages={packages}
           blockedKeys={blockedPackageKeys}
+          compact
+        />
+      ) : null}
+      {member.is_detailer ? (
+        <StaffServiceAreasField
+          areas={serviceAreas}
+          allowedSlugs={allowedAreaSlugs}
           compact
         />
       ) : null}
@@ -271,13 +293,17 @@ function StaffListRow({
   expanded,
   onToggleEdit,
   packages,
+  serviceAreas,
   blockedPackageKeys,
+  allowedAreaSlugs,
 }: {
   member: StaffMemberRow;
   expanded: boolean;
   onToggleEdit: () => void;
   packages: SitePackage[];
+  serviceAreas: ServiceAreaOption[];
   blockedPackageKeys: string[];
+  allowedAreaSlugs: string[];
 }) {
   return (
     <li
@@ -297,6 +323,7 @@ function StaffListRow({
           <StaffBadgesWithBlocks
             member={member}
             blockedCount={blockedPackageKeys.length}
+            allowedAreasCount={allowedAreaSlugs.length}
           />
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
@@ -320,7 +347,9 @@ function StaffListRow({
         <StaffEditForm
           member={member}
           packages={packages}
+          serviceAreas={serviceAreas}
           blockedPackageKeys={blockedPackageKeys}
+          allowedAreaSlugs={allowedAreaSlugs}
         />
       ) : null}
     </li>
@@ -330,11 +359,15 @@ function StaffListRow({
 export function StaffPanel({
   staff,
   packages,
+  serviceAreas,
   blockedByStaffId,
+  allowedAreasByStaffId,
 }: {
   staff: StaffMemberRow[];
   packages: SitePackage[];
+  serviceAreas: ServiceAreaOption[];
   blockedByStaffId: Record<string, string[]>;
+  allowedAreasByStaffId: Record<string, string[]>;
 }) {
   const [createState, createAction, createPending] = useActionState(
     createStaffMember,
@@ -458,7 +491,9 @@ export function StaffPanel({
                 expanded={expandedId === member.id}
                 onToggleEdit={() => toggleEdit(member.id)}
                 packages={packages}
+                serviceAreas={serviceAreas}
                 blockedPackageKeys={blockedByStaffId[member.id] ?? []}
+                allowedAreaSlugs={allowedAreasByStaffId[member.id] ?? []}
               />
             ))}
           </ul>
@@ -478,7 +513,9 @@ export function StaffPanel({
                 expanded={expandedId === member.id}
                 onToggleEdit={() => toggleEdit(member.id)}
                 packages={packages}
+                serviceAreas={serviceAreas}
                 blockedPackageKeys={blockedByStaffId[member.id] ?? []}
+                allowedAreaSlugs={allowedAreasByStaffId[member.id] ?? []}
               />
             ))}
           </ul>

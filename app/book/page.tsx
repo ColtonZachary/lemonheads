@@ -5,6 +5,7 @@ import { BookingFlow } from "@/components/book/booking-flow";
 import { SectionLabel } from "@/components/ui/section";
 import { fetchBookableDetailersWithPhotos } from "@/lib/bookings/bookable-detailers";
 import { fetchDetailerPackageBlocksMap } from "@/lib/bookings/staff-package-blocks";
+import { fetchDetailerServiceAreasMap } from "@/lib/bookings/staff-service-areas";
 import { fetchActiveCoverageRules } from "@/lib/bookings/service-area-coverage";
 import { fetchSchedulingRules } from "@/lib/bookings/scheduling-rules";
 import { fetchPublicCatalog } from "@/lib/catalog/public-catalog";
@@ -18,14 +19,21 @@ export const metadata: Metadata = {
 
 export default async function BookPage() {
   const supabase = await createSupabaseServerClient();
-  const [detailers, detailerPackageBlocks, catalog, schedulingRules, coverageRules] =
-    await Promise.all([
-      supabase ? fetchBookableDetailersWithPhotos(supabase) : undefined,
-      supabase ? fetchDetailerPackageBlocksMap(supabase) : {},
-      fetchPublicCatalog(supabase),
-      fetchSchedulingRules(supabase),
-      supabase ? fetchActiveCoverageRules(supabase) : [],
-    ]);
+  const [
+    detailers,
+    detailerPackageBlocks,
+    detailerServiceAreas,
+    catalog,
+    schedulingRules,
+    coverageRules,
+  ] = await Promise.all([
+    supabase ? fetchBookableDetailersWithPhotos(supabase) : undefined,
+    supabase ? fetchDetailerPackageBlocksMap(supabase) : {},
+    supabase ? fetchDetailerServiceAreasMap(supabase) : {},
+    fetchPublicCatalog(supabase),
+    fetchSchedulingRules(supabase),
+    supabase ? fetchActiveCoverageRules(supabase) : [],
+  ]);
 
   return (
     <>
@@ -44,6 +52,7 @@ export default async function BookPage() {
           <BookingFlow
             detailers={detailers}
             detailerPackageBlocks={detailerPackageBlocks}
+            detailerServiceAreas={detailerServiceAreas}
             catalog={catalog}
             schedulingRules={schedulingRules}
             coverageRules={coverageRules}

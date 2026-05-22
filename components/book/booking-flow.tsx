@@ -53,6 +53,11 @@ import {
   isDetailerBlockedForPackage,
   type DetailerPackageBlocksMap,
 } from "@/lib/bookings/staff-package-blocks";
+import {
+  isDetailerAllowedInServiceAreas,
+  type DetailerServiceAreasMap,
+} from "@/lib/bookings/staff-service-areas";
+import { locationRequiresCoverageCheck } from "@/lib/bookings/service-area-coverage";
 import { TEAM, type VehicleKey } from "@/lib/data";
 import {
   packageIconForKey,
@@ -159,12 +164,14 @@ function emptyState(
 export function BookingFlow({
   detailers: detailersProp,
   detailerPackageBlocks = {},
+  detailerServiceAreas = {},
   catalog,
   schedulingRules,
   coverageRules,
 }: {
   detailers?: DetailerCardInfo[];
   detailerPackageBlocks?: DetailerPackageBlocksMap;
+  detailerServiceAreas?: DetailerServiceAreasMap;
   catalog: PublicCatalog;
   schedulingRules: SchedulingRulesSnapshot;
   coverageRules: ServiceAreaCoverageRule[];
@@ -271,10 +278,44 @@ export function BookingFlow({
   }, [state.packageKey, detailerPackageBlocks]);
 
   useEffect(() => {
+    if (
+      !state.detailer ||
+      !locationRequiresCoverageCheck(state.locationType) ||
+      !serviceAreaSlugs.length
+    ) {
+      return;
+    }
+    setState((s) => {
+      if (
+        isDetailerAllowedInServiceAreas(
+          detailerServiceAreas,
+          s.detailer,
+          serviceAreaSlugs,
+        )
+      ) {
+        return s;
+      }
+      return { ...s, detailer: "" };
+    });
+  }, [
+    state.locationType,
+    state.zip,
+    state.city,
+    serviceAreaSlugs,
+    detailerServiceAreas,
+  ]);
+
+  useEffect(() => {
     if (!state.date || !pkg) {
       setAvailability(null);
       return;
     }
+
+    const slugsForAvailability =
+      locationRequiresCoverageCheck(state.locationType) &&
+      serviceAreaSlugs.length
+        ? serviceAreaSlugs
+        : undefined;
 
     let cancelled = false;
     setAvailabilityLoading(true);
@@ -282,6 +323,7 @@ export function BookingFlow({
       state.date,
       pkg.durationHours,
       state.packageKey,
+      slugsForAvailability,
     )
       .then((snapshot) => {
       if (cancelled) return;
@@ -308,6 +350,17 @@ export function BookingFlow({
         ) {
           next = { ...next, detailer: "" };
         }
+        if (
+          s.detailer &&
+          slugsForAvailability?.length &&
+          !isDetailerAllowedInServiceAreas(
+            detailerServiceAreas,
+            s.detailer,
+            slugsForAvailability,
+          )
+        ) {
+          next = { ...next, detailer: "" };
+        }
         return next;
       });
     })
@@ -318,7 +371,17 @@ export function BookingFlow({
     return () => {
       cancelled = true;
     };
-  }, [state.date, state.packageKey, pkg?.durationHours, detailerPackageBlocks]);
+  }, [
+    state.date,
+    state.packageKey,
+    state.locationType,
+    state.zip,
+    state.city,
+    serviceAreaSlugs,
+    pkg?.durationHours,
+    detailerPackageBlocks,
+    detailerServiceAreas,
+  ]);
 
   const tryAdvance = (target: Step) => {
     setError(null);
@@ -381,6 +444,20 @@ export function BookingFlow({
       ) {
         return setError(
           `${state.detailer} is not available for this service. Pick another detailer or use auto-assign.`,
+        );
+      }
+      if (
+        state.detailer &&
+        locationRequiresCoverageCheck(state.locationType) &&
+        serviceAreaSlugs.length &&
+        !isDetailerAllowedInServiceAreas(
+          detailerServiceAreas,
+          state.detailer,
+          serviceAreaSlugs,
+        )
+      ) {
+        return setError(
+          `${state.detailer} is not scheduled for this service area. Pick another detailer or use auto-assign.`,
         );
       }
       if (
@@ -539,6 +616,8 @@ export function BookingFlow({
               availability={availability}
               detailers={bookableDetailers}
               detailerPackageBlocks={detailerPackageBlocks}
+              detailerServiceAreas={detailerServiceAreas}
+              serviceAreaSlugs={serviceAreaSlugs}
               locationTypes={locationTypes}
             />
           </div>
@@ -1162,6 +1241,8 @@ function Step3({
   availability,
   detailers,
   detailerPackageBlocks,
+  detailerServiceAreas,
+  serviceAreaSlugs,
   locationTypes,
 }: {
   state: BookingState;
@@ -1170,6 +1251,8 @@ function Step3({
   availability: DetailerAvailabilitySnapshot | null;
   detailers: DetailerCardInfo[];
   detailerPackageBlocks: DetailerPackageBlocksMap;
+  detailerServiceAreas: DetailerServiceAreasMap;
+  serviceAreaSlugs: string[];
   locationTypes: string[];
 }) {
   const autoAssignUnavailable =
@@ -1210,8 +1293,18 @@ function Step3({
                 d.name,
                 state.packageKey,
               );
+            const areaBlocked =
+              Boolean(state.locationType) &&
+              locationRequiresCoverageCheck(state.locationType) &&
+              Boolean(serviceAreaSlugs.length) &&
+              !isDetailerAllowedInServiceAreas(
+                detailerServiceAreas,
+                d.name,
+                serviceAreaSlugs,
+              );
             const busy =
               packageBlocked ||
+              areaBlocked ||
               (Boolean(state.time) &&
                 Boolean(
                   availability?.busySlotsByDetailer[d.name]?.includes(
@@ -1231,9 +1324,11 @@ function Step3({
                 sub={
                   packageBlocked
                     ? "Not available for this service"
-                    : busy
-                      ? "Booked at this time"
-                      : undefined
+                    : areaBlocked
+                      ? "Not in this service area"
+                      : busy
+                        ? "Booked at this time"
+                        : undefined
                 }
                 onClick={() => update("detailer", d.name)}
               />

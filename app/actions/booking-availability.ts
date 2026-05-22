@@ -14,6 +14,10 @@ import {
   fetchDetailerPackageBlocksMap,
   filterDetailersForPackage,
 } from "@/lib/bookings/staff-package-blocks";
+import {
+  fetchDetailerServiceAreasMap,
+  filterDetailersForServiceAreas,
+} from "@/lib/bookings/staff-service-areas";
 import { DETAILER_NAMES } from "@/lib/data";
 import { fetchActiveDateOverrides } from "@/lib/bookings/date-overrides";
 import { fetchActiveWeeklyBlocks } from "@/lib/bookings/weekly-blocks";
@@ -23,6 +27,7 @@ export async function getDetailerAvailability(
   dateLabel: string,
   durationHours: number,
   packageKey?: string,
+  serviceAreaSlugs?: string[],
 ): Promise<DetailerAvailabilitySnapshot> {
   const empty: DetailerAvailabilitySnapshot = {
     fullyBookedSlots: [],
@@ -40,17 +45,26 @@ export async function getDetailerAvailability(
       BOOKING_TIME_SLOTS[0],
       durationHours,
     );
-    const [existing, weeklyBlocks, openDayOverrides, detailerNames, packageBlocks] =
+    const [existing, weeklyBlocks, openDayOverrides, detailerNames, packageBlocks, serviceAreasMap] =
       await Promise.all([
         fetchBookingsForDate(client, probe.appointmentDate),
         fetchActiveWeeklyBlocks(client),
         fetchActiveDateOverrides(client),
         fetchBookableDetailerNames(client),
         fetchDetailerPackageBlocksMap(client),
+        fetchDetailerServiceAreasMap(client),
       ]);
-    const eligibleDetailers = packageKey?.trim()
+    const slugs = serviceAreaSlugs?.filter(Boolean) ?? [];
+    let eligibleDetailers = packageKey?.trim()
       ? filterDetailersForPackage(detailerNames, packageKey, packageBlocks)
       : detailerNames;
+    if (slugs.length) {
+      eligibleDetailers = filterDetailersForServiceAreas(
+        eligibleDetailers,
+        slugs,
+        serviceAreasMap,
+      );
+    }
     return buildAvailabilitySnapshot(
       dateLabel,
       durationHours,

@@ -29,7 +29,15 @@ import {
   fetchSchedulingRules,
   resolveServiceAreaSlugsForLocation,
 } from "@/lib/bookings/scheduling-rules";
-import { fetchActiveCoverageRules } from "@/lib/bookings/service-area-coverage";
+import {
+  fetchActiveCoverageRules,
+  locationRequiresCoverageCheck,
+} from "@/lib/bookings/service-area-coverage";
+import {
+  fetchDetailerServiceAreasMap,
+  filterDetailersForServiceAreas,
+  isDetailerAllowedInServiceAreas,
+} from "@/lib/bookings/staff-service-areas";
 import {
   validateBookingScheduleFromInput,
   validateScheduleChangeFromInput,
@@ -197,7 +205,7 @@ export async function updateHubBooking(
   let detailerName: string | null = null;
   let detailerAutoAssigned = false;
 
-  const [dayBookings, weeklyBlocks, openDayOverrides, detailerNames] =
+  const [dayBookings, weeklyBlocks, openDayOverrides, detailerNames, serviceAreasMap] =
     await Promise.all([
       fetchBookingsForDate(supabase, schedule.appointmentDate, {
         excludeBookingId: bookingId,
@@ -205,7 +213,20 @@ export async function updateHubBooking(
       fetchActiveWeeklyBlocks(supabase),
       fetchActiveDateOverrides(supabase),
       fetchBookableDetailerNames(supabase),
+      fetchDetailerServiceAreasMap(supabase),
     ]);
+  const locationType = String(existing.location_type ?? "");
+  let eligibleDetailers = detailerNames;
+  if (
+    locationRequiresCoverageCheck(locationType) &&
+    serviceAreaSlugs.length
+  ) {
+    eligibleDetailers = filterDetailersForServiceAreas(
+      eligibleDetailers,
+      serviceAreaSlugs,
+      serviceAreasMap,
+    );
+  }
   const availabilityOpts = {
     weeklyBlocks,
     openDayOverrides,
@@ -214,7 +235,7 @@ export async function updateHubBooking(
 
   if (autoAssign) {
     const assigned = findAvailableDetailer(
-      detailerNames,
+      eligibleDetailers,
       dayBookings,
       schedule.startsAt,
       schedule.endsAt,
@@ -232,6 +253,20 @@ export async function updateHubBooking(
   } else {
     if (!detailerNames.includes(detailerChoice)) {
       return { ok: false, message: "Unknown or inactive detailer." };
+    }
+    if (
+      locationRequiresCoverageCheck(locationType) &&
+      serviceAreaSlugs.length &&
+      !isDetailerAllowedInServiceAreas(
+        serviceAreasMap,
+        detailerChoice,
+        serviceAreaSlugs,
+      )
+    ) {
+      return {
+        ok: false,
+        message: `${detailerChoice} is not scheduled for this service area.`,
+      };
     }
     if (
       !isDetailerAvailable(

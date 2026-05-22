@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { fetchPublicCatalog } from "@/lib/catalog/public-catalog";
 import { syncStaffPackageBlocks } from "@/lib/bookings/staff-package-blocks";
+import { syncStaffServiceAreas } from "@/lib/bookings/staff-service-areas";
 import { staffSlugFromName } from "@/lib/hub/staff-slug";
 import { deleteStaffPhoto, uploadStaffPhoto } from "@/lib/hub/staff-photo";
 import { requireManagerSupabase } from "@/lib/hub/require-manager-supabase";
@@ -155,6 +156,27 @@ export async function updateStaffMember(
     return {
       ok: false,
       message: `Profile saved, but package blocks failed: ${blocksResult.error}`,
+    };
+  }
+
+  const { data: serviceAreas } = await ctx.supabase
+    .from("service_areas")
+    .select("slug")
+    .eq("active", true);
+  const allowedAreaSlugs = new Set(
+    (serviceAreas ?? []).map((row) => row.slug as string),
+  );
+  const areaSlugs = formData.getAll("allowed_service_area_slugs").map(String);
+  const areasResult = await syncStaffServiceAreas(
+    ctx.supabase,
+    staffId,
+    is_detailer ? areaSlugs : [],
+    allowedAreaSlugs,
+  );
+  if (!areasResult.ok) {
+    return {
+      ok: false,
+      message: `Profile saved, but service areas failed: ${areasResult.error}`,
     };
   }
 
