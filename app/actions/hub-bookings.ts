@@ -546,6 +546,7 @@ export async function createHubBooking(
   const saved = await insertBooking(supabase, referenceId, parsed.data, {
     status: status as BookingInsertOptions["status"],
     managerNotes: String(formData.get("manager_notes") ?? ""),
+    enforceDetailerPackageBlocks: false,
   });
 
   if (!saved.ok) {

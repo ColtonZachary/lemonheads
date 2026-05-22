@@ -4,6 +4,7 @@ import type { DetailerAvailabilitySnapshot } from "@/lib/bookings/detailer-avail
 export async function getDetailerAvailability(
   _dateLabel: string,
   _durationHours: number,
+  _packageKey?: string,
 ): Promise<DetailerAvailabilitySnapshot> {
   return {
     fullyBookedSlots: [],

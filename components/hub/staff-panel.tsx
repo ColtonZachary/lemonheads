@@ -9,9 +9,11 @@ import {
   updateStaffMember,
   type HubStaffActionState,
 } from "@/app/actions/hub-staff";
+import { StaffPackageBlocksField } from "@/components/hub/staff-package-blocks-field";
 import { StaffPhotoField } from "@/components/hub/staff-photo-field";
 import { Button } from "@/components/ui/button";
 import type { StaffMemberRow } from "@/lib/bookings/bookable-detailers";
+import type { SitePackage } from "@/lib/catalog/public-catalog";
 import { cn } from "@/lib/utils";
 
 const EMPTY: HubStaffActionState = { ok: false, message: "" };
@@ -21,7 +23,15 @@ const fieldClass =
 const labelClass =
   "font-mono text-[9px] uppercase tracking-[0.12em] text-text/40";
 
-function StaffEditForm({ member }: { member: StaffMemberRow }) {
+function StaffEditForm({
+  member,
+  packages,
+  blockedPackageKeys,
+}: {
+  member: StaffMemberRow;
+  packages: SitePackage[];
+  blockedPackageKeys: string[];
+}) {
   const [state, action, pending] = useActionState(
     updateStaffMember.bind(null, member.id),
     EMPTY,
@@ -91,6 +101,12 @@ function StaffEditForm({ member }: { member: StaffMemberRow }) {
           Active
         </label>
       </div>
+      {member.is_detailer ? (
+        <StaffPackageBlocksField
+          packages={packages}
+          blockedKeys={blockedPackageKeys}
+        />
+      ) : null}
       <Button type="submit" disabled={pending} className="h-auto min-h-0 px-3 py-1.5 text-xs">
         {pending ? "Saving…" : "Save changes"}
       </Button>
@@ -183,7 +199,15 @@ function StaffActionButtons({
   );
 }
 
-export function StaffPanel({ staff }: { staff: StaffMemberRow[] }) {
+export function StaffPanel({
+  staff,
+  packages,
+  blockedByStaffId,
+}: {
+  staff: StaffMemberRow[];
+  packages: SitePackage[];
+  blockedByStaffId: Record<string, string[]>;
+}) {
   const [createState, createAction, createPending] = useActionState(
     createStaffMember,
     EMPTY,
@@ -307,7 +331,11 @@ export function StaffPanel({ staff }: { staff: StaffMemberRow[] }) {
                     active={member.active}
                   />
                 </div>
-                <StaffEditForm member={member} />
+                <StaffEditForm
+                  member={member}
+                  packages={packages}
+                  blockedPackageKeys={blockedByStaffId[member.id] ?? []}
+                />
               </li>
             ))}
           </ul>
@@ -333,7 +361,11 @@ export function StaffPanel({ staff }: { staff: StaffMemberRow[] }) {
                     active={member.active}
                   />
                 </div>
-                <StaffEditForm member={member} />
+                <StaffEditForm
+                  member={member}
+                  packages={packages}
+                  blockedPackageKeys={blockedByStaffId[member.id] ?? []}
+                />
               </li>
             ))}
           </ul>

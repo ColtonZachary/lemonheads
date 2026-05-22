@@ -49,6 +49,10 @@ import {
 import { Icon, type IconName } from "@/components/ui/icons";
 import { assetPath } from "@/lib/asset-path";
 import type { DetailerCardInfo } from "@/lib/bookings/bookable-detailers";
+import {
+  isDetailerBlockedForPackage,
+  type DetailerPackageBlocksMap,
+} from "@/lib/bookings/staff-package-blocks";
 import { TEAM, type VehicleKey } from "@/lib/data";
 import {
   packageIconForKey,
@@ -154,11 +158,13 @@ function emptyState(
 
 export function BookingFlow({
   detailers: detailersProp,
+  detailerPackageBlocks = {},
   catalog,
   schedulingRules,
   coverageRules,
 }: {
   detailers?: DetailerCardInfo[];
+  detailerPackageBlocks?: DetailerPackageBlocksMap;
   catalog: PublicCatalog;
   schedulingRules: SchedulingRulesSnapshot;
   coverageRules: ServiceAreaCoverageRule[];
@@ -248,6 +254,23 @@ export function BookingFlow({
   }, [state.packageKey, state.vehicleKey, addonKey]);
 
   useEffect(() => {
+    if (!state.packageKey) return;
+    setState((s) => {
+      if (
+        !s.detailer ||
+        !isDetailerBlockedForPackage(
+          detailerPackageBlocks,
+          s.detailer,
+          state.packageKey,
+        )
+      ) {
+        return s;
+      }
+      return { ...s, detailer: "" };
+    });
+  }, [state.packageKey, detailerPackageBlocks]);
+
+  useEffect(() => {
     if (!state.date || !pkg) {
       setAvailability(null);
       return;
@@ -255,7 +278,11 @@ export function BookingFlow({
 
     let cancelled = false;
     setAvailabilityLoading(true);
-    void getDetailerAvailability(state.date, pkg.durationHours)
+    void getDetailerAvailability(
+      state.date,
+      pkg.durationHours,
+      state.packageKey,
+    )
       .then((snapshot) => {
       if (cancelled) return;
       setAvailability(snapshot);
@@ -271,6 +298,16 @@ export function BookingFlow({
         ) {
           next = { ...next, detailer: "" };
         }
+        if (
+          s.detailer &&
+          isDetailerBlockedForPackage(
+            detailerPackageBlocks,
+            s.detailer,
+            state.packageKey,
+          )
+        ) {
+          next = { ...next, detailer: "" };
+        }
         return next;
       });
     })
@@ -281,7 +318,7 @@ export function BookingFlow({
     return () => {
       cancelled = true;
     };
-  }, [state.date, pkg?.durationHours]);
+  }, [state.date, state.packageKey, pkg?.durationHours, detailerPackageBlocks]);
 
   const tryAdvance = (target: Step) => {
     setError(null);
@@ -331,6 +368,19 @@ export function BookingFlow({
       if (availability?.fullyBookedSlots.includes(state.time)) {
         return setError(
           "That time is fully booked. Please pick another time slot.",
+        );
+      }
+      if (
+        state.detailer &&
+        state.packageKey &&
+        isDetailerBlockedForPackage(
+          detailerPackageBlocks,
+          state.detailer,
+          state.packageKey,
+        )
+      ) {
+        return setError(
+          `${state.detailer} is not available for this service. Pick another detailer or use auto-assign.`,
         );
       }
       if (
@@ -488,6 +538,7 @@ export function BookingFlow({
               paymentRef={paymentRef}
               availability={availability}
               detailers={bookableDetailers}
+              detailerPackageBlocks={detailerPackageBlocks}
               locationTypes={locationTypes}
             />
           </div>
@@ -1110,6 +1161,7 @@ function Step3({
   paymentRef,
   availability,
   detailers,
+  detailerPackageBlocks,
   locationTypes,
 }: {
   state: BookingState;
@@ -1117,6 +1169,7 @@ function Step3({
   paymentRef: RefObject<BookingCardCaptureApi | null>;
   availability: DetailerAvailabilitySnapshot | null;
   detailers: DetailerCardInfo[];
+  detailerPackageBlocks: DetailerPackageBlocksMap;
   locationTypes: string[];
 }) {
   const autoAssignUnavailable =
@@ -1150,11 +1203,21 @@ function Step3({
             onClick={() => update("detailer", "")}
           />
           {detailers.map((d) => {
-            const busy =
-              Boolean(state.time) &&
-              Boolean(
-                availability?.busySlotsByDetailer[d.name]?.includes(state.time),
+            const packageBlocked =
+              Boolean(state.packageKey) &&
+              isDetailerBlockedForPackage(
+                detailerPackageBlocks,
+                d.name,
+                state.packageKey,
               );
+            const busy =
+              packageBlocked ||
+              (Boolean(state.time) &&
+                Boolean(
+                  availability?.busySlotsByDetailer[d.name]?.includes(
+                    state.time,
+                  ),
+                ));
             const photoSrc =
               d.photo &&
               (d.photo.startsWith("http") ? d.photo : assetPath(d.photo));
@@ -1165,7 +1228,13 @@ function Step3({
                 photo={photoSrc}
                 selected={state.detailer === d.name}
                 disabled={busy}
-                sub={busy ? "Booked at this time" : undefined}
+                sub={
+                  packageBlocked
+                    ? "Not available for this service"
+                    : busy
+                      ? "Booked at this time"
+                      : undefined
+                }
                 onClick={() => update("detailer", d.name)}
               />
             );

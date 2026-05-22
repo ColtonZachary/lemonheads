@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
+import { fetchPublicCatalog } from "@/lib/catalog/public-catalog";
+import { syncStaffPackageBlocks } from "@/lib/bookings/staff-package-blocks";
 import { staffSlugFromName } from "@/lib/hub/staff-slug";
 import { deleteStaffPhoto, uploadStaffPhoto } from "@/lib/hub/staff-photo";
 import { requireManagerSupabase } from "@/lib/hub/require-manager-supabase";
@@ -139,6 +141,22 @@ export async function updateStaffMember(
     .eq("id", staffId);
 
   if (error) return { ok: false, message: error.message };
+
+  const catalog = await fetchPublicCatalog(ctx.supabase);
+  const allowedKeys = new Set(catalog.packages.map((p) => p.key));
+  const blockedKeys = formData.getAll("blocked_package_keys").map(String);
+  const blocksResult = await syncStaffPackageBlocks(
+    ctx.supabase,
+    staffId,
+    is_detailer ? blockedKeys : [],
+    allowedKeys,
+  );
+  if (!blocksResult.ok) {
+    return {
+      ok: false,
+      message: `Profile saved, but package blocks failed: ${blocksResult.error}`,
+    };
+  }
 
   const photo = photoFromForm(formData);
   if (photo) {

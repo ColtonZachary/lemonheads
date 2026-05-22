@@ -25,6 +25,11 @@ import {
 } from "@/lib/bookings/scheduling-rules";
 import { validateBookingSchedule } from "@/lib/bookings/scheduling-limits";
 import { syncCustomerFromBooking } from "@/lib/hub/sync-customer-from-booking";
+import {
+  fetchDetailerPackageBlocksMap,
+  filterDetailersForPackage,
+  isDetailerBlockedForPackage,
+} from "@/lib/bookings/staff-package-blocks";
 
 export type BookingInsertRow = {
   reference_id: string;
@@ -102,6 +107,11 @@ export type BookingInsertOptions = {
   managerNotes?: string;
   /** Use customer-facing copy when location is outside service area (default true). */
   coverageCustomerFacing?: boolean;
+  /**
+   * When true (default), detailers blocked for the selected package cannot be assigned
+   * on the public booking flow. Hub bookings should pass false.
+   */
+  enforceDetailerPackageBlocks?: boolean;
 };
 
 export async function insertBooking(
@@ -167,15 +177,46 @@ export async function insertBooking(
     };
   }
 
-  const [weeklyBlocks, openDayOverrides, detailerNames] = await Promise.all([
-    fetchActiveWeeklyBlocks(client),
-    fetchActiveDateOverrides(client),
-    fetchBookableDetailerNames(client),
-  ]);
+  const [weeklyBlocks, openDayOverrides, detailerNames, packageBlocks] =
+    await Promise.all([
+      fetchActiveWeeklyBlocks(client),
+      fetchActiveDateOverrides(client),
+      fetchBookableDetailerNames(client),
+      options?.enforceDetailerPackageBlocks === false
+        ? Promise.resolve({})
+        : fetchDetailerPackageBlocksMap(client),
+    ]);
+
+  const serviceKey = data.serviceKey?.trim() ?? "";
+  const enforcePackageBlocks = options?.enforceDetailerPackageBlocks !== false;
+  let eligibleDetailers = detailerNames;
+  const requested = data.requestedDetailer?.trim() ?? "";
+
+  if (enforcePackageBlocks && serviceKey) {
+    eligibleDetailers = filterDetailersForPackage(
+      detailerNames,
+      serviceKey,
+      packageBlocks,
+    );
+    if (requested && isDetailerBlockedForPackage(packageBlocks, requested, serviceKey)) {
+      return {
+        ok: false,
+        error: `${requested} is not available for this service when booking online. Choose another detailer, use auto-assign, or call 833-536-6648.`,
+      };
+    }
+    if (!requested && eligibleDetailers.length === 0) {
+      return {
+        ok: false,
+        error:
+          "No detailers are available for this service at that time. Please call 833-536-6648.",
+      };
+    }
+  }
+
   const assignment = resolveDetailerAssignment(
     data,
     existing,
-    detailerNames,
+    eligibleDetailers,
     weeklyBlocks,
     openDayOverrides,
   );
@@ -183,7 +224,6 @@ export async function insertBooking(
     return { ok: false, error: assignment.message };
   }
 
-  const serviceKey = data.serviceKey?.trim() ?? "";
   const vehicleKey = data.vehicleKey?.trim() as VehicleKey;
   const pricing = await computeBookingPricing(client, {
     packageKey: serviceKey,
