@@ -106,7 +106,7 @@ export function BookingDetailForm({
   );
 
   useEffect(() => {
-    if (deleteState.ok) router.push("/hub/bookings");
+    if (deleteState.ok) router.push("/hub/calendar");
   }, [deleteState.ok, router]);
 
   const isDeleted = Boolean(booking.deleted_at);
@@ -293,7 +293,7 @@ export function BookingDetailForm({
               {updatePending ? "Saving…" : "Save changes"}
             </Button>
             <Button asChild variant="outline">
-              <Link href="/hub/bookings">Back to list</Link>
+              <Link href="/hub/calendar">Back to calendar</Link>
             </Button>
           </div>
           <ActionBanner state={updateState} />

@@ -385,7 +385,7 @@ export function BookingCreateForm({
           </Button>
         ) : (
           <Button asChild variant="outline">
-            <Link href="/hub/bookings">Cancel</Link>
+            <Link href="/hub/calendar">Cancel</Link>
           </Button>
         )}
       </div>

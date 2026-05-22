@@ -53,10 +53,10 @@ export default async function HubBookingDetailPage({
   return (
     <div>
       <Link
-        href="/hub/bookings"
+        href="/hub/calendar"
         className="font-mono text-[10px] uppercase tracking-[0.12em] text-text/40 hover:text-y"
       >
-        ← Bookings
+        ← Calendar
       </Link>
 
       <h1 className="mt-4 font-display text-5xl tracking-[0.04em] text-y">
