@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import {
   deleteHubUserPermanently,
@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 const EMPTY: HubManagersActionState = { ok: false, message: "" };
 
 const fieldClass =
-  "mt-1 w-full rounded border border-white/15 bg-dk px-3 py-2 font-mono text-sm";
+  "mt-1 w-full rounded border border-white/15 bg-dk px-2.5 py-1.5 text-sm";
 const labelClass =
   "font-mono text-[9px] uppercase tracking-[0.12em] text-text/40";
 
@@ -60,109 +60,109 @@ function ProfileEditForm({
   const actor = { id: currentUserId, role: viewerRole };
   const mayRemove = profile.active && canDeactivateHubUser(actor, profile);
   const mayDelete = !isSelf && canDeleteHubUser(actor, profile);
+  const busy = pending || removePending || deletePending;
 
   return (
-    <div className="mt-3 space-y-3 border-t border-white/10 pt-3">
-      <form action={action} className="space-y-3">
-        <div className="grid gap-3 sm:grid-cols-2">
+    <form
+      action={action}
+      className="border-t border-white/10 bg-white/[0.02] px-3 py-3 sm:px-4"
+    >
+      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+        <label className="block">
+          <span className={labelClass}>Full name</span>
+          <input
+            name="full_name"
+            required
+            defaultValue={profile.full_name}
+            className={fieldClass}
+          />
+        </label>
+        <label className="block">
+          <span className={labelClass}>Phone</span>
+          <input name="phone" defaultValue={profile.phone} className={fieldClass} />
+        </label>
+        {isAdminViewer ? (
           <label className="block">
-            <span className={labelClass}>Full name</span>
-            <input
-              name="full_name"
-              required
-              defaultValue={profile.full_name}
+            <span className={labelClass}>Role</span>
+            <select
+              name="role"
+              defaultValue={profile.role}
               className={fieldClass}
-            />
+              disabled={isSelf}
+            >
+              <option value="admin">admin</option>
+              <option value="manager">manager</option>
+              <option value="detailer">detailer</option>
+            </select>
           </label>
+        ) : (
           <label className="block">
-            <span className={labelClass}>Phone</span>
-            <input name="phone" defaultValue={profile.phone} className={fieldClass} />
+            <span className={labelClass}>Role</span>
+            <select
+              name="role"
+              defaultValue={profile.role}
+              className={fieldClass}
+              disabled={isSelf}
+            >
+              <option value="manager">manager</option>
+              <option value="detailer">detailer</option>
+            </select>
           </label>
-          {isAdminViewer ? (
-            <label className="block">
-              <span className={labelClass}>Role</span>
-              <select
-                name="role"
-                defaultValue={profile.role}
-                className={fieldClass}
-                disabled={isSelf}
-              >
-                <option value="admin">admin</option>
-                <option value="manager">manager</option>
-                <option value="detailer">detailer</option>
-              </select>
-            </label>
-          ) : (
-            <label className="block">
-              <span className={labelClass}>Role</span>
-              <select
-                name="role"
-                defaultValue={profile.role}
-                className={fieldClass}
-                disabled={isSelf}
-              >
-                <option value="manager">manager</option>
-                <option value="detailer">detailer</option>
-              </select>
-            </label>
-          )}
-          <label className="flex items-end gap-2 pb-2 text-sm">
-            <input
-              type="checkbox"
-              name="active"
-              defaultChecked={profile.active}
-              disabled={isSelf || !mayRemove}
-              className="size-4"
-            />
-            Active (can sign in)
-          </label>
-        </div>
-        <p className="font-mono text-[9px] text-text/35">{profile.email}</p>
-        <div className="flex flex-wrap gap-2">
+        )}
+        <label className="flex items-end gap-1.5 pb-0.5 text-xs sm:col-span-2">
+          <input
+            type="checkbox"
+            name="active"
+            defaultChecked={profile.active}
+            disabled={isSelf || !mayRemove}
+            className="size-3.5"
+          />
+          Active (can sign in)
+        </label>
+      </div>
+      <p className="mt-2 font-mono text-[9px] text-text/40">{profile.email}</p>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button type="submit" disabled={busy} className="h-auto min-h-0 px-3 py-1.5 text-xs">
+          {pending ? "Saving…" : "Save"}
+        </Button>
+        {mayRemove ? (
           <Button
             type="submit"
-            disabled={pending}
-            className="h-auto min-h-0 px-3 py-1.5 text-xs"
+            formAction={removeAction}
+            disabled={busy}
+            variant="outline"
+            className="h-auto min-h-0 border-red-500/30 px-3 py-1.5 text-xs text-red-200"
           >
-            {pending ? "Saving…" : "Save profile"}
+            {removePending ? "…" : "Remove access"}
           </Button>
-          {mayRemove ? (
-            <Button
-              type="submit"
-              formAction={removeAction}
-              disabled={removePending}
-              variant="outline"
-              className="h-auto min-h-0 border-red-500/30 px-3 py-1.5 text-xs text-red-200 hover:bg-red-500/10"
-            >
-              {removePending ? "Removing…" : "Remove access"}
-            </Button>
-          ) : null}
-          {mayDelete ? (
-            <Button
-              type="submit"
-              formAction={deleteAction}
-              disabled={deletePending}
-              variant="outline"
-              className="h-auto min-h-0 border-red-500/40 px-3 py-1.5 text-xs text-red-300 hover:bg-red-500/15"
-              onClick={(e) => {
-                if (
-                  !confirm(
-                    `Permanently delete ${profile.full_name} (${profile.email})? They can be invited again with the same email.`,
-                  )
-                ) {
-                  e.preventDefault();
-                }
-              }}
-            >
-              {deletePending ? "Deleting…" : "Delete permanently"}
-            </Button>
-          ) : null}
-        </div>
-      </form>
+        ) : null}
+        {mayDelete ? (
+          <Button
+            type="submit"
+            formAction={deleteAction}
+            disabled={busy}
+            variant="outline"
+            className="h-auto min-h-0 border-red-500/40 px-3 py-1.5 text-xs text-red-300"
+            onClick={(e) => {
+              if (
+                !confirm(
+                  `Permanently delete ${profile.full_name}? Same email can be invited again.`,
+                )
+              ) {
+                e.preventDefault();
+              }
+            }}
+          >
+            {deletePending ? "…" : "Delete"}
+          </Button>
+        ) : null}
+      </div>
+
       {(state.message || removeState.message || deleteState.message) && (
         <p
           className={cn(
-            "font-mono text-xs",
+            "mt-2 font-mono text-[10px]",
             state.ok || removeState.ok || deleteState.ok
               ? "text-y"
               : "text-red-200",
@@ -171,7 +171,70 @@ function ProfileEditForm({
           {deleteState.message || removeState.message || state.message}
         </p>
       )}
-    </div>
+    </form>
+  );
+}
+
+function ProfileListRow({
+  profile,
+  expanded,
+  onToggleEdit,
+  currentUserId,
+  viewerRole,
+  isSelf,
+}: {
+  profile: HubProfileRow;
+  expanded: boolean;
+  onToggleEdit: () => void;
+  currentUserId: string;
+  viewerRole: UserRole;
+  isSelf?: boolean;
+}) {
+  return (
+    <li
+      className={cn(
+        "overflow-hidden rounded-lg border",
+        profile.active ? "border-white/10" : "border-white/5 opacity-75",
+        expanded && "border-y/25",
+      )}
+    >
+      <div className="flex items-center gap-3 px-3 py-2 sm:px-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-x-2">
+            <span className="font-mono text-sm text-y/90">{profile.full_name}</span>
+            {isSelf ? (
+              <span className="font-mono text-[8px] uppercase text-text/40">You</span>
+            ) : null}
+          </div>
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+            <span className="rounded bg-y/10 px-1.5 py-0.5 font-mono text-[8px] uppercase text-y/70">
+              {profile.role}
+            </span>
+            <span className="truncate font-mono text-[9px] text-text/45">{profile.email}</span>
+            {!profile.active ? (
+              <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[8px] text-text/50">
+                Access removed
+              </span>
+            ) : null}
+          </div>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-auto min-h-0 shrink-0 px-2 py-1 text-[10px]"
+          onClick={onToggleEdit}
+        >
+          {expanded ? "Close" : "Edit"}
+        </Button>
+      </div>
+      {expanded ? (
+        <ProfileEditForm
+          profile={profile}
+          currentUserId={currentUserId}
+          viewerRole={viewerRole}
+        />
+      ) : null}
+    </li>
   );
 }
 
@@ -193,128 +256,148 @@ export function ManagersPanel({
     inviteHubUser,
     EMPTY,
   );
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const active = profiles.filter((p) => p.active);
   const inactive = profiles.filter((p) => !p.active);
+  const managers = active.filter((p) => p.role === "manager" || p.role === "admin").length;
+  const detailers = active.filter((p) => p.role === "detailer").length;
+
+  const toggleEdit = (id: string) => {
+    setExpandedId((cur) => (cur === id ? null : id));
+  };
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-3">
+        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5">
+          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">Active</p>
+          <p className="font-display text-2xl text-y">{active.length}</p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5">
+          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">Managers</p>
+          <p className="font-display text-2xl text-y">{managers}</p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5">
+          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">Detailers</p>
+          <p className="font-display text-2xl text-y">{detailers}</p>
+        </div>
+      </div>
+
       {canInvite ? (
-        <form action={inviteAction} className="rounded-md border border-white/10 p-6">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-y">
-            Invite hub user
-          </h2>
-          <p className="mt-1 text-sm text-text/45">
-            {isAdmin
-              ? "Sends a Supabase email invite. They click Accept invitation, set a password, then sign in at /login."
-              : "Invite a manager or detailer — they set a password from the email, then use /login."}
-          </p>
-          <p className="mt-2 font-mono text-[9px] leading-relaxed text-text/35">
-            Supabase → Authentication → URL configuration: Site URL must be your
-            Vercel app (not the marketing site). Add redirect URL{" "}
-            <span className="text-text/50">/auth/confirm</span> and{" "}
-            <span className="text-text/50">/auth/callback</span>. Invite email
-            template should link to /auth/confirm (see docs).
-          </p>
-
-          <div className="mt-5 grid gap-5 sm:grid-cols-2">
-            <label className="block">
-              <span className={labelClass}>Email *</span>
-              <input name="email" type="email" required className={fieldClass} />
-            </label>
-            <label className="block">
-              <span className={labelClass}>Full name *</span>
-              <input name="full_name" required className={fieldClass} />
-            </label>
-            <label className="block">
-              <span className={labelClass}>Phone</span>
-              <input name="phone" type="tel" className={fieldClass} />
-            </label>
-            <label className="block">
-              <span className={labelClass}>Role *</span>
-              {isAdmin ? (
-                <select name="role" className={fieldClass} defaultValue="manager">
-                  <option value="manager">manager</option>
-                  <option value="admin">admin</option>
-                  <option value="detailer">detailer</option>
-                </select>
-              ) : (
-                <select name="role" className={fieldClass} defaultValue="manager">
-                  <option value="manager">manager</option>
-                  <option value="detailer">detailer</option>
-                </select>
-              )}
-            </label>
-          </div>
-
-          <Button type="submit" className="mt-6" disabled={invitePending}>
-            {invitePending ? "Sending…" : "Send invite"}
-          </Button>
-
-          {inviteState.message && (
-            <p
-              className={`mt-4 rounded-md border px-4 py-3 font-mono text-xs ${
-                inviteState.ok
-                  ? "border-y/30 bg-y/10 text-y"
-                  : "border-red-500/30 bg-red-500/10 text-red-200"
-              }`}
+        <details className="rounded-lg border border-white/10 bg-card/30">
+          <summary className="cursor-pointer list-none px-4 py-3 font-mono text-[10px] uppercase tracking-[0.12em] text-y [&::-webkit-details-marker]:hidden">
+            + Invite hub user
+          </summary>
+          <form action={inviteAction} className="border-t border-white/10 px-4 py-4">
+            <details className="mb-3 text-[10px] text-text/40">
+              <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-text/45">
+                Email setup notes
+              </summary>
+              <p className="mt-2 leading-relaxed">
+                Supabase → Authentication → URL configuration: Site URL = your Vercel app.
+                Redirect URLs: /auth/confirm and /auth/callback.
+              </p>
+            </details>
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              <label className="block">
+                <span className={labelClass}>Email *</span>
+                <input name="email" type="email" required className={fieldClass} />
+              </label>
+              <label className="block">
+                <span className={labelClass}>Full name *</span>
+                <input name="full_name" required className={fieldClass} />
+              </label>
+              <label className="block">
+                <span className={labelClass}>Phone</span>
+                <input name="phone" type="tel" className={fieldClass} />
+              </label>
+              <label className="block">
+                <span className={labelClass}>Role *</span>
+                {isAdmin ? (
+                  <select name="role" className={fieldClass} defaultValue="manager">
+                    <option value="manager">manager</option>
+                    <option value="admin">admin</option>
+                    <option value="detailer">detailer</option>
+                  </select>
+                ) : (
+                  <select name="role" className={fieldClass} defaultValue="manager">
+                    <option value="manager">manager</option>
+                    <option value="detailer">detailer</option>
+                  </select>
+                )}
+              </label>
+            </div>
+            <Button
+              type="submit"
+              className="mt-4 h-auto min-h-0 px-4 py-2 text-xs"
+              disabled={invitePending}
             >
-              {inviteState.message}
-            </p>
-          )}
-        </form>
+              {invitePending ? "Sending…" : "Send invite"}
+            </Button>
+            {inviteState.message ? (
+              <p
+                className={cn(
+                  "mt-3 rounded border px-3 py-2 font-mono text-[10px]",
+                  inviteState.ok
+                    ? "border-y/30 bg-y/10 text-y"
+                    : "border-red-500/30 bg-red-500/10 text-red-200",
+                )}
+              >
+                {inviteState.message}
+              </p>
+            ) : null}
+          </form>
+        </details>
       ) : null}
 
       <section>
-        <h3 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
-          Active accounts ({active.length})
-        </h3>
-        <ul className="mt-4 space-y-4">
-          {active.map((profile) => (
-            <li key={profile.id} className="rounded-md border border-white/10 px-4 py-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="font-mono text-sm text-y/85">{profile.full_name}</div>
-                <span className="rounded bg-y/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-y/70">
-                  {profile.role}
-                </span>
-              </div>
-              <ProfileEditForm
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
+            Accounts
+          </h2>
+          <span className="font-mono text-[9px] text-text/35">Tap Edit to change role or access</span>
+        </div>
+        {!active.length && !inactive.length ? (
+          <p className="rounded-lg border border-white/10 px-4 py-6 text-sm text-text/40">
+            No hub users yet. Expand &ldquo;Invite hub user&rdquo; above.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {active.map((profile) => (
+              <ProfileListRow
+                key={profile.id}
                 profile={profile}
+                expanded={expandedId === profile.id}
+                onToggleEdit={() => toggleEdit(profile.id)}
+                currentUserId={currentUserId}
+                viewerRole={viewerRole}
+                isSelf={profile.id === currentUserId}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {inactive.length > 0 ? (
+        <details className="rounded-lg border border-white/5">
+          <summary className="cursor-pointer list-none px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-text/45 [&::-webkit-details-marker]:hidden">
+            Access removed ({inactive.length}) — delete to re-use email
+          </summary>
+          <ul className="space-y-2 border-t border-white/5 px-3 py-3">
+            {inactive.map((profile) => (
+              <ProfileListRow
+                key={profile.id}
+                profile={profile}
+                expanded={expandedId === profile.id}
+                onToggleEdit={() => toggleEdit(profile.id)}
                 currentUserId={currentUserId}
                 viewerRole={viewerRole}
               />
-            </li>
-          ))}
-          {!active.length ? (
-            <li className="rounded-md border border-dashed border-white/10 p-8 text-center font-mono text-xs text-text/40">
-              No active accounts in this list.
-            </li>
-          ) : null}
-        </ul>
-      </section>
-
-      {inactive.length > 0 && (
-        <section>
-          <h3 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
-            Access removed ({inactive.length}) — delete permanently to re-use email
-          </h3>
-          <ul className="mt-4 space-y-4">
-            {inactive.map((profile) => (
-              <li
-                key={profile.id}
-                className="rounded-md border border-white/5 px-4 py-4 opacity-70"
-              >
-                <div className="font-mono text-sm text-text/55">{profile.full_name}</div>
-                <ProfileEditForm
-                  profile={profile}
-                  currentUserId={currentUserId}
-                  viewerRole={viewerRole}
-                />
-              </li>
             ))}
           </ul>
-        </section>
-      )}
+        </details>
+      ) : null}
     </div>
   );
 }

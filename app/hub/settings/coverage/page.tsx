@@ -44,13 +44,11 @@ export default async function HubSettingsCoveragePage() {
       <h1 className="mt-4 font-display text-5xl tracking-[0.04em] text-y">
         SERVICE AREAS
       </h1>
-      <p className="mt-2 max-w-2xl text-sm text-text/45">
-        Define which ZIP prefixes and city names count as in-range for mobile
-        detailing. Booking limits still come from your team schedule — this only
-        checks location.
+      <p className="mt-2 text-sm text-text/45">
+        ZIP and city rules for mobile detailing — separate from team schedule limits.
       </p>
 
-      <div className="mt-10 max-w-2xl">
+      <div className="mt-6 max-w-4xl">
         <ServiceAreaCoveragePanel
           serviceAreas={areas ?? []}
           rules={rules}

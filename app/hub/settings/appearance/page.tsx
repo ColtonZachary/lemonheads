@@ -26,12 +26,11 @@ export default async function HubAppearancePage() {
       <h1 className="mt-4 font-display text-5xl tracking-[0.04em] text-y">
         HUB COLORS
       </h1>
-      <p className="mt-2 max-w-2xl text-sm text-text/45">
-        Customize accent, backgrounds, text, and borders for your view of the
-        Managers Hub. Changes do not affect the public website or other users.
+      <p className="mt-2 text-sm text-text/45">
+        Personal theme for your hub view only — does not affect the public site or other users.
       </p>
 
-      <div className="mt-10 max-w-4xl">
+      <div className="mt-6 max-w-4xl">
         {!schemaReady ? <HubThemeMigrationNotice /> : null}
         <HubAppearancePanel savedTheme={savedTheme} schemaReady={schemaReady} />
       </div>

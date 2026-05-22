@@ -15,14 +15,22 @@ import {
   hubThemeStyle,
   resolveHubTheme,
   type HubTheme,
+  type HubThemeKey,
 } from "@/lib/hub/hub-theme";
+import { cn } from "@/lib/utils";
 
 const EMPTY: HubThemeActionState = { ok: false, message: "" };
 
 const labelClass =
   "font-mono text-[9px] uppercase tracking-[0.12em] text-text/40";
 const fieldClass =
-  "mt-1 w-full rounded border border-white/15 bg-dk px-3 py-2 font-mono text-sm";
+  "mt-1 w-full rounded border border-white/15 bg-dk px-2 py-1.5 font-mono text-xs";
+
+const COLOR_GROUPS: { title: string; keys: HubThemeKey[] }[] = [
+  { title: "Accent", keys: ["accent", "accentBright"] },
+  { title: "Surfaces", keys: ["background", "card", "border"] },
+  { title: "Text", keys: ["text", "muted"] },
+];
 
 function ColorField({
   item,
@@ -39,14 +47,13 @@ function ColorField({
   return (
     <label className="block">
       <span className={labelClass}>{item.label}</span>
-      <p className="mt-0.5 text-xs text-text/45">{item.hint}</p>
-      <div className="mt-2 flex gap-2">
+      <div className="mt-1 flex gap-1.5">
         {showPicker ? (
           <input
             type="color"
             value={pickerValue}
             onChange={(e) => onChange(item.key, e.target.value)}
-            className="h-10 w-12 cursor-pointer rounded border border-white/15 bg-dk"
+            className="h-9 w-10 shrink-0 cursor-pointer rounded border border-white/15 bg-dk"
             aria-label={`${item.label} picker`}
           />
         ) : null}
@@ -69,33 +76,29 @@ function ThemePreview({ theme }: { theme: HubTheme }) {
 
   return (
     <div
-      className="overflow-hidden rounded-md border border-border-faint"
+      className="overflow-hidden rounded-lg border border-border-faint"
       style={style}
     >
-      <div className="flex min-h-[140px]">
-        <div className="w-[120px] border-r border-border-faint bg-card p-3">
-          <div className="font-display text-sm tracking-[0.08em] text-y">HUB</div>
-          <div className="mt-3 rounded bg-y/15 px-2 py-1 font-mono text-[9px] text-y">
-            Active
+      <div className="flex min-h-[100px]">
+        <div className="w-[88px] border-r border-border-faint bg-card p-2">
+          <div className="font-display text-xs tracking-[0.08em] text-y">HUB</div>
+          <div className="mt-2 rounded bg-y/15 px-1.5 py-0.5 font-mono text-[8px] text-y">
+            Nav
           </div>
-          <div className="mt-1 font-mono text-[9px] text-text/50">Link</div>
         </div>
-        <div className="flex-1 bg-dk p-4">
-          <div className="font-display text-2xl tracking-[0.04em] text-y">
-            PREVIEW
-          </div>
-          <p className="mt-2 text-xs text-text/70">Primary text sample</p>
-          <p className="font-mono text-[10px] text-muted">Muted label</p>
+        <div className="flex-1 bg-dk p-3">
+          <div className="font-display text-lg tracking-[0.04em] text-y">Preview</div>
+          <p className="mt-1 text-[10px] text-text/70">Body text</p>
           <button
             type="button"
-            className="mt-3 rounded bg-y px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-black"
+            className="mt-2 rounded bg-y px-2 py-1 font-mono text-[9px] font-bold uppercase text-black"
           >
             Button
           </button>
         </div>
       </div>
-      <div className="border-t border-border-faint bg-card/80 px-3 py-2 font-mono text-[9px] text-text/40">
-        Accent {resolved.accent} · Card {resolved.card}
+      <div className="border-t border-border-faint bg-card/80 px-2 py-1 font-mono text-[8px] text-text/40">
+        {resolved.accent} · {resolved.card}
       </div>
     </div>
   );
@@ -116,6 +119,11 @@ export function HubAppearancePanel({
   const [resetState, resetAction, resetPending] = useActionState(
     resetHubTheme,
     EMPTY,
+  );
+
+  const itemByKey = useMemo(
+    () => new Map(HUB_THEME_ITEMS.map((i) => [i.key, i])),
+    [],
   );
 
   const mergedDraft = useMemo(() => {
@@ -153,55 +161,74 @@ export function HubAppearancePanel({
   const flashOk = saveState.ok || resetState.ok;
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
-      <form action={saveAction} className="space-y-6">
-        <p className="text-sm text-text/50">
-          Colors apply only to your account in the Managers Hub. Other users
-          keep their own settings.
-        </p>
+    <div className="space-y-6">
+      <p className="text-sm text-text/45">
+        Colors apply only to your hub login — other users keep their own theme.
+      </p>
 
-        <div className="grid gap-6 sm:grid-cols-2">
-          {HUB_THEME_ITEMS.map((item) => (
-            <ColorField
-              key={item.key}
-              item={item}
-              value={draft[item.key] ?? HUB_THEME_DEFAULTS[item.key]}
-              onChange={setColor}
-            />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_220px]">
+        <form action={saveAction} className="space-y-3">
+          {COLOR_GROUPS.map((group) => (
+            <details
+              key={group.title}
+              className="rounded-lg border border-white/10 bg-card/30"
+              open={group.title === "Accent"}
+            >
+              <summary className="cursor-pointer list-none px-3 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-text/50 hover:text-y [&::-webkit-details-marker]:hidden">
+                {group.title}
+              </summary>
+              <div className="grid gap-3 border-t border-white/10 p-3 sm:grid-cols-2">
+                {group.keys.map((key) => {
+                  const item = itemByKey.get(key)!;
+                  return (
+                    <ColorField
+                      key={key}
+                      item={item}
+                      value={draft[key] ?? HUB_THEME_DEFAULTS[key]}
+                      onChange={setColor}
+                    />
+                  );
+                })}
+              </div>
+            </details>
           ))}
-        </div>
 
-        {flash && (
-          <p
-            className={
-              flashOk
-                ? "font-mono text-xs text-y"
-                : "font-mono text-xs text-red-200"
-            }
-          >
-            {flash}
-          </p>
-        )}
+          {flash ? (
+            <p
+              className={cn(
+                "font-mono text-[10px]",
+                flashOk ? "text-y" : "text-red-200",
+              )}
+            >
+              {flash}
+            </p>
+          ) : null}
 
-        <div className="flex flex-wrap gap-3">
-          <Button type="submit" disabled={savePending || !schemaReady}>
-            {savePending ? "Saving…" : "Save colors"}
-          </Button>
-          <Button
-            type="submit"
-            formAction={resetAction}
-            variant="outline"
-            disabled={resetPending || !schemaReady}
-          >
-            {resetPending ? "Resetting…" : "Reset to defaults"}
-          </Button>
-        </div>
-      </form>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="submit"
+              className="h-auto min-h-0 px-4 py-2 text-xs"
+              disabled={savePending || !schemaReady}
+            >
+              {savePending ? "Saving…" : "Save colors"}
+            </Button>
+            <Button
+              type="submit"
+              formAction={resetAction}
+              variant="outline"
+              className="h-auto min-h-0 px-4 py-2 text-xs"
+              disabled={resetPending || !schemaReady}
+            >
+              {resetPending ? "…" : "Reset defaults"}
+            </Button>
+          </div>
+        </form>
 
-      <div className="lg:sticky lg:top-8 lg:self-start">
-        <p className={labelClass}>Live preview</p>
-        <div className="mt-3">
-          <ThemePreview theme={mergedDraft} />
+        <div className="lg:sticky lg:top-6 lg:self-start">
+          <p className={labelClass}>Preview</p>
+          <div className="mt-2">
+            <ThemePreview theme={mergedDraft} />
+          </div>
         </div>
       </div>
     </div>

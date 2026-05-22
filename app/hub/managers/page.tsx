@@ -30,13 +30,13 @@ export default async function HubManagersPage() {
   return (
     <div>
       <h1 className="font-display text-5xl tracking-[0.04em] text-y">HUB ACCESS</h1>
-      <p className="mt-2 max-w-2xl text-sm text-text/45">
+      <p className="mt-2 text-sm text-text/45">
         {access.isAdmin
-          ? "Invite hub users, change roles, remove access, or delete permanently to free an email for a new invite."
-          : "Invite managers and detailers, update access, or delete permanently to re-invite the same email. Admin accounts are admin-only."}
+          ? "Invite users, edit one account at a time, remove access, or delete to free an email."
+          : "Invite managers and detailers — edit one row at a time. Admin accounts are admin-only."}
       </p>
 
-      <div className="mt-10 max-w-2xl">
+      <div className="mt-6 max-w-4xl">
         <ManagersPanel
           profiles={rows}
           currentUserId={access.profile.id}

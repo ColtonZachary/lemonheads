@@ -50,11 +50,11 @@ export default async function HubSettingsRulesPage() {
       </Link>
 
       <h1 className="mt-4 font-display text-5xl tracking-[0.04em] text-y">RULES</h1>
-      <p className="mt-2 font-mono text-xs tracking-[0.08em] text-text/40">
-        Step 3 of hub setup · lead time and shop closed dates
+      <p className="mt-2 text-sm text-text/45">
+        Same-day cutoff and dates the shop is closed.
       </p>
 
-      <div className="mt-10 max-w-2xl space-y-12">
+      <div className="mt-6 max-w-4xl space-y-6">
         {sameDayRule ? (
           <LeadTimeRuleForm rule={sameDayRule as LeadTimeRuleRow} />
         ) : (
