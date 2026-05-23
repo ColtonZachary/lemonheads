@@ -29,6 +29,13 @@ import {
   type SchedulingRulesSnapshot,
 } from "@/lib/bookings/scheduling-rules";
 import type { ServiceAreaCoverageRule } from "@/lib/bookings/service-area-coverage";
+import { locationRequiresCoverageCheck } from "@/lib/bookings/service-area-coverage";
+import {
+  buildLocationSchedulingContext,
+  locationSchedulingHint,
+  type LocationSchedulingContext,
+  type ServiceAreaTravelMap,
+} from "@/lib/bookings/location-scheduling";
 import type { DetailerAvailabilitySnapshot } from "@/lib/bookings/detailer-availability";
 import { applyPromoForBooking } from "@/app/actions/promo";
 import { submitBooking } from "@/lib/submit-booking";
@@ -57,7 +64,6 @@ import {
   isDetailerAllowedInServiceAreas,
   type DetailerServiceAreasMap,
 } from "@/lib/bookings/staff-service-areas";
-import { locationRequiresCoverageCheck } from "@/lib/bookings/service-area-coverage";
 import { TEAM, type VehicleKey } from "@/lib/data";
 import {
   packageIconForKey,
@@ -168,6 +174,7 @@ export function BookingFlow({
   catalog,
   schedulingRules,
   coverageRules,
+  serviceAreaTravel,
 }: {
   detailers?: DetailerCardInfo[];
   detailerPackageBlocks?: DetailerPackageBlocksMap;
@@ -175,6 +182,7 @@ export function BookingFlow({
   catalog: PublicCatalog;
   schedulingRules: SchedulingRulesSnapshot;
   coverageRules: ServiceAreaCoverageRule[];
+  serviceAreaTravel: ServiceAreaTravelMap;
 }) {
   const { packages, addons, locationTypes } = catalog;
   const packageByKey = useMemo(() => packagesByKey(packages), [packages]);
@@ -241,8 +249,6 @@ export function BookingFlow({
   const total =
     subtotal !== null ? Math.max(0, subtotal - discountDollars) : null;
 
-  const addonKey = Array.from(state.addons).sort().join("|");
-
   const serviceAreaSlugs = useMemo(
     () =>
       resolveServiceAreaSlugsForLocation(
@@ -252,6 +258,61 @@ export function BookingFlow({
       ),
     [state.zip, state.city, coverageRules],
   );
+
+  const locationContext = useMemo(
+    () =>
+      buildLocationSchedulingContext(
+        state.locationType,
+        state.zip,
+        state.city,
+        coverageRules,
+        serviceAreaTravel,
+      ),
+    [
+      state.locationType,
+      state.zip,
+      state.city,
+      coverageRules,
+      serviceAreaTravel,
+    ],
+  );
+
+  useEffect(() => {
+    if (!state.date && !state.time) return;
+    if (
+      state.date &&
+      !isDateLabelSelectable(
+        state.date,
+        schedulingRules,
+        serviceAreaSlugs,
+        locationContext,
+      )
+    ) {
+      setState((s) => ({ ...s, date: "", time: "" }));
+      return;
+    }
+    if (
+      state.date &&
+      state.time &&
+      !isTimeSlotSelectable(
+        state.date,
+        state.time,
+        schedulingRules,
+        serviceAreaSlugs,
+        locationContext,
+      )
+    ) {
+      setState((s) => ({ ...s, time: "" }));
+    }
+  }, [
+    locationContext,
+    serviceAreaSlugs,
+    schedulingRules,
+    state.date,
+    state.time,
+  ]);
+
+  const addonKey = Array.from(state.addons).sort().join("|");
 
   useEffect(() => {
     setState((s) => {
@@ -392,42 +453,35 @@ export function BookingFlow({
         return setError("Please select a vehicle type before continuing.");
     }
     if (target === 3) {
-      if (!state.date || !state.time)
+      if (!state.locationType) {
+        return setError("Please pick where we'll detail your vehicle.");
+      }
+      if (locationRequiresCoverageCheck(state.locationType)) {
+        if (!state.address.trim()) {
+          return setError("Please enter your street address.");
+        }
+        if (!state.city.trim() || !state.zip.trim()) {
+          return setError("Please enter your city and ZIP code.");
+        }
+      }
+      if (!state.firstName || !state.lastName) {
+        return setError("Please enter your name.");
+      }
+      if (!state.phone) return setError("Please enter a phone number.");
+      if (!state.email) return setError("Please enter an email address.");
+    }
+    if (target === 4) {
+      if (!state.date || !state.time) {
         return setError("Please pick a date and time before continuing.");
+      }
       const scheduleError = validateBookingSchedule(
         state.date,
         state.time,
         schedulingRules,
         serviceAreaSlugs,
+        locationContext,
       );
       if (scheduleError) return setError(scheduleError);
-      if (availability?.fullyBookedSlots.includes(state.time)) {
-        return setError(
-          "That time is fully booked. Please pick another time slot.",
-        );
-      }
-    }
-    if (target === 4) {
-      if (!state.firstName || !state.lastName)
-        return setError("Please enter your name.");
-      if (!state.phone) return setError("Please enter a phone number.");
-      if (!state.email) return setError("Please enter an email address.");
-      if (!state.locationType)
-        return setError("Please pick a service location type.");
-      if (state.date && state.time) {
-        const slugs = resolveServiceAreaSlugsForLocation(
-          state.zip,
-          state.city,
-          coverageRules,
-        );
-        const scheduleError = validateBookingSchedule(
-          state.date,
-          state.time,
-          schedulingRules,
-          slugs,
-        );
-        if (scheduleError) return setError(scheduleError);
-      }
       if (availability?.fullyBookedSlots.includes(state.time)) {
         return setError(
           "That time is fully booked. Please pick another time slot.",
@@ -588,16 +642,37 @@ export function BookingFlow({
       )}
 
       {step === 2 && (
-        <Step2
+        <Step2Location
           state={state}
+          update={update}
+          locationTypes={locationTypes}
+          locationContext={locationContext}
+        />
+      )}
+
+      {step === 3 && (
+        <Step3Schedule
+          state={state}
+          update={update}
           schedulingRules={schedulingRules}
+          serviceAreaSlugs={serviceAreaSlugs}
+          locationContext={locationContext}
           availability={availability}
           availabilityLoading={availabilityLoading}
+          detailers={bookableDetailers}
+          detailerPackageBlocks={detailerPackageBlocks}
+          detailerServiceAreas={detailerServiceAreas}
           onPickDate={(d) => {
             update("date", d);
             if (
               state.time &&
-              !isTimeSlotSelectable(d, state.time, schedulingRules)
+              !isTimeSlotSelectable(
+                d,
+                state.time,
+                schedulingRules,
+                serviceAreaSlugs,
+                locationContext,
+              )
             ) {
               update("time", "");
             }
@@ -606,32 +681,17 @@ export function BookingFlow({
         />
       )}
 
-      {step >= 3 && step <= 4 && (
-        <>
-          <div className={cn(step !== 3 && "hidden")}>
-            <Step3
-              state={state}
-              update={update}
-              paymentRef={paymentRef}
-              availability={availability}
-              detailers={bookableDetailers}
-              detailerPackageBlocks={detailerPackageBlocks}
-              detailerServiceAreas={detailerServiceAreas}
-              serviceAreaSlugs={serviceAreaSlugs}
-              locationTypes={locationTypes}
-            />
-          </div>
-          <div className={cn(step !== 4 && "hidden")}>
-            <Step4
-              state={state}
-              pkg={pkg}
-              pkgPrice={pkgPrice}
-              addonTotal={addonTotal}
-              subtotal={subtotal}
-              total={total}
-            />
-          </div>
-        </>
+      {step === 4 && (
+        <Step4
+          state={state}
+          update={update}
+          paymentRef={paymentRef}
+          pkg={pkg}
+          pkgPrice={pkgPrice}
+          addonTotal={addonTotal}
+          subtotal={subtotal}
+          total={total}
+        />
       )}
 
       {error && (
@@ -658,8 +718,8 @@ export function BookingFlow({
 function Stepper({ step }: { step: Step }) {
   const steps: { num: Step; label: string }[] = [
     { num: 1, label: "Service" },
-    { num: 2, label: "Schedule" },
-    { num: 3, label: "Details" },
+    { num: 2, label: "Details" },
+    { num: 3, label: "Schedule" },
     { num: 4, label: "Confirm" },
   ];
   return (
@@ -1051,7 +1111,169 @@ function PrefQuestion({
 }
 
 /* ─────────────────────────────────────────────────────────────────────
-   STEP 2 — Calendar + Time picker
+   STEP 2 — Service location (full address)
+─────────────────────────────────────────────────────────────────────*/
+
+function Step2Location({
+  state,
+  update,
+  locationTypes,
+  locationContext,
+}: {
+  state: BookingState;
+  update: <K extends keyof BookingState>(k: K, v: BookingState[K]) => void;
+  locationTypes: string[];
+  locationContext: LocationSchedulingContext;
+}) {
+  const locationHint = locationSchedulingHint(locationContext);
+  const needsAddress = Boolean(
+    state.locationType && locationRequiresCoverageCheck(state.locationType),
+  );
+
+  return (
+    <>
+      <FormSection title="Service Location">
+        <p className="mb-4 font-mono text-[10px] leading-relaxed tracking-[0.06em] text-text/40">
+          Where we&rsquo;ll detail your vehicle. Next you&rsquo;ll pick a date,
+          time, and detailer.
+        </p>
+      <FormRow cols={1} className="mb-3.5">
+        <FieldGroup>
+          <Label htmlFor="step2-lt">Location Type</Label>
+          <Select
+            id="step2-lt"
+            value={state.locationType}
+            onChange={(e) => update("locationType", e.target.value)}
+          >
+            <option value="">Select location type…</option>
+            {locationTypes.map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </Select>
+        </FieldGroup>
+      </FormRow>
+      {state.locationType && needsAddress ? (
+        <>
+          <FormRow cols={1} className="mb-3.5">
+            <FieldGroup>
+              <Label htmlFor="step2-ad">Street Address</Label>
+              <Input
+                id="step2-ad"
+                placeholder="123 Main St"
+                value={state.address}
+                onChange={(e) => update("address", e.target.value)}
+              />
+            </FieldGroup>
+          </FormRow>
+          <FormRow className="mb-3.5">
+            <FieldGroup>
+              <Label htmlFor="step2-ct">City</Label>
+              <Input
+                id="step2-ct"
+                placeholder="Edmond"
+                value={state.city}
+                onChange={(e) => update("city", e.target.value)}
+              />
+            </FieldGroup>
+            <FieldGroup>
+              <Label htmlFor="step2-zp">ZIP Code</Label>
+              <Input
+                id="step2-zp"
+                placeholder="73013"
+                value={state.zip}
+                onChange={(e) => update("zip", e.target.value)}
+              />
+            </FieldGroup>
+          </FormRow>
+          <p className="font-mono text-[9px] leading-relaxed text-text/35">
+            We service metro areas around OKC, Tulsa, and Enid. ZIP prefixes like
+            731 or 741 cover whole regions — not every code listed.
+          </p>
+        </>
+      ) : state.locationType ? (
+        <p className="font-mono text-[10px] leading-relaxed tracking-[0.06em] text-text/45">
+          Drop-off at our Edmond shop — no street address needed.
+        </p>
+      ) : null}
+      {locationHint ? (
+        <p className="mt-3 font-mono text-[10px] leading-relaxed tracking-[0.06em] text-y/70">
+          {locationHint}
+        </p>
+      ) : null}
+      </FormSection>
+
+      <FormSection title="Your Information">
+        <FormRow className="mb-3.5">
+          <FieldGroup>
+            <Label htmlFor="fn">First Name</Label>
+            <Input
+              id="fn"
+              placeholder="Jordan"
+              value={state.firstName}
+              onChange={(e) => update("firstName", e.target.value)}
+            />
+          </FieldGroup>
+          <FieldGroup>
+            <Label htmlFor="ln">Last Name</Label>
+            <Input
+              id="ln"
+              placeholder="Smith"
+              value={state.lastName}
+              onChange={(e) => update("lastName", e.target.value)}
+            />
+          </FieldGroup>
+        </FormRow>
+        <FormRow className="mb-3.5">
+          <FieldGroup>
+            <Label htmlFor="ph">Phone</Label>
+            <Input
+              id="ph"
+              type="tel"
+              placeholder="(405) 555-0100"
+              value={state.phone}
+              onChange={(e) => update("phone", e.target.value)}
+            />
+          </FieldGroup>
+          <FieldGroup>
+            <Label htmlFor="em">Email</Label>
+            <Input
+              id="em"
+              type="email"
+              placeholder="you@email.com"
+              value={state.email}
+              onChange={(e) => update("email", e.target.value)}
+            />
+          </FieldGroup>
+        </FormRow>
+        <FormRow cols={1} className="mb-3.5">
+          <FieldGroup>
+            <Label htmlFor="vi">Year, Make &amp; Model</Label>
+            <Input
+              id="vi"
+              placeholder="e.g. 2021 Toyota Camry"
+              value={state.vehicleInfo}
+              onChange={(e) => update("vehicleInfo", e.target.value)}
+            />
+          </FieldGroup>
+        </FormRow>
+        <FormRow cols={1}>
+          <FieldGroup>
+            <Label htmlFor="nt">Special Requests</Label>
+            <Textarea
+              id="nt"
+              placeholder="Any specific areas to focus on, access instructions, etc."
+              value={state.notes}
+              onChange={(e) => update("notes", e.target.value)}
+            />
+          </FieldGroup>
+        </FormRow>
+      </FormSection>
+    </>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   STEP 3 — Calendar + Time + Detailer
 ─────────────────────────────────────────────────────────────────────*/
 
 function formatCutoffHour(hour: number): string {
@@ -1061,18 +1283,30 @@ function formatCutoffHour(hour: number): string {
   return `${hour - 12}:00 PM`;
 }
 
-function Step2({
+function Step3Schedule({
   state,
+  update,
   schedulingRules,
+  serviceAreaSlugs,
+  locationContext,
   availability,
   availabilityLoading,
+  detailers,
+  detailerPackageBlocks,
+  detailerServiceAreas,
   onPickDate,
   onPickTime,
 }: {
   state: BookingState;
+  update: <K extends keyof BookingState>(k: K, v: BookingState[K]) => void;
   schedulingRules: SchedulingRulesSnapshot;
+  serviceAreaSlugs: string[];
+  locationContext: LocationSchedulingContext;
   availability: DetailerAvailabilitySnapshot | null;
   availabilityLoading: boolean;
+  detailers: DetailerCardInfo[];
+  detailerPackageBlocks: DetailerPackageBlocksMap;
+  detailerServiceAreas: DetailerServiceAreasMap;
   onPickDate: (d: string) => void;
   onPickTime: (t: string) => void;
 }) {
@@ -1083,6 +1317,10 @@ function Step2({
   });
 
   const todayKey = getCentralTodayDateInput();
+  const scheduleHint = locationSchedulingHint(locationContext);
+  const autoAssignUnavailable =
+    Boolean(state.time) &&
+    Boolean(availability?.fullyBookedSlots.includes(state.time));
 
   const days = useMemo(() => {
     const first = new Date(cursor.y, cursor.m, 1).getDay();
@@ -1096,12 +1334,17 @@ function Step2({
       cells.push({
         day: d,
         iso: dateLabel,
-        disabled: !isDateLabelSelectable(dateLabel, schedulingRules),
+        disabled: !isDateLabelSelectable(
+          dateLabel,
+          schedulingRules,
+          serviceAreaSlugs,
+          locationContext,
+        ),
         isToday: dateInput === todayKey,
       });
     }
     return cells;
-  }, [cursor, todayKey, schedulingRules]);
+  }, [cursor, todayKey, schedulingRules, serviceAreaSlugs, locationContext]);
 
   const blockAllSlots = useMemo(() => {
     if (!state.date) return false;
@@ -1114,6 +1357,12 @@ function Step2({
 
   return (
     <>
+      {scheduleHint ? (
+        <p className="mb-4 font-mono text-[10px] leading-relaxed tracking-[0.06em] text-y/70">
+          {scheduleHint}
+        </p>
+      ) : null}
+
       <FormSection title="Pick a Date">
         <div className="mb-5 flex items-center justify-between">
           <button
@@ -1200,6 +1449,8 @@ function Step2({
                   state.date,
                   t,
                   schedulingRules,
+                  serviceAreaSlugs,
+                  locationContext,
                 );
                 const disabled = fullyBooked || slotUnavailable;
                 return (
@@ -1226,259 +1477,84 @@ function Step2({
           )}
         </FormSection>
       )}
-    </>
-  );
-}
 
-/* ─────────────────────────────────────────────────────────────────────
-   STEP 3 — Detailer + Contact + Location
-─────────────────────────────────────────────────────────────────────*/
-
-function Step3({
-  state,
-  update,
-  paymentRef,
-  availability,
-  detailers,
-  detailerPackageBlocks,
-  detailerServiceAreas,
-  serviceAreaSlugs,
-  locationTypes,
-}: {
-  state: BookingState;
-  update: <K extends keyof BookingState>(k: K, v: BookingState[K]) => void;
-  paymentRef: RefObject<BookingCardCaptureApi | null>;
-  availability: DetailerAvailabilitySnapshot | null;
-  detailers: DetailerCardInfo[];
-  detailerPackageBlocks: DetailerPackageBlocksMap;
-  detailerServiceAreas: DetailerServiceAreasMap;
-  serviceAreaSlugs: string[];
-  locationTypes: string[];
-}) {
-  const autoAssignUnavailable =
-    Boolean(state.time) &&
-    Boolean(availability?.fullyBookedSlots.includes(state.time));
-
-  return (
-    <>
-      <FormSection
-        title={
-          <>
-            Choose Your Detailer{" "}
-            <span className="ml-2 font-mono text-[13px] font-normal normal-case tracking-[0.05em] text-muted">
-              — Optional
-            </span>
-          </>
-        }
-      >
-        <p className="mb-6 font-mono text-xs tracking-[0.06em] text-text/35">
-          No preference? We&rsquo;ll assign the best available.
-        </p>
-        <div className="grid gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-          <DetailerCard
-            name=""
-            label="Auto-Assign"
-            sub={
-              autoAssignUnavailable ? "Fully booked at this time" : "Best available"
-            }
-            selected={state.detailer === ""}
-            disabled={autoAssignUnavailable}
-            onClick={() => update("detailer", "")}
-          />
-          {detailers.map((d) => {
-            const packageBlocked =
-              Boolean(state.packageKey) &&
-              isDetailerBlockedForPackage(
-                detailerPackageBlocks,
-                d.name,
-                state.packageKey,
-              );
-            const areaBlocked =
-              Boolean(state.locationType) &&
-              locationRequiresCoverageCheck(state.locationType) &&
-              Boolean(serviceAreaSlugs.length) &&
-              !isDetailerAllowedInServiceAreas(
-                detailerServiceAreas,
-                d.name,
-                serviceAreaSlugs,
-              );
-            const busy =
-              packageBlocked ||
-              areaBlocked ||
-              (Boolean(state.time) &&
-                Boolean(
-                  availability?.busySlotsByDetailer[d.name]?.includes(
-                    state.time,
-                  ),
-                ));
-            const photoSrc =
-              d.photo &&
-              (d.photo.startsWith("http") ? d.photo : assetPath(d.photo));
-            return (
-              <DetailerCard
-                key={d.name}
-                name={d.name}
-                photo={photoSrc}
-                selected={state.detailer === d.name}
-                disabled={busy}
-                sub={
-                  packageBlocked
-                    ? "Not available for this service"
-                    : areaBlocked
-                      ? "Not in this service area"
-                      : busy
-                        ? "Booked at this time"
-                        : undefined
-                }
-                onClick={() => update("detailer", d.name)}
-              />
-            );
-          })}
-        </div>
-      </FormSection>
-
-      <FormSection title="Your Information">
-        <FormRow className="mb-3.5">
-          <FieldGroup>
-            <Label htmlFor="fn">First Name</Label>
-            <Input
-              id="fn"
-              placeholder="Jordan"
-              value={state.firstName}
-              onChange={(e) => update("firstName", e.target.value)}
-            />
-          </FieldGroup>
-          <FieldGroup>
-            <Label htmlFor="ln">Last Name</Label>
-            <Input
-              id="ln"
-              placeholder="Smith"
-              value={state.lastName}
-              onChange={(e) => update("lastName", e.target.value)}
-            />
-          </FieldGroup>
-        </FormRow>
-        <FormRow>
-          <FieldGroup>
-            <Label htmlFor="ph">Phone</Label>
-            <Input
-              id="ph"
-              type="tel"
-              placeholder="(405) 555-0100"
-              value={state.phone}
-              onChange={(e) => update("phone", e.target.value)}
-            />
-          </FieldGroup>
-          <FieldGroup>
-            <Label htmlFor="em">Email</Label>
-            <Input
-              id="em"
-              type="email"
-              placeholder="you@email.com"
-              value={state.email}
-              onChange={(e) => update("email", e.target.value)}
-            />
-          </FieldGroup>
-        </FormRow>
-      </FormSection>
-
-      <FormSection title="Service Location">
-        <FormRow cols={1} className="mb-3.5">
-          <FieldGroup>
-            <Label htmlFor="lt">Location Type</Label>
-            <Select
-              id="lt"
-              value={state.locationType}
-              onChange={(e) => update("locationType", e.target.value)}
-            >
-              <option value="">Select location type…</option>
-              {locationTypes.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </Select>
-          </FieldGroup>
-        </FormRow>
-        <FormRow cols={1} className="mb-3.5">
-          <FieldGroup>
-            <Label htmlFor="ad">Street Address</Label>
-            <Input
-              id="ad"
-              placeholder="123 Main St"
-              value={state.address}
-              onChange={(e) => update("address", e.target.value)}
-            />
-          </FieldGroup>
-        </FormRow>
-        <FormRow className="mb-3.5">
-          <FieldGroup>
-            <Label htmlFor="ct">City</Label>
-            <Input
-              id="ct"
-              placeholder="Edmond"
-              value={state.city}
-              onChange={(e) => update("city", e.target.value)}
-            />
-          </FieldGroup>
-          <FieldGroup>
-            <Label htmlFor="zp">ZIP Code</Label>
-            <Input
-              id="zp"
-              placeholder="73013"
-              value={state.zip}
-              onChange={(e) => update("zip", e.target.value)}
-            />
-            {state.locationType &&
-              state.locationType !== "Drop off at your Edmond location" && (
-                <p className="mt-1.5 font-mono text-[9px] leading-relaxed text-text/35">
-                  We service metro areas around OKC, Tulsa, and Enid. ZIP prefixes
-                  like 731 or 741 cover whole regions — not every code listed.
-                </p>
-              )}
-          </FieldGroup>
-        </FormRow>
-        <FormRow cols={1} className="mb-3.5">
-          <FieldGroup>
-            <Label htmlFor="vi">Year, Make &amp; Model</Label>
-            <Input
-              id="vi"
-              placeholder="e.g. 2021 Toyota Camry"
-              value={state.vehicleInfo}
-              onChange={(e) => update("vehicleInfo", e.target.value)}
-            />
-          </FieldGroup>
-        </FormRow>
-        <FormRow cols={1}>
-          <FieldGroup>
-            <Label htmlFor="nt">Special Requests</Label>
-            <Textarea
-              id="nt"
-              placeholder="Any specific areas to focus on, access instructions, etc."
-              value={state.notes}
-              onChange={(e) => update("notes", e.target.value)}
-            />
-          </FieldGroup>
-        </FormRow>
-      </FormSection>
-
-      {isStripeCardCaptureAvailable() && (
+      {state.date && state.time ? (
         <FormSection
           title={
             <>
-              Payment method{" "}
+              Choose Your Detailer{" "}
               <span className="ml-2 font-mono text-[13px] font-normal normal-case tracking-[0.05em] text-muted">
                 — Optional
               </span>
             </>
           }
         >
-          <BookingCardCapture
-            ref={paymentRef}
-            saveCardOnFile={state.saveCardOnFile}
-            onSaveCardOnFileChange={(v) => update("saveCardOnFile", v)}
-            email={state.email}
-          />
+          <p className="mb-6 font-mono text-xs tracking-[0.06em] text-text/35">
+            No preference? We&rsquo;ll assign the best available.
+          </p>
+          <div className="grid gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            <DetailerCard
+              name=""
+              label="Auto-Assign"
+              sub={
+                autoAssignUnavailable ? "Fully booked at this time" : "Best available"
+              }
+              selected={state.detailer === ""}
+              disabled={autoAssignUnavailable}
+              onClick={() => update("detailer", "")}
+            />
+            {detailers.map((d) => {
+              const packageBlocked =
+                Boolean(state.packageKey) &&
+                isDetailerBlockedForPackage(
+                  detailerPackageBlocks,
+                  d.name,
+                  state.packageKey,
+                );
+              const areaBlocked =
+                Boolean(state.locationType) &&
+                locationRequiresCoverageCheck(state.locationType) &&
+                Boolean(serviceAreaSlugs.length) &&
+                !isDetailerAllowedInServiceAreas(
+                  detailerServiceAreas,
+                  d.name,
+                  serviceAreaSlugs,
+                );
+              const busy =
+                packageBlocked ||
+                areaBlocked ||
+                (Boolean(state.time) &&
+                  Boolean(
+                    availability?.busySlotsByDetailer[d.name]?.includes(
+                      state.time,
+                    ),
+                  ));
+              const photoSrc =
+                d.photo &&
+                (d.photo.startsWith("http") ? d.photo : assetPath(d.photo));
+              return (
+                <DetailerCard
+                  key={d.name}
+                  name={d.name}
+                  photo={photoSrc}
+                  selected={state.detailer === d.name}
+                  disabled={busy}
+                  sub={
+                    packageBlocked
+                      ? "Not available for this service"
+                      : areaBlocked
+                        ? "Not in this service area"
+                        : busy
+                          ? "Booked at this time"
+                          : undefined
+                  }
+                  onClick={() => update("detailer", d.name)}
+                />
+              );
+            })}
+          </div>
         </FormSection>
-      )}
+      ) : null}
     </>
   );
 }
@@ -1569,6 +1645,8 @@ function DetailerCard({
 
 function Step4({
   state,
+  update,
+  paymentRef,
   pkg,
   pkgPrice,
   addonTotal,
@@ -1576,6 +1654,8 @@ function Step4({
   total,
 }: {
   state: BookingState;
+  update: <K extends keyof BookingState>(k: K, v: BookingState[K]) => void;
+  paymentRef: RefObject<BookingCardCaptureApi | null>;
   pkg: SitePackage | null;
   pkgPrice: number | null;
   addonTotal: number;
@@ -1585,6 +1665,26 @@ function Step4({
   const discountDollars = (state.appliedPromo?.discountCents ?? 0) / 100;
   return (
     <div className="flex flex-col gap-8 sm:gap-10">
+      {isStripeCardCaptureAvailable() && (
+        <FormSection
+          title={
+            <>
+              Payment method{" "}
+              <span className="ml-2 font-mono text-[13px] font-normal normal-case tracking-[0.05em] text-muted">
+                — Optional
+              </span>
+            </>
+          }
+        >
+          <BookingCardCapture
+            ref={paymentRef}
+            saveCardOnFile={state.saveCardOnFile}
+            onSaveCardOnFileChange={(v) => update("saveCardOnFile", v)}
+            email={state.email}
+          />
+        </FormSection>
+      )}
+
       <FormSection title="Booking Summary" className="mb-0" size="large">
         <dl className="rounded-md border border-y/15 bg-y/[0.04] p-6 sm:p-8">
           <SummaryRow large label="Service" value={pkg?.name ?? "Not selected"} />

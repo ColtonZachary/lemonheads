@@ -78,3 +78,30 @@ export async function deleteCoverageRule(
   revalidatePath(COVERAGE_PATH);
   return { ok: true, message: "Rule removed." };
 }
+
+export async function updateServiceAreaTravelMinutes(
+  _prev: HubCoverageActionState,
+  formData: FormData,
+): Promise<HubCoverageActionState> {
+  const ctx = await requireManagerSupabase();
+  if ("error" in ctx) return { ok: false, message: ctx.error };
+
+  const slug = String(formData.get("slug") ?? "").trim();
+  const minutes = Number.parseInt(String(formData.get("travel_minutes") ?? ""), 10);
+
+  if (!slug) return { ok: false, message: "Missing service area." };
+  if (!Number.isFinite(minutes) || minutes < 0 || minutes > 600) {
+    return { ok: false, message: "Travel minutes must be 0–600." };
+  }
+
+  const { error } = await ctx.supabase
+    .from("service_areas")
+    .update({ travel_minutes_from_shop: minutes })
+    .eq("slug", slug);
+
+  if (error) return { ok: false, message: error.message };
+
+  revalidatePath(COVERAGE_PATH);
+  revalidatePath("/book");
+  return { ok: true, message: "Travel time updated." };
+}

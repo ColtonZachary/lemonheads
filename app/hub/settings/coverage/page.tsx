@@ -14,7 +14,7 @@ export default async function HubSettingsCoveragePage() {
   const [{ data: areas }, { data: coverage }] = await Promise.all([
     supabase!
       .from("service_areas")
-      .select("slug, city, state")
+      .select("slug, city, state, travel_minutes_from_shop")
       .eq("active", true)
       .order("sort_order"),
     supabase!
@@ -50,7 +50,12 @@ export default async function HubSettingsCoveragePage() {
 
       <div className="mt-6 max-w-4xl">
         <ServiceAreaCoveragePanel
-          serviceAreas={areas ?? []}
+          serviceAreas={(areas ?? []).map((a) => ({
+            slug: a.slug,
+            city: a.city,
+            state: a.state,
+            travelMinutesFromShop: a.travel_minutes_from_shop ?? 0,
+          }))}
           rules={rules}
         />
       </div>

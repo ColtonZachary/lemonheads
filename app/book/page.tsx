@@ -7,6 +7,7 @@ import { fetchBookableDetailersWithPhotos } from "@/lib/bookings/bookable-detail
 import { fetchDetailerPackageBlocksMap } from "@/lib/bookings/staff-package-blocks";
 import { fetchDetailerServiceAreasMap } from "@/lib/bookings/staff-service-areas";
 import { fetchActiveCoverageRules } from "@/lib/bookings/service-area-coverage";
+import { fetchServiceAreaTravelMap } from "@/lib/bookings/location-scheduling";
 import { fetchSchedulingRules } from "@/lib/bookings/scheduling-rules";
 import { fetchPublicCatalog } from "@/lib/catalog/public-catalog";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -26,6 +27,7 @@ export default async function BookPage() {
     catalog,
     schedulingRules,
     coverageRules,
+    serviceAreaTravel,
   ] = await Promise.all([
     supabase ? fetchBookableDetailersWithPhotos(supabase) : undefined,
     supabase ? fetchDetailerPackageBlocksMap(supabase) : {},
@@ -33,6 +35,7 @@ export default async function BookPage() {
     fetchPublicCatalog(supabase),
     fetchSchedulingRules(supabase),
     supabase ? fetchActiveCoverageRules(supabase) : [],
+    fetchServiceAreaTravelMap(supabase),
   ]);
 
   return (
@@ -56,6 +59,7 @@ export default async function BookPage() {
             catalog={catalog}
             schedulingRules={schedulingRules}
             coverageRules={coverageRules}
+            serviceAreaTravel={serviceAreaTravel}
           />
         </Suspense>
       </div>

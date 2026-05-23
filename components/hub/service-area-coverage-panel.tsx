@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import {
   addCoverageRule,
   deleteCoverageRule,
+  updateServiceAreaTravelMinutes,
   type HubCoverageActionState,
 } from "@/app/actions/hub-coverage";
 import { Button } from "@/components/ui/button";
@@ -59,11 +60,70 @@ function formatRule(row: CoverageRuleRow): string {
   return "—";
 }
 
+function TravelMinutesRow({
+  area,
+}: {
+  area: { slug: string; city: string; state: string; travelMinutesFromShop: number };
+}) {
+  const [state, action, pending] = useActionState(
+    updateServiceAreaTravelMinutes,
+    EMPTY,
+  );
+
+  return (
+    <form
+      action={action}
+      className="flex flex-wrap items-end justify-between gap-3 border-b border-white/5 px-3 py-2.5 last:border-0"
+    >
+      <div>
+        <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">
+          {area.city}, {area.state}
+        </p>
+        <p className="font-mono text-[9px] text-text/35">
+          {area.travelMinutesFromShop >= 60
+            ? "Next-day booking · 8:30 AM earliest"
+            : area.slug === "enid" || area.city.toLowerCase() === "enid"
+              ? "8:30 AM earliest"
+              : "Standard slots"}
+        </p>
+      </div>
+      <input type="hidden" name="slug" value={area.slug} />
+      <label className="flex items-end gap-2">
+        <span className={labelClass}>Min from shop</span>
+        <input
+          name="travel_minutes"
+          type="number"
+          min={0}
+          max={600}
+          defaultValue={String(area.travelMinutesFromShop)}
+          className={cn(fieldClass, "w-24")}
+        />
+      </label>
+      <Button
+        type="submit"
+        variant="outline"
+        className="h-auto min-h-0 px-2 py-1 text-[10px]"
+        disabled={pending}
+      >
+        {pending ? "…" : "Save"}
+      </Button>
+      {!state.ok && state.message ? (
+        <span className="w-full font-mono text-[9px] text-red-300">{state.message}</span>
+      ) : null}
+    </form>
+  );
+}
+
 export function ServiceAreaCoveragePanel({
   serviceAreas,
   rules,
 }: {
-  serviceAreas: { slug: string; city: string; state: string }[];
+  serviceAreas: {
+    slug: string;
+    city: string;
+    state: string;
+    travelMinutesFromShop: number;
+  }[];
   rules: CoverageRuleRow[];
 }) {
   const [createState, createAction, createPending] = useActionState(
@@ -96,6 +156,25 @@ export function ServiceAreaCoveragePanel({
           <p className="font-display text-2xl text-y">{rules.length}</p>
         </div>
       </div>
+
+      <section>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
+            Travel time from Edmond shop
+          </h2>
+          <span className="font-mono text-[9px] text-text/35">
+            60+ min → next day · 8:30 earliest
+          </span>
+        </div>
+        <p className="mb-2 text-xs text-text/45">
+          Estimated drive minutes used for booking rules — no Google API at checkout.
+        </p>
+        <ul className="rounded-lg border border-white/10">
+          {serviceAreas.map((area) => (
+            <TravelMinutesRow key={area.slug} area={area} />
+          ))}
+        </ul>
+      </section>
 
       <details className="rounded-lg border border-white/10 bg-card/30">
         <summary className="cursor-pointer list-none px-4 py-3 font-mono text-[10px] uppercase tracking-[0.12em] text-y [&::-webkit-details-marker]:hidden">

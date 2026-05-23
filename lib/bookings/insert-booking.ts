@@ -21,6 +21,10 @@ import {
   validateBookingLocationCoverage,
 } from "@/lib/bookings/service-area-coverage";
 import {
+  buildLocationSchedulingContext,
+  fetchServiceAreaTravelMap,
+} from "@/lib/bookings/location-scheduling";
+import {
   fetchSchedulingRules,
   resolveServiceAreaSlugsForLocation,
 } from "@/lib/bookings/scheduling-rules";
@@ -118,6 +122,8 @@ export type BookingInsertOptions = {
    * on the public booking flow. Hub bookings should pass false.
    */
   enforceDetailerPackageBlocks?: boolean;
+  /** When false, hub can override travel-time slot rules (default true). */
+  enforceLocationScheduling?: boolean;
 };
 
 export async function insertBooking(
@@ -134,9 +140,10 @@ export async function insertBooking(
     }
   | { ok: false; error: string }
 > {
-  const [schedulingRules, coverageRules] = await Promise.all([
+  const [schedulingRules, coverageRules, travelBySlug] = await Promise.all([
     fetchSchedulingRules(client),
     fetchActiveCoverageRules(client),
+    fetchServiceAreaTravelMap(client),
   ]);
 
   const serviceAreaSlugs = resolveServiceAreaSlugsForLocation(
@@ -145,11 +152,23 @@ export async function insertBooking(
     coverageRules,
   );
 
+  const locationContext =
+    options?.enforceLocationScheduling === false
+      ? null
+      : buildLocationSchedulingContext(
+          data.location,
+          data.zip ?? "",
+          data.city ?? "",
+          coverageRules,
+          travelBySlug,
+        );
+
   const scheduleError = validateBookingSchedule(
     data.date,
     data.time,
     schedulingRules,
     serviceAreaSlugs,
+    locationContext,
   );
   if (scheduleError) {
     return { ok: false, error: scheduleError };

@@ -1,3 +1,9 @@
+import type { LocationSchedulingContext } from "@/lib/bookings/location-scheduling";
+import {
+  isDateAllowedForLocation,
+  isTimeSlotAllowedForLocation,
+  validateLocationScheduleFromInput,
+} from "@/lib/bookings/location-scheduling";
 import { BOOKING_TIME_SLOTS, type BookingTimeSlot } from "@/lib/bookings/constants";
 import {
   BUSINESS_TIME_ZONE,
@@ -167,10 +173,21 @@ export function isDateLabelSelectable(
   dateLabel: string,
   rules?: SchedulingRulesSnapshot,
   serviceAreaSlugs: string[] = [],
+  locationContext?: LocationSchedulingContext | null,
 ): boolean {
   if (isBlackoutDateLabel(dateLabel, rules, serviceAreaSlugs)) return false;
   if (isPastDateLabel(dateLabel)) return false;
   if (isTodayDateLabel(dateLabel) && isSameDayCutoffActive(rules)) return false;
+  try {
+    const { appointmentDate } = parseBookingSchedule(
+      dateLabel,
+      BOOKING_TIME_SLOTS[0],
+      0.25,
+    );
+    if (!isDateAllowedForLocation(appointmentDate, locationContext)) return false;
+  } catch {
+    return false;
+  }
   return true;
 }
 
@@ -179,9 +196,13 @@ export function isTimeSlotSelectable(
   timeSlot: string,
   rules?: SchedulingRulesSnapshot,
   serviceAreaSlugs: string[] = [],
+  locationContext?: LocationSchedulingContext | null,
 ): boolean {
-  if (!isDateLabelSelectable(dateLabel, rules, serviceAreaSlugs)) return false;
+  if (!isDateLabelSelectable(dateLabel, rules, serviceAreaSlugs, locationContext)) {
+    return false;
+  }
   if (isTimeSlotInPast(dateLabel, timeSlot)) return false;
+  if (!isTimeSlotAllowedForLocation(timeSlot, locationContext)) return false;
   return true;
 }
 
@@ -209,21 +230,40 @@ export function validateBookingSchedule(
   timeSlot: string,
   rules?: SchedulingRulesSnapshot,
   serviceAreaSlugs: string[] = [],
+  locationContext?: LocationSchedulingContext | null,
 ): string | null {
   if (isBlackoutDateLabel(dateLabel, rules, serviceAreaSlugs)) {
     return "We are closed that day. Please pick another date.";
   }
-  if (!isDateLabelSelectable(dateLabel, rules, serviceAreaSlugs)) {
+  if (!isDateLabelSelectable(dateLabel, rules, serviceAreaSlugs, locationContext)) {
     if (isPastDateLabel(dateLabel)) {
       return "That date has already passed. Please pick a future date.";
+    }
+    try {
+      const { appointmentDate } = parseBookingSchedule(
+        dateLabel,
+        BOOKING_TIME_SLOTS[0],
+        0.25,
+      );
+      if (!isDateAllowedForLocation(appointmentDate, locationContext)) {
+        return "This location requires booking at least the next day. Please pick a future date.";
+      }
+    } catch {
+      /* fall through */
     }
     const cutoff = cutoffHour(rules);
     return `Same-day bookings are unavailable after ${formatCutoffMessage(cutoff)} Central. Pick a future date.`;
   }
-  if (!isTimeSlotSelectable(dateLabel, timeSlot, rules, serviceAreaSlugs)) {
+  if (!isTimeSlotSelectable(dateLabel, timeSlot, rules, serviceAreaSlugs, locationContext)) {
     if (isTimeSlotInPast(dateLabel, timeSlot)) {
       return "That time has already passed. Please pick a later time or another day.";
     }
+  if (!isTimeSlotAllowedForLocation(timeSlot, locationContext)) {
+    if (locationContext?.isEnid) {
+      return "Enid bookings start at 8:30 AM. Please pick a later time.";
+    }
+    return "Earliest available time for this location is 8:30 AM.";
+  }
     return "That time is not available. Please pick another slot.";
   }
   return null;
@@ -234,6 +274,7 @@ export function validateBookingScheduleFromInput(
   timeSlot: string,
   rules?: SchedulingRulesSnapshot,
   serviceAreaSlugs: string[] = [],
+  locationContext?: LocationSchedulingContext | null,
 ): string | null {
   try {
     return validateBookingSchedule(
@@ -241,6 +282,7 @@ export function validateBookingScheduleFromInput(
       timeSlot,
       rules,
       serviceAreaSlugs,
+      locationContext,
     );
   } catch {
     return "Invalid date or time.";
@@ -301,6 +343,7 @@ export function listTimeSlotStates(
   dateLabel: string | null,
   rules?: SchedulingRulesSnapshot,
   serviceAreaSlugs: string[] = [],
+  locationContext?: LocationSchedulingContext | null,
 ) {
   if (!dateLabel) {
     return BOOKING_TIME_SLOTS.map((slot) => ({
@@ -316,10 +359,11 @@ export function listTimeSlotStates(
       slot,
       rules,
       serviceAreaSlugs,
+      locationContext,
     );
     let reason: "past" | "cutoff" | "ok" = "ok";
     if (!selectable) {
-      if (!isDateLabelSelectable(dateLabel, rules, serviceAreaSlugs)) {
+      if (!isDateLabelSelectable(dateLabel, rules, serviceAreaSlugs, locationContext)) {
         reason = "cutoff";
       } else if (isTimeSlotInPast(dateLabel, slot)) reason = "past";
       else reason = "cutoff";

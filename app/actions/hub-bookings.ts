@@ -582,6 +582,7 @@ export async function createHubBooking(
     status: status as BookingInsertOptions["status"],
     managerNotes: String(formData.get("manager_notes") ?? ""),
     enforceDetailerPackageBlocks: false,
+    enforceLocationScheduling: false,
   });
 
   if (!saved.ok) {
