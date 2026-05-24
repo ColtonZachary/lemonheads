@@ -47,6 +47,14 @@ export function SiteNav() {
         <Logo />
 
         <ul className="hidden items-center gap-7 lg:flex">
+          <li>
+            <Link
+              href="/rewards"
+              className="font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-white transition-colors hover:text-y"
+            >
+              Rewards
+            </Link>
+          </li>
           {PRIMARY_LINKS.map((link) => (
             <li key={link.href}>
               <Link
@@ -130,6 +138,13 @@ export function SiteNav() {
           isOpen ? "flex" : "hidden",
         )}
       >
+        <Link
+          href="/rewards"
+          onClick={close}
+          className="border-b border-white/5 py-3 font-mono text-sm font-semibold uppercase tracking-[0.1em] text-text transition-colors hover:text-y"
+        >
+          Rewards
+        </Link>
         {[...PRIMARY_LINKS, ...MORE_LINKS].map((link) => (
           <Link
             key={link.href}

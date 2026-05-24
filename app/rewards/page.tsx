@@ -98,11 +98,15 @@ export default async function RewardsPage() {
         ) : user && !linked ? (
           <div className="rounded-md border border-white/15 bg-card p-6 text-sm text-text/55">
             <p>
-              Signed in as <span className="text-y">{user.email}</span>, but we don&apos;t have a
-              booking history for that email yet. Complete a booking with this email first, then
-              refresh this page.
+              Signed in as <span className="text-y">{user.email}</span>, but we couldn&apos;t find a
+              rewards account linked to this login. The customer email must match, and{" "}
+              <code className="text-y/80">auth_user_id</code> must be your Auth user id.
             </p>
-            <RewardsSignIn defaultEmail={user.email ?? ""} />
+            <form action={signOutRewards} className="mt-4">
+              <Button type="submit" variant="ghost" size="sm">
+                Sign out
+              </Button>
+            </form>
           </div>
         ) : (
           <>

@@ -14,6 +14,7 @@ import {
 } from "@/lib/hub/hub-access-permissions";
 import { requireManagerSupabase } from "@/lib/hub/require-manager-supabase";
 import { getAppBaseUrl } from "@/lib/app-url";
+import { formatAuthEmailError } from "@/lib/auth/email-errors";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export type HubManagersActionState = {
@@ -182,7 +183,7 @@ export async function inviteHubUser(
     return {
       ok: false,
       message:
-        inviteError?.message ??
+        formatAuthEmailError(inviteError?.message ?? "") ||
         "Could not send invite. User may already exist — update them below.",
     };
   }

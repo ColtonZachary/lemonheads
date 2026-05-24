@@ -539,6 +539,27 @@ No Stripe work is required to use the hub for scheduling and catalog.
 
 ---
 
+## Phase 11 — Loyalty rewards (follow-up checklist)
+
+Work through when you are ready to go live with customer points and email sign-in.
+
+| Step | Status |
+|------|--------|
+| Run `20260603000000_loyalty.sql` in Supabase SQL Editor | ☐ |
+| Run `NOTIFY pgrst, 'reload schema';` if tables/functions are missing in the app | ☐ |
+| Hub → **Settings → Loyalty** — set points rate and at least one reward goal | ☐ |
+| Supabase → **URL configuration** — add `…/auth/finish**` (and `…/auth/confirm**`) redirect URLs | ☐ |
+| **Resend SMTP for Supabase Auth** (rewards magic links + hub invites — separate from `RESEND_API_KEY` in Vercel) | ☐ |
+| Resend → verify domain → Supabase → **Authentication → Email → SMTP Settings** | ☐ |
+| Host `smtp.resend.com`, port `465`, user `resend`, password = Resend API key | ☐ |
+| Sender e.g. `noreply@lemonheadsdetail.com` (must be on verified domain) | ☐ |
+| Optional: Resend → **Integrations → Supabase** (auto-configures SMTP) | ☐ |
+| Test customer seed: `supabase/seed/test_loyalty_customer.sql` | ☐ |
+
+**Note:** Booking/contact emails use the Resend API via `RESEND_*` in Vercel. Auth emails (magic links, invites) only use Resend after SMTP is configured in the **Supabase** dashboard.
+
+---
+
 ## Troubleshooting
 
 | Problem | Fix |

@@ -8,6 +8,7 @@ export const BookingSchema = z.object({
   vehicleKey: z.string().optional().default(""),
   vehicle: z.string().min(1, "Please select a vehicle type."),
   promoCode: z.string().optional().default(""),
+  loyaltyRedemptionId: z.string().optional().default(""),
   vehicleInfo: z.string().optional().default(""),
   date: z.string().min(1, "Please pick a date."),
   time: z.string().min(1, "Please pick a time."),

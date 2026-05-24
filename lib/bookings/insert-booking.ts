@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { VehicleKey } from "@/lib/data";
 import type { BookingInput } from "@/lib/booking-types";
 import { fetchBookableDetailerNames } from "@/lib/bookings/bookable-detailers";
-import { computeBookingPricing } from "@/lib/promos/booking-pricing";
+import { computeCheckoutPricing } from "@/lib/bookings/checkout-pricing";
 import { incrementPromoUse } from "@/lib/promos/promo-validate";
 import {
   fetchBookingsForDate,
@@ -275,11 +275,12 @@ export async function insertBooking(
   }
 
   const vehicleKey = data.vehicleKey?.trim() as VehicleKey;
-  const pricing = await computeBookingPricing(client, {
+  const pricing = await computeCheckoutPricing(client, {
     packageKey: serviceKey,
     vehicleKey,
     addonNames: data.addons ?? [],
     promoCode: data.promoCode?.trim() || undefined,
+    loyaltyRedemptionId: data.loyaltyRedemptionId?.trim() || undefined,
   });
 
   if (!pricing.ok) {
@@ -303,6 +304,9 @@ export async function insertBooking(
     price_cents: pricing.totalCents,
     price_display: formatCentsDisplay(pricing.totalCents),
     ...(customerId ? { customer_id: customerId } : {}),
+    ...(pricing.loyaltyRedemptionId
+      ? { loyalty_redemption_id: pricing.loyaltyRedemptionId }
+      : {}),
   };
 
   const { data: inserted, error } = await client
@@ -314,6 +318,14 @@ export async function insertBooking(
   if (error) {
     console.error("[bookings] insert failed:", error.message);
     return { ok: false, error: error.message };
+  }
+
+  if (pricing.loyaltyRedemptionId) {
+    await client
+      .from("loyalty_redemptions")
+      .update({ booking_id: inserted.id })
+      .eq("id", pricing.loyaltyRedemptionId)
+      .eq("status", "pending");
   }
 
   if (pricing.promoCodeId) {

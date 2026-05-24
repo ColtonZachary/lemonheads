@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getAppBaseUrl, authRedirectPath } from "@/lib/app-url";
+import { formatAuthEmailError } from "@/lib/auth/email-errors";
 import { linkCustomerAuthUser } from "@/lib/loyalty/link-customer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -11,6 +12,37 @@ export type LoyaltyCustomerActionState = {
   ok: boolean;
   message: string;
 };
+
+export async function signInRewardsWithPassword(
+  _prev: LoyaltyCustomerActionState,
+  formData: FormData,
+): Promise<LoyaltyCustomerActionState> {
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
+  const password = String(formData.get("password") ?? "");
+
+  if (!email || !email.includes("@")) {
+    return { ok: false, message: "Enter a valid email address." };
+  }
+  if (!password) {
+    return { ok: false, message: "Enter your password." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, message: "Sign-in is not configured." };
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    return { ok: false, message: formatAuthEmailError(error.message) };
+  }
+
+  await linkCustomerAuthUser(supabase);
+  revalidatePath("/rewards");
+  redirect("/rewards");
+}
 
 export async function sendRewardsMagicLink(
   _prev: LoyaltyCustomerActionState,
@@ -46,7 +78,7 @@ export async function sendRewardsMagicLink(
   });
 
   if (error) {
-    return { ok: false, message: error.message };
+    return { ok: false, message: formatAuthEmailError(error.message) };
   }
 
   return {

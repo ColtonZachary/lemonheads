@@ -1,7 +1,7 @@
 "use server";
 
 import type { VehicleKey } from "@/lib/data";
-import { computeBookingPricing } from "@/lib/promos/booking-pricing";
+import { computeCheckoutPricing } from "@/lib/bookings/checkout-pricing";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export type PromoApplyResult =
@@ -9,6 +9,7 @@ export type PromoApplyResult =
       ok: true;
       code: string;
       discountCents: number;
+      loyaltyDiscountCents: number;
       subtotalCents: number;
       totalCents: number;
     }
@@ -19,6 +20,7 @@ export async function applyPromoForBooking(input: {
   packageKey: string;
   vehicleKey: VehicleKey;
   addonNames: string[];
+  loyaltyRedemptionId?: string;
 }): Promise<PromoApplyResult> {
   const client = getSupabaseAdmin();
   if (!client) {
@@ -30,11 +32,12 @@ export async function applyPromoForBooking(input: {
     return { ok: false, message: "Enter a promo code." };
   }
 
-  const pricing = await computeBookingPricing(client, {
+  const pricing = await computeCheckoutPricing(client, {
     packageKey: input.packageKey,
     vehicleKey: input.vehicleKey,
     addonNames: input.addonNames,
     promoCode: trimmed,
+    loyaltyRedemptionId: input.loyaltyRedemptionId?.trim() || undefined,
   });
 
   if (!pricing.ok) return pricing;
@@ -45,7 +48,8 @@ export async function applyPromoForBooking(input: {
   return {
     ok: true,
     code: pricing.promoCode,
-    discountCents: pricing.discountCents,
+    discountCents: pricing.promoDiscountCents,
+    loyaltyDiscountCents: pricing.loyaltyDiscountCents,
     subtotalCents: pricing.subtotalCents,
     totalCents: pricing.totalCents,
   };

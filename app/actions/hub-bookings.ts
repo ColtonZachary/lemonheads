@@ -560,6 +560,7 @@ export async function createHubBooking(
     vehicleKey,
     vehicle: vehicle.label,
     promoCode: "",
+    loyaltyRedemptionId: "",
     vehicleInfo: String(formData.get("vehicle_info") ?? ""),
     date: dateLabel,
     time: timeLabel,

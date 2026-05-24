@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
+
+import { CheckoutRewardsSignIn } from "@/components/book/checkout-rewards-sign-in";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  type Dispatch,
+  type SetStateAction,
   useEffect,
   useMemo,
   useRef,
@@ -38,6 +42,11 @@ import {
 } from "@/lib/bookings/location-scheduling";
 import type { DetailerAvailabilitySnapshot } from "@/lib/bookings/detailer-availability";
 import { applyPromoForBooking } from "@/app/actions/promo";
+import {
+  applyLoyaltyForBooking,
+  getRewardsCheckoutOptions,
+  type RewardsCheckoutContextResult,
+} from "@/app/actions/loyalty-checkout";
 import { submitBooking } from "@/lib/submit-booking";
 import {
   BookingCardCapture,
@@ -109,6 +118,14 @@ interface BookingState {
   promoCodeInput: string;
   appliedPromo: { code: string; discountCents: number } | null;
   promoMessage: string | null;
+
+  appliedLoyalty: {
+    redemptionId: string;
+    label: string;
+    discountCents: number;
+  } | null;
+  loyaltyMessage: string | null;
+  selectedRewardKey: string;
 }
 
 const VEHICLE_TOP: { key: VehicleKey | "suv"; label: string; icon: IconName }[] = [
@@ -160,6 +177,9 @@ function emptyState(
     promoCodeInput: "",
     appliedPromo: null,
     promoMessage: null,
+    appliedLoyalty: null,
+    loyaltyMessage: null,
+    selectedRewardKey: "",
   };
 }
 
@@ -245,9 +265,11 @@ export function BookingFlow({
     [state.addons, addons],
   );
   const subtotal = pkgPrice !== null ? pkgPrice + addonTotal : null;
-  const discountDollars = (state.appliedPromo?.discountCents ?? 0) / 100;
+  const discountCents =
+    (state.appliedPromo?.discountCents ?? 0) +
+    (state.appliedLoyalty?.discountCents ?? 0);
   const total =
-    subtotal !== null ? Math.max(0, subtotal - discountDollars) : null;
+    subtotal !== null ? Math.max(0, subtotal - discountCents / 100) : null;
 
   const serviceAreaSlugs = useMemo(
     () =>
@@ -316,8 +338,22 @@ export function BookingFlow({
 
   useEffect(() => {
     setState((s) => {
-      if (!s.appliedPromo && !s.promoMessage) return s;
-      return { ...s, appliedPromo: null, promoMessage: null };
+      if (
+        !s.appliedPromo &&
+        !s.promoMessage &&
+        !s.appliedLoyalty &&
+        !s.loyaltyMessage
+      ) {
+        return s;
+      }
+      return {
+        ...s,
+        appliedPromo: null,
+        promoMessage: null,
+        appliedLoyalty: null,
+        loyaltyMessage: null,
+        selectedRewardKey: "",
+      };
     });
   }, [state.packageKey, state.vehicleKey, addonKey]);
 
@@ -566,6 +602,7 @@ export function BookingFlow({
         addons: Array.from(state.addons),
         vehicleKey: state.vehicleKey,
         promoCode: state.appliedPromo?.code ?? "",
+        loyaltyRedemptionId: state.appliedLoyalty?.redemptionId ?? "",
         estimatedTotal: total !== null ? formatCurrency(total) : "TBD",
         plasticCondition: state.plasticCondition,
         earlyContact: state.earlyContact,
@@ -619,25 +656,6 @@ export function BookingFlow({
           toggleAddon={toggleAddon}
           packages={packages}
           addons={addons}
-          onApplyPromo={(result) => {
-            if (result.ok) {
-              setState((s) => ({
-                ...s,
-                appliedPromo: {
-                  code: result.code,
-                  discountCents: result.discountCents,
-                },
-                promoMessage: `${result.code} applied — you save ${formatCurrency(result.discountCents / 100)}.`,
-              }));
-              setError(null);
-            } else {
-              setState((s) => ({
-                ...s,
-                appliedPromo: null,
-                promoMessage: result.message,
-              }));
-            }
-          }}
         />
       )}
 
@@ -685,12 +703,15 @@ export function BookingFlow({
         <Step4
           state={state}
           update={update}
+          setState={setState}
+          setError={setError}
           paymentRef={paymentRef}
           pkg={pkg}
           pkgPrice={pkgPrice}
           addonTotal={addonTotal}
           subtotal={subtotal}
           total={total}
+          discountCents={discountCents}
         />
       )}
 
@@ -774,38 +795,13 @@ function Step1({
   toggleAddon,
   packages,
   addons,
-  onApplyPromo,
 }: {
   state: BookingState;
   update: <K extends keyof BookingState>(k: K, v: BookingState[K]) => void;
   toggleAddon: (name: string) => void;
   packages: SitePackage[];
   addons: PublicCatalog["addons"];
-  onApplyPromo: (
-    result:
-      | {
-          ok: true;
-          code: string;
-          discountCents: number;
-        }
-      | { ok: false; message: string },
-  ) => void;
 }) {
-  const [promoPending, startPromoTransition] = useTransition();
-  const canApplyPromo = Boolean(state.packageKey && state.vehicleKey);
-
-  const handleApplyPromo = () => {
-    if (!canApplyPromo) return;
-    startPromoTransition(async () => {
-      const result = await applyPromoForBooking({
-        code: state.promoCodeInput,
-        packageKey: state.packageKey,
-        vehicleKey: state.vehicleKey as VehicleKey,
-        addonNames: Array.from(state.addons),
-      });
-      onApplyPromo(result);
-    });
-  };
   const [suvOpen, setSuvOpen] = useState(
     state.vehicleKey === "suv2" || state.vehicleKey === "suv3",
   );
@@ -1004,55 +1000,6 @@ function Step1({
         )}
       </FormSection>
 
-      <FormSection title="Promo Code">
-        <p className="mb-4 font-mono text-xs tracking-[0.06em] text-text/35">
-          Have a code? Enter it below and tap Apply. Select your service and vehicle
-          first.
-        </p>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <label className="min-w-0 flex-1">
-            <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-text/40">
-              Code
-            </span>
-            <input
-              type="text"
-              value={state.promoCodeInput}
-              onChange={(e) =>
-                update("promoCodeInput", e.target.value.toUpperCase())
-              }
-              placeholder="SUMMER25"
-              className="mt-1 w-full rounded border border-white/15 bg-dk px-3 py-2 font-mono text-sm uppercase tracking-[0.08em]"
-              autoComplete="off"
-            />
-          </label>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={!canApplyPromo || promoPending || !state.promoCodeInput.trim()}
-            className="h-auto min-h-0 shrink-0 px-5 py-2"
-            onClick={handleApplyPromo}
-          >
-            {promoPending ? "Checking…" : "Apply"}
-          </Button>
-        </div>
-        {!canApplyPromo && (
-          <p className="mt-2 font-mono text-[10px] text-text/35">
-            Select a service and vehicle type to apply a code.
-          </p>
-        )}
-        {state.promoMessage && (
-          <p
-            className={cn(
-              "mt-3 rounded-md border px-4 py-3 font-mono text-xs",
-              state.appliedPromo
-                ? "border-y/30 bg-y/10 text-y"
-                : "border-red-500/30 bg-red-500/10 text-red-200",
-            )}
-          >
-            {state.promoMessage}
-          </p>
-        )}
-      </FormSection>
 
       <FormSection title="A Few Quick Questions">
         <p className="mb-7 font-mono text-xs tracking-[0.06em] text-text/35">
@@ -1646,25 +1593,367 @@ function DetailerCard({
 function Step4({
   state,
   update,
+  setState,
+  setError,
   paymentRef,
   pkg,
   pkgPrice,
   addonTotal,
   subtotal,
   total,
+  discountCents,
 }: {
   state: BookingState;
   update: <K extends keyof BookingState>(k: K, v: BookingState[K]) => void;
+  setState: Dispatch<SetStateAction<BookingState>>;
+  setError: Dispatch<SetStateAction<string | null>>;
   paymentRef: RefObject<BookingCardCaptureApi | null>;
   pkg: SitePackage | null;
   pkgPrice: number | null;
   addonTotal: number;
   subtotal: number | null;
   total: number | null;
+  discountCents: number;
 }) {
-  const discountDollars = (state.appliedPromo?.discountCents ?? 0) / 100;
+  const [promoPending, startPromoTransition] = useTransition();
+  const [loyaltyPending, startLoyaltyTransition] = useTransition();
+  const [rewardsLoading, setRewardsLoading] = useState(true);
+  const [rewardsRefreshKey, setRewardsRefreshKey] = useState(0);
+  const [rewardsContext, setRewardsContext] =
+    useState<Extract<RewardsCheckoutContextResult, { ok: true }> | null>(null);
+  const [rewardsNotice, setRewardsNotice] = useState<string | null>(null);
+
+  const addonNames = useMemo(() => Array.from(state.addons), [state.addons]);
+  const addonKey = addonNames.sort().join("|");
+
+  useEffect(() => {
+    if (!state.packageKey || !state.vehicleKey) {
+      setRewardsContext(null);
+      setRewardsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setRewardsLoading(true);
+    void getRewardsCheckoutOptions({
+      packageKey: state.packageKey,
+      vehicleKey: state.vehicleKey as VehicleKey,
+      addonNames,
+    })
+      .then((result) => {
+        if (cancelled) return;
+        if (result.ok) {
+          setRewardsContext(result);
+          setRewardsNotice(null);
+        } else if (result.message === "not_signed_in") {
+          setRewardsContext(null);
+          setRewardsNotice(null);
+        } else if (result.message === "no_customer") {
+          setRewardsContext(null);
+          setRewardsNotice(
+            "Sign in with the same email as your past bookings to use rewards.",
+          );
+        } else {
+          setRewardsContext(null);
+          setRewardsNotice(result.message);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setRewardsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [state.packageKey, state.vehicleKey, addonKey, addonNames, rewardsRefreshKey]);
+
+  const handleApplyPromo = () => {
+    if (!state.packageKey || !state.vehicleKey) return;
+    startPromoTransition(async () => {
+      const result = await applyPromoForBooking({
+        code: state.promoCodeInput,
+        packageKey: state.packageKey,
+        vehicleKey: state.vehicleKey as VehicleKey,
+        addonNames,
+        loyaltyRedemptionId: state.appliedLoyalty?.redemptionId,
+      });
+      if (result.ok) {
+        setState((s) => ({
+          ...s,
+          appliedPromo: {
+            code: result.code,
+            discountCents: result.discountCents,
+          },
+          appliedLoyalty: s.appliedLoyalty
+            ? {
+                ...s.appliedLoyalty,
+                discountCents: result.loyaltyDiscountCents,
+              }
+            : null,
+          promoMessage: `${result.code} applied — you save ${formatCurrency(result.discountCents / 100)}.`,
+        }));
+        setError(null);
+      } else {
+        setState((s) => ({
+          ...s,
+          appliedPromo: null,
+          promoMessage: result.message,
+        }));
+      }
+    });
+  };
+
+  const handleApplyLoyalty = () => {
+    if (!state.packageKey || !state.vehicleKey || !state.selectedRewardKey) return;
+    const option = rewardsContext?.options.find(
+      (o) => `${o.kind}:${o.id}` === state.selectedRewardKey,
+    );
+    if (!option?.applicable) return;
+
+    startLoyaltyTransition(async () => {
+      const result = await applyLoyaltyForBooking({
+        packageKey: state.packageKey,
+        vehicleKey: state.vehicleKey as VehicleKey,
+        addonNames,
+        pendingRedemptionId:
+          option.kind === "pending" ? option.redemptionId : undefined,
+        goalId: option.kind === "goal" ? option.goalId : undefined,
+        promoCode: state.appliedPromo?.code,
+      });
+      if (result.ok) {
+        setState((s) => ({
+          ...s,
+          appliedLoyalty: {
+            redemptionId: result.redemptionId,
+            label: result.label,
+            discountCents: result.discountCents,
+          },
+          loyaltyMessage: `${result.label} applied — you save ${formatCurrency(result.discountCents / 100)}.`,
+          selectedRewardKey: `${option.kind}:${option.id}`,
+        }));
+        setError(null);
+      } else {
+        setState((s) => ({
+          ...s,
+          appliedLoyalty: null,
+          loyaltyMessage: result.message,
+        }));
+      }
+    });
+  };
+
+  const promoDiscountDollars = (state.appliedPromo?.discountCents ?? 0) / 100;
+  const loyaltyDiscountDollars =
+    (state.appliedLoyalty?.discountCents ?? 0) / 100;
+  const hasDiscount = discountCents > 0;
+
   return (
     <div className="flex flex-col gap-8 sm:gap-10">
+      <FormSection title="Promo & Rewards">
+        <p className="mb-6 font-mono text-xs tracking-[0.06em] text-text/35">
+          Add a promo code or redeem rewards before you confirm. Discounts update
+          your estimated total below.
+        </p>
+
+        <div className="space-y-6">
+          <div>
+            <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-y/70">
+              Promo code
+            </p>
+            {state.appliedPromo ? (
+              <div className="flex flex-col gap-3 rounded-md border border-y/25 bg-y/[0.06] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-mono text-xs font-bold uppercase tracking-[0.1em] text-y">
+                    {state.appliedPromo.code}
+                  </p>
+                  <p className="mt-1 font-mono text-[10px] text-text/50">
+                    Saves {formatCurrency(promoDiscountDollars)}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setState((s) => ({
+                      ...s,
+                      appliedPromo: null,
+                      promoMessage: null,
+                      promoCodeInput: "",
+                    }))
+                  }
+                >
+                  Remove
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <label className="min-w-0 flex-1">
+                    <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-text/40">
+                      Code
+                    </span>
+                    <input
+                      type="text"
+                      value={state.promoCodeInput}
+                      onChange={(e) =>
+                        update("promoCodeInput", e.target.value.toUpperCase())
+                      }
+                      placeholder="SUMMER25"
+                      className="mt-1 w-full rounded border border-white/15 bg-dk px-3 py-2 font-mono text-sm uppercase tracking-[0.08em]"
+                      autoComplete="off"
+                    />
+                  </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={
+                      promoPending || !state.promoCodeInput.trim()
+                    }
+                    className="h-auto min-h-0 shrink-0 px-5 py-2"
+                    onClick={handleApplyPromo}
+                  >
+                    {promoPending ? "Checking…" : "Apply"}
+                  </Button>
+                </div>
+                {state.promoMessage && (
+                  <p className="mt-3 rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 font-mono text-xs text-red-200">
+                    {state.promoMessage}
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="h-px bg-white/[0.06]" />
+
+          <div>
+            <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-y/70">
+              Rewards
+            </p>
+            {state.appliedLoyalty ? (
+              <div className="flex flex-col gap-3 rounded-md border border-y/25 bg-y/[0.06] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-mono text-xs font-bold uppercase tracking-[0.1em] text-y">
+                    {state.appliedLoyalty.label}
+                  </p>
+                  <p className="mt-1 font-mono text-[10px] text-text/50">
+                    Saves {formatCurrency(loyaltyDiscountDollars)}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setState((s) => ({
+                      ...s,
+                      appliedLoyalty: null,
+                      loyaltyMessage: null,
+                      selectedRewardKey: "",
+                    }))
+                  }
+                >
+                  Remove
+                </Button>
+              </div>
+            ) : rewardsLoading ? (
+              <p className="font-mono text-xs text-text/40">Loading rewards…</p>
+            ) : rewardsContext ? (
+              <>
+                <p className="mb-4 font-mono text-[10px] text-text/45">
+                  Signed in as {rewardsContext.email} ·{" "}
+                  {rewardsContext.pointsBalance.toLocaleString()} points
+                </p>
+                {rewardsContext.options.length === 0 ? (
+                  <p className="font-mono text-xs text-text/40">
+                    No rewards available for this booking yet. Earn more points
+                    after your detail is billed.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {rewardsContext.options.map((option) => {
+                      const key = `${option.kind}:${option.id}`;
+                      const selected = state.selectedRewardKey === key;
+                      return (
+                        <label
+                          key={key}
+                          className={cn(
+                            "flex cursor-pointer gap-3 rounded-md border px-4 py-3 transition-colors",
+                            !option.applicable &&
+                              "cursor-not-allowed opacity-50",
+                            selected
+                              ? "border-y bg-y/[0.08]"
+                              : "border-border-faint bg-card hover:border-y/20",
+                          )}
+                        >
+                          <input
+                            type="radio"
+                            name="checkout-reward"
+                            className="mt-1 accent-[var(--y)]"
+                            disabled={!option.applicable}
+                            checked={selected}
+                            onChange={() =>
+                              update("selectedRewardKey", key)
+                            }
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-semibold text-text/90">
+                              {option.label}
+                            </span>
+                            <span className="mt-0.5 block font-mono text-[10px] text-text/45">
+                              {option.detail}
+                              {option.applicable
+                                ? ` · Save ${formatCurrency(option.discountCents / 100)}`
+                                : option.reason
+                                  ? ` · ${option.reason}`
+                                  : ""}
+                            </span>
+                            {option.kind === "goal" ? (
+                              <span className="mt-1 block font-mono text-[9px] uppercase tracking-[0.1em] text-y/60">
+                                Redeems {option.pointsRequired} points at checkout
+                              </span>
+                            ) : null}
+                          </span>
+                        </label>
+                      );
+                    })}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={
+                        loyaltyPending ||
+                        !state.selectedRewardKey ||
+                        !rewardsContext.options.some(
+                          (o) =>
+                            `${o.kind}:${o.id}` === state.selectedRewardKey &&
+                            o.applicable,
+                        )
+                      }
+                      className="mt-3"
+                      onClick={handleApplyLoyalty}
+                    >
+                      {loyaltyPending ? "Applying…" : "Apply reward"}
+                    </Button>
+                  </div>
+                )}
+                {state.loyaltyMessage && (
+                  <p className="mt-3 rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 font-mono text-xs text-red-200">
+                    {state.loyaltyMessage}
+                  </p>
+                )}
+              </>
+            ) : (
+              <CheckoutRewardsSignIn
+                defaultEmail={state.email}
+                notice={rewardsNotice}
+                onSignedIn={() => setRewardsRefreshKey((key) => key + 1)}
+              />
+            )}
+          </div>
+        </div>
+      </FormSection>
+
       {isStripeCardCaptureAvailable() && (
         <FormSection
           title={
@@ -1745,6 +2034,9 @@ function Step4({
           {state.appliedPromo && (
             <SummaryRow large label="Promo" value={state.appliedPromo.code} />
           )}
+          {state.appliedLoyalty && (
+            <SummaryRow large label="Rewards" value={state.appliedLoyalty.label} />
+          )}
           <SummaryRow large label="Plastic Conditioning" value={state.plasticCondition} />
           <SummaryRow large label="OK for Early Contact" value={state.earlyContact} />
           {state.saveCardOnFile && (
@@ -1769,14 +2061,23 @@ function Step4({
             {addonTotal > 0 && (
               <BreakdownRow large label="Add-Ons" value={`+${formatCurrency(addonTotal)}`} />
             )}
-            {subtotal !== null && discountDollars > 0 && (
+            {subtotal !== null && hasDiscount && (
               <>
                 <BreakdownRow large label="Subtotal" value={formatCurrency(subtotal)} />
-                <BreakdownRow
-                  large
-                  label={`Promo (${state.appliedPromo?.code})`}
-                  value={`−${formatCurrency(discountDollars)}`}
-                />
+                {state.appliedPromo && promoDiscountDollars > 0 && (
+                  <BreakdownRow
+                    large
+                    label={`Promo (${state.appliedPromo.code})`}
+                    value={`−${formatCurrency(promoDiscountDollars)}`}
+                  />
+                )}
+                {state.appliedLoyalty && loyaltyDiscountDollars > 0 && (
+                  <BreakdownRow
+                    large
+                    label={`Rewards (${state.appliedLoyalty.label})`}
+                    value={`−${formatCurrency(loyaltyDiscountDollars)}`}
+                  />
+                )}
               </>
             )}
             <div className="h-px bg-white/[0.06]" />
