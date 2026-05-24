@@ -20,6 +20,11 @@ const settingsLinks = [
     description: "Detailer pay per package and add-on (Regular vs Senior)",
   },
   {
+    href: "/hub/settings/loyalty",
+    title: "Loyalty",
+    description: "Customer points, reward goals, and redemptions",
+  },
+  {
     href: "/hub/settings/appearance",
     title: "Hub colors",
     description: "Your personal hub theme",
@@ -46,7 +51,7 @@ export default async function HubSettingsPage() {
     <div className="max-w-4xl">
       <h1 className="font-display text-5xl tracking-[0.04em] text-y">SETTINGS</h1>
       <p className="mt-2 text-sm text-text/45">
-        Scheduling rules, coverage, detailer pay, and your hub appearance.
+        Scheduling rules, coverage, detailer pay, loyalty rewards, and your hub appearance.
       </p>
 
       <div className="mt-6 flex flex-wrap gap-3">

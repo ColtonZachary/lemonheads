@@ -8,6 +8,7 @@ import { SITE } from "@/lib/site";
 
 const FOOTER_LINKS = [
   { href: "/book", label: "Book Now" },
+  { href: "/rewards", label: "Rewards" },
   { href: SITE.externalLinks.memberships, label: "Memberships", external: true },
   { href: SITE.externalLinks.faq, label: "FAQs", external: true },
   { href: SITE.externalLinks.shop, label: "Store", external: true },

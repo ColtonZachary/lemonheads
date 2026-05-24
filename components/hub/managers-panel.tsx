@@ -295,8 +295,12 @@ export function ManagersPanel({
                 Email setup notes
               </summary>
               <p className="mt-2 leading-relaxed">
-                Supabase → Authentication → URL configuration: Site URL = your Vercel app.
-                Redirect URLs: /auth/confirm and /auth/callback.
+                Supabase → Authentication → URL configuration: Site URL = your app URL
+                (e.g. https://lemonheadsdetail.com). Add Redirect URLs:{" "}
+                <code className="text-text/55">…/auth/confirm**</code>,{" "}
+                <code className="text-text/55">…/auth/finish**</code>, and optionally{" "}
+                <code className="text-text/55">…/auth/callback**</code>. Hub invites use confirm;
+                rewards magic links use finish.
               </p>
             </details>
             <div className="grid gap-2.5 sm:grid-cols-2">

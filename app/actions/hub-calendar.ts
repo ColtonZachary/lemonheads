@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getProfile, isManagerRole } from "@/lib/auth/profile";
+import { syncLoyaltyPointsForBooking } from "@/lib/hub/loyalty-points";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type HubCalendarActionState = {
@@ -40,6 +41,14 @@ export async function setBookingBilled(
     return { ok: false, message: "Managers only." };
   }
 
+  const { data: existing } = await supabase
+    .from("bookings")
+    .select("billed_at")
+    .eq("id", bookingId)
+    .maybeSingle();
+
+  const wasBilled = Boolean(existing?.billed_at);
+
   const { error } = await supabase
     .from("bookings")
     .update({ billed_at: billed ? new Date().toISOString() : null })
@@ -56,8 +65,13 @@ export async function setBookingBilled(
     return { ok: false, message: error.message };
   }
 
+  if (wasBilled !== billed) {
+    await syncLoyaltyPointsForBooking(supabase, bookingId, billed, profile.id);
+  }
+
   revalidateCalendar();
   revalidatePath(`/hub/bookings/${bookingId}`);
+  revalidatePath("/rewards");
   return {
     ok: true,
     message: billed ? "Marked as billed." : "Billed status cleared.",

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getProfile, isManagerRole, type Profile } from "@/lib/auth/profile";
 import { recordBookingAudit } from "@/lib/hub/booking-audit";
+import { syncLoyaltyPointsForBooking } from "@/lib/hub/loyalty-points";
 import {
   bookingDurationHours,
   dateInputToLabel,
@@ -320,6 +321,12 @@ export async function updateHubBooking(
 
   if (updateError) {
     return { ok: false, message: updateError.message };
+  }
+
+  const wasBilled = Boolean(existing.billed_at);
+  const isBilled = Boolean(patch.billed_at);
+  if (wasBilled !== isBilled) {
+    await syncLoyaltyPointsForBooking(supabase, bookingId, isBilled, profile.id);
   }
 
   await recordBookingAudit(supabase, bookingId, profile.id, "booking.updated", {

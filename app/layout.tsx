@@ -3,6 +3,7 @@ import { Bebas_Neue, JetBrains_Mono, Syne } from "next/font/google";
 import "./globals.css";
 
 import { Grain } from "@/components/site/grain";
+import { AuthHashHandler } from "@/components/auth/auth-hash-handler";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
 
@@ -80,6 +81,7 @@ export default function RootLayout({
     >
       <body className="bg-bk text-text min-h-full flex flex-col antialiased">
         <Grain />
+        <AuthHashHandler />
         <SiteNav />
         <main className="flex-1">{children}</main>
         <SiteFooter />
