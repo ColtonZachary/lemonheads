@@ -7,6 +7,7 @@ import { useActionState, useEffect, useState } from "react";
 import {
   cancelHubBooking,
   deleteHubBookingForm,
+  removeBookingLoyaltyReward,
   updateHubBooking,
   type HubBookingActionState,
 } from "@/app/actions/hub-bookings";
@@ -54,6 +55,21 @@ export type HubBookingDetail = {
   discount_cents: number | null;
   final_price_cents: number | null;
   promo_code_id: string | null;
+  loyalty_redemption_id: string | null;
+  loyalty_redemptions:
+    | {
+        id: string;
+        status: string;
+        points_spent: number;
+        loyalty_reward_goals: { title: string } | { title: string }[] | null;
+      }
+    | {
+        id: string;
+        status: string;
+        points_spent: number;
+        loyalty_reward_goals: { title: string } | { title: string }[] | null;
+      }[]
+    | null;
   promo_codes: { code: string } | { code: string }[] | null;
   manager_notes: string;
   cancellation_reason: string;
@@ -104,10 +120,16 @@ export function BookingDetailForm({
     deleteHubBookingForm.bind(null, booking.id),
     EMPTY,
   );
+  const [removeRewardState, removeRewardAction, removeRewardPending] =
+    useActionState(removeBookingLoyaltyReward.bind(null, booking.id), EMPTY);
 
   useEffect(() => {
     if (deleteState.ok) router.push("/hub/calendar");
   }, [deleteState.ok, router]);
+
+  useEffect(() => {
+    if (removeRewardState.ok) router.refresh();
+  }, [removeRewardState.ok, router]);
 
   const isDeleted = Boolean(booking.deleted_at);
   const isCancelled = booking.status === "cancelled";
@@ -115,6 +137,16 @@ export function BookingDetailForm({
   const promoCode = Array.isArray(booking.promo_codes)
     ? booking.promo_codes[0]?.code
     : booking.promo_codes?.code;
+  const loyaltyRedemption = Array.isArray(booking.loyalty_redemptions)
+    ? booking.loyalty_redemptions[0]
+    : booking.loyalty_redemptions;
+  const loyaltyGoal = loyaltyRedemption?.loyalty_reward_goals;
+  const loyaltyTitle = Array.isArray(loyaltyGoal)
+    ? loyaltyGoal[0]?.title
+    : loyaltyGoal?.title;
+  const hasActiveReward =
+    Boolean(booking.loyalty_redemption_id) &&
+    loyaltyRedemption?.status !== "cancelled";
 
   return (
     <div className="space-y-10">
@@ -130,6 +162,41 @@ export function BookingDetailForm({
             Promo code: <span className="text-y/80">{promoCode}</span>
           </p>
         )}
+        {hasActiveReward && loyaltyTitle && (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-y/20 bg-y/[0.04] px-4 py-3">
+            <div>
+              <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-y/70">
+                Rewards applied
+              </p>
+              <p className="mt-1 text-sm text-text/80">{loyaltyTitle}</p>
+              <p className="font-mono text-[10px] text-text/40">
+                {loyaltyRedemption?.points_spent} points · applied at checkout
+              </p>
+            </div>
+            {!isDeleted && (
+              <form action={removeRewardAction}>
+                <Button
+                  type="submit"
+                  variant="outline"
+                  size="sm"
+                  disabled={removeRewardPending}
+                  onClick={(e) => {
+                    if (
+                      !confirm(
+                        "Remove this reward from the booking? Points will be refunded to the customer and the price will update.",
+                      )
+                    ) {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  {removeRewardPending ? "Removing…" : "Remove reward"}
+                </Button>
+              </form>
+            )}
+          </div>
+        )}
+        <ActionBanner state={removeRewardState} />
         {booking.price_override_cents != null && (
           <p className="mt-1 font-mono text-[10px] text-text/35">
             Manager price override applied

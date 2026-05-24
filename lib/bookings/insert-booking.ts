@@ -30,6 +30,7 @@ import {
 } from "@/lib/bookings/scheduling-rules";
 import { validateBookingSchedule } from "@/lib/bookings/scheduling-limits";
 import { syncCustomerFromBooking } from "@/lib/hub/sync-customer-from-booking";
+import { isSupabaseMissingColumn } from "@/lib/supabase/schema-errors";
 import {
   fetchDetailerPackageBlocksMap,
   filterDetailersForPackage,
@@ -309,21 +310,41 @@ export async function insertBooking(
       : {}),
   };
 
-  const { data: inserted, error } = await client
-    .from("bookings")
-    .insert(row)
-    .select("id")
-    .single();
+  let inserted: { id: string } | null = null;
+  let insertError: { message?: string; code?: string } | null = null;
 
-  if (error) {
-    console.error("[bookings] insert failed:", error.message);
-    return { ok: false, error: error.message };
+  const attemptInsert = async (payload: typeof row) =>
+    client.from("bookings").insert(payload).select("id").single();
+
+  ({ data: inserted, error: insertError } = await attemptInsert(row));
+
+  if (
+    insertError &&
+    pricing.loyaltyRedemptionId &&
+    isSupabaseMissingColumn(insertError, "loyalty_redemption_id")
+  ) {
+    console.warn(
+      "[bookings] loyalty_redemption_id column missing — booking saved without link. Run migration 20260605000000_booking_loyalty_redemption.sql",
+    );
+    const { loyalty_redemption_id: _ignored, ...rowWithoutLoyaltyLink } = row;
+    ({ data: inserted, error: insertError } = await attemptInsert(
+      rowWithoutLoyaltyLink,
+    ));
+  }
+
+  if (insertError || !inserted) {
+    console.error("[bookings] insert failed:", insertError?.message);
+    return { ok: false, error: insertError?.message ?? "Booking could not be saved." };
   }
 
   if (pricing.loyaltyRedemptionId) {
     await client
       .from("loyalty_redemptions")
-      .update({ booking_id: inserted.id })
+      .update({
+        booking_id: inserted.id,
+        status: "fulfilled",
+        fulfilled_at: new Date().toISOString(),
+      })
       .eq("id", pricing.loyaltyRedemptionId)
       .eq("status", "pending");
   }

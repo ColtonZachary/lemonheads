@@ -9,10 +9,12 @@ import {
   bookingDurationHours,
   dateInputToLabel,
 } from "@/lib/hub/schedule-labels";
+import { computeCheckoutPricing } from "@/lib/bookings/checkout-pricing";
 import {
   insertBooking,
   type BookingInsertOptions,
 } from "@/lib/bookings/insert-booking";
+import { vehicleKeyFromTypeLabel } from "@/lib/bookings/vehicle-key-from-label";
 import {
   BOOKING_LOCATION_TYPES,
   BOOKING_TIME_SLOTS,
@@ -631,4 +633,193 @@ export async function createHubBooking(
     message: `Booking ${referenceId} created.`,
     bookingId: saved.bookingId,
   };
+}
+
+function formatHubBookingPrice(cents: number): string {
+  return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
+}
+
+export async function removeBookingLoyaltyReward(
+  bookingId: string,
+  _prev: HubBookingActionState,
+  _formData: FormData,
+): Promise<HubBookingActionState> {
+  const ctx = await requireManagerSupabase();
+  if ("error" in ctx) return { ok: false, message: ctx.error };
+
+  const { supabase, profile } = ctx;
+
+  const { data: booking, error: loadError } = await supabase
+    .from("bookings")
+    .select(
+      `
+      id,
+      reference_id,
+      service_key,
+      vehicle_type,
+      addons,
+      estimated_price_cents,
+      discount_cents,
+      final_price_cents,
+      price_override_cents,
+      price_cents,
+      price_display,
+      loyalty_redemption_id,
+      promo_code_id,
+      promo_codes ( code )
+    `,
+    )
+    .eq("id", bookingId)
+    .maybeSingle();
+
+  if (loadError || !booking) {
+    return { ok: false, message: "Booking not found." };
+  }
+  if (!booking.loyalty_redemption_id) {
+    return { ok: false, message: "This booking has no rewards applied." };
+  }
+
+  const { data: redemption, error: redemptionError } = await supabase
+    .from("loyalty_redemptions")
+    .select(
+      `
+      id,
+      customer_id,
+      points_spent,
+      status,
+      loyalty_reward_goals (
+        reward_kind,
+        reward_addon_name
+      )
+    `,
+    )
+    .eq("id", booking.loyalty_redemption_id)
+    .maybeSingle();
+
+  if (redemptionError || !redemption) {
+    return { ok: false, message: "Reward record not found." };
+  }
+  if (redemption.status === "cancelled") {
+    return { ok: false, message: "This reward was already removed." };
+  }
+
+  const goal = redemption.loyalty_reward_goals as
+    | { reward_kind: string; reward_addon_name: string | null }
+    | { reward_kind: string; reward_addon_name: string | null }[]
+    | null;
+  const g = Array.isArray(goal) ? goal[0] : goal;
+
+  let nextAddons = [...(booking.addons ?? [])];
+  if (g?.reward_kind === "addon" && g.reward_addon_name) {
+    nextAddons = nextAddons.filter((name) => name !== g.reward_addon_name);
+  }
+
+  const promoRow = booking.promo_codes as
+    | { code: string }
+    | { code: string }[]
+    | null;
+  const promoCode = Array.isArray(promoRow)
+    ? promoRow[0]?.code
+    : promoRow?.code;
+
+  const vehicleKey = vehicleKeyFromTypeLabel(booking.vehicle_type ?? "");
+  let nextDiscountCents = 0;
+  let nextFinalCents =
+    booking.price_override_cents ??
+    booking.estimated_price_cents ??
+    booking.final_price_cents ??
+    0;
+
+  if (booking.service_key && vehicleKey) {
+    const pricing = await computeCheckoutPricing(supabase, {
+      packageKey: booking.service_key,
+      vehicleKey,
+      addonNames: nextAddons,
+      promoCode: promoCode || undefined,
+    });
+    if (pricing.ok) {
+      nextDiscountCents = pricing.discountCents;
+      if (booking.price_override_cents == null) {
+        nextFinalCents = pricing.totalCents;
+      }
+    }
+  } else if (!booking.promo_code_id) {
+    nextDiscountCents = 0;
+    if (booking.price_override_cents == null && booking.estimated_price_cents != null) {
+      nextFinalCents = booking.estimated_price_cents;
+    }
+  }
+
+  const { data: customer } = await supabase
+    .from("customers")
+    .select("points_balance")
+    .eq("id", redemption.customer_id)
+    .maybeSingle();
+
+  if (customer) {
+    const refund = redemption.points_spent as number;
+    const { error: balanceError } = await supabase
+      .from("customers")
+      .update({
+        points_balance: (customer.points_balance ?? 0) + refund,
+      })
+      .eq("id", redemption.customer_id);
+
+    if (balanceError) {
+      return { ok: false, message: balanceError.message };
+    }
+
+    await supabase.from("loyalty_transactions").insert({
+      customer_id: redemption.customer_id,
+      redemption_id: redemption.id,
+      kind: "adjust",
+      points: refund,
+      note: `Reward removed from booking ${booking.reference_id} — points refunded`,
+      created_by: profile.id,
+    });
+  }
+
+  const { error: redemptionUpdateError } = await supabase
+    .from("loyalty_redemptions")
+    .update({ status: "cancelled", booking_id: null })
+    .eq("id", redemption.id);
+
+  if (redemptionUpdateError) {
+    return { ok: false, message: redemptionUpdateError.message };
+  }
+
+  const patch: Record<string, unknown> = {
+    loyalty_redemption_id: null,
+    addons: nextAddons,
+    discount_cents: nextDiscountCents,
+  };
+
+  if (booking.price_override_cents == null) {
+    patch.final_price_cents = nextFinalCents;
+    patch.price_cents = nextFinalCents;
+    patch.price_display = formatHubBookingPrice(nextFinalCents);
+  }
+
+  const { error: bookingUpdateError } = await supabase
+    .from("bookings")
+    .update(patch)
+    .eq("id", bookingId);
+
+  if (bookingUpdateError) {
+    return { ok: false, message: bookingUpdateError.message };
+  }
+
+  await recordBookingAudit(supabase, bookingId, profile.id, "booking.reward_removed", {
+    redemption_id: redemption.id,
+    points_refunded: redemption.points_spent,
+    pricing: patch,
+  });
+
+  revalidatePath("/hub/calendar");
+  revalidatePath("/hub/bookings");
+  revalidatePath(`/hub/bookings/${bookingId}`);
+  revalidatePath("/hub/settings/loyalty");
+  revalidatePath("/rewards");
+
+  return { ok: true, message: "Reward removed. Points refunded and price updated." };
 }

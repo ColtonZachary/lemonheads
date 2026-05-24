@@ -121,6 +121,7 @@ export async function fetchPendingLoyaltyRedemptions(
     `,
     )
     .eq("status", "pending")
+    .is("booking_id", null)
     .order("created_at", { ascending: false })
     .limit(50);
 

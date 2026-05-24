@@ -1,12 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import {
-  BookingDetailForm,
-  type HubBookingDetail,
-} from "@/components/hub/booking-detail-form";
+import { BookingDetailForm } from "@/components/hub/booking-detail-form";
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import { fetchBookableDetailerNames } from "@/lib/bookings/bookable-detailers";
+import { fetchHubBookingDetail } from "@/lib/hub/fetch-booking-detail";
 import { formatCentralDateTime } from "@/lib/hub/format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -19,26 +17,7 @@ export default async function HubBookingDetailPage({
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
-  const { data: booking } = await supabase!
-    .from("bookings")
-    .select(
-      `
-      id, reference_id, customer_name, email, phone,
-      location_type, address_line, city, zip,
-      service_name, vehicle_type, vehicle_info,
-      addons, plastic_shine, customer_notes,
-      status, starts_at, ends_at,
-      detailer_name, detailer_auto_assigned,
-      price_display, price_cents, price_override_cents,
-      estimated_price_cents, discount_cents, final_price_cents,
-      promo_code_id,
-      manager_notes, cancellation_reason, cancelled_at, deleted_at, billed_at,
-      promo_codes ( code )
-    `,
-    )
-    .eq("id", id)
-    .maybeSingle();
-
+  const booking = await fetchHubBookingDetail(supabase!, id);
   if (!booking) notFound();
 
   const detailerNames = await fetchBookableDetailerNames(supabase!);
@@ -68,10 +47,7 @@ export default async function HubBookingDetailPage({
       </p>
 
       <div className="mt-8">
-        <BookingDetailForm
-          booking={booking as HubBookingDetail}
-          detailerNames={detailerNames}
-        />
+        <BookingDetailForm booking={booking} detailerNames={detailerNames} />
       </div>
 
       <section className="mt-12">

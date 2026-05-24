@@ -6,7 +6,6 @@ import {
   cancelLoyaltyRedemption,
   createLoyaltyGoal,
   deleteLoyaltyGoal,
-  fulfillLoyaltyRedemption,
   updateLoyaltyGoal,
   updateLoyaltySettings,
   type HubLoyaltyActionState,
@@ -219,8 +218,12 @@ export function LoyaltySettingsPanel({
       {pendingRedemptions.length > 0 ? (
         <section className="rounded-lg border border-y/20 bg-y/[0.04] p-5">
           <h2 className="font-mono text-xs uppercase tracking-[0.12em] text-y">
-            Pending redemptions
+            Unused redemptions
           </h2>
+          <p className="mt-1 text-sm text-text/45">
+            Redeemed on the rewards page but not yet applied to a booking. Rewards applied at
+            checkout are linked automatically — no manager approval needed.
+          </p>
           <ul className="mt-3 space-y-2">
             {pendingRedemptions.map((r) => (
               <li
@@ -234,19 +237,12 @@ export function LoyaltySettingsPanel({
                     {r.customer_name || "Customer"} · {r.customer_email}
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <PendingRedemptionAction
-                    redemptionId={r.id}
-                    action={fulfillLoyaltyRedemption}
-                    label="Fulfilled"
-                  />
-                  <PendingRedemptionAction
-                    redemptionId={r.id}
-                    action={cancelLoyaltyRedemption}
-                    label="Cancel & refund"
-                    variant="ghost"
-                  />
-                </div>
+                <PendingRedemptionAction
+                  redemptionId={r.id}
+                  action={cancelLoyaltyRedemption}
+                  label="Cancel & refund"
+                  variant="ghost"
+                />
               </li>
             ))}
           </ul>
