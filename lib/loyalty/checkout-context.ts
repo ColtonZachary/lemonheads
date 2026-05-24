@@ -5,7 +5,10 @@ import {
   fetchLoyaltyRewardGoals,
   formatRewardGoalDetail,
 } from "@/lib/hub/loyalty-db";
-import { computeLoyaltyDiscountCents } from "@/lib/loyalty/checkout-discount";
+import {
+  addonRewardNeedsCheckoutAdd,
+  computeLoyaltyDiscountCents,
+} from "@/lib/loyalty/checkout-discount";
 import { linkCustomerAuthUser } from "@/lib/loyalty/link-customer";
 
 export type CheckoutRewardOption = {
@@ -18,8 +21,54 @@ export type CheckoutRewardOption = {
   pointsRequired: number;
   discountCents: number;
   applicable: boolean;
+  addAddonAtCheckout: boolean;
+  rewardAddonName: string | null;
   reason?: string;
 };
+
+function buildCheckoutRewardOption(
+  base: Omit<
+    CheckoutRewardOption,
+    "discountCents" | "applicable" | "addAddonAtCheckout" | "rewardAddonName" | "reason"
+  >,
+  reward: {
+    reward_kind: "package" | "addon";
+    reward_package_key: string | null;
+    reward_addon_name: string | null;
+  },
+  packageKey: string,
+  packageCents: number,
+  addonNames: string[],
+  activeAddons: Awaited<ReturnType<typeof fetchCatalogAddons>>,
+): CheckoutRewardOption {
+  const discount = computeLoyaltyDiscountCents(
+    reward,
+    packageKey,
+    packageCents,
+    addonNames,
+    activeAddons,
+  );
+  const checkoutAdd = addonRewardNeedsCheckoutAdd(
+    reward,
+    addonNames,
+    activeAddons,
+  );
+
+  return {
+    ...base,
+    rewardAddonName: reward.reward_addon_name?.trim() || null,
+    discountCents: discount.ok
+      ? discount.discountCents
+      : (checkoutAdd?.discountCents ?? 0),
+    applicable: discount.ok,
+    addAddonAtCheckout: !discount.ok && checkoutAdd !== null,
+    reason: discount.ok
+      ? undefined
+      : checkoutAdd
+        ? `"${checkoutAdd.addonName}" will be added free when you apply this reward.`
+        : discount.message,
+  };
+}
 
 export type RewardsCheckoutContext = {
   email: string;
@@ -81,6 +130,7 @@ export async function fetchRewardsCheckoutContext(
   const activeAddons = addons.filter((a) => a.active);
 
   const options: CheckoutRewardOption[] = [];
+  const pendingGoalIds = new Set<string>();
 
   for (const row of pendingRows.data ?? []) {
     const goal = row.loyalty_reward_goals as
@@ -101,64 +151,62 @@ export async function fetchRewardsCheckoutContext(
         }>;
     const g = Array.isArray(goal) ? goal[0] : goal;
     if (!g) continue;
+    pendingGoalIds.add(g.id);
 
-    const discount = computeLoyaltyDiscountCents(
-      g,
-      input.packageKey,
-      packageCents,
-      input.addonNames,
-      activeAddons,
-    );
-
-    options.push({
-      kind: "pending",
-      id: row.id,
-      redemptionId: row.id,
-      goalId: g.id,
-      label: g.title,
-      detail: formatRewardGoalDetail(
+    options.push(
+      buildCheckoutRewardOption(
         {
-          id: g.id,
-          title: g.title,
-          description: "",
-          points_required: row.points_spent,
-          reward_kind: g.reward_kind,
-          reward_package_key: g.reward_package_key,
-          reward_addon_name: g.reward_addon_name,
-          active: true,
-          sort_order: 0,
+          kind: "pending",
+          id: row.id,
+          redemptionId: row.id,
+          goalId: g.id,
+          label: g.title,
+          detail: `${formatRewardGoalDetail(
+            {
+              id: g.id,
+              title: g.title,
+              description: "",
+              points_required: row.points_spent,
+              reward_kind: g.reward_kind,
+              reward_package_key: g.reward_package_key,
+              reward_addon_name: g.reward_addon_name,
+              active: true,
+              sort_order: 0,
+            },
+            packageNames,
+          )} · Ready to use (points already redeemed)`,
+          pointsRequired: row.points_spent,
         },
-        packageNames,
+        g,
+        input.packageKey,
+        packageCents,
+        input.addonNames,
+        activeAddons,
       ),
-      pointsRequired: row.points_spent,
-      discountCents: discount.ok ? discount.discountCents : 0,
-      applicable: discount.ok,
-      reason: discount.ok ? undefined : discount.message,
-    });
+    );
   }
 
   for (const goal of goals) {
+    if (pendingGoalIds.has(goal.id)) continue;
     if ((customer.points_balance ?? 0) < goal.points_required) continue;
 
-    const discount = computeLoyaltyDiscountCents(
-      goal,
-      input.packageKey,
-      packageCents,
-      input.addonNames,
-      activeAddons,
+    options.push(
+      buildCheckoutRewardOption(
+        {
+          kind: "goal",
+          id: goal.id,
+          goalId: goal.id,
+          label: goal.title,
+          detail: formatRewardGoalDetail(goal, packageNames),
+          pointsRequired: goal.points_required,
+        },
+        goal,
+        input.packageKey,
+        packageCents,
+        input.addonNames,
+        activeAddons,
+      ),
     );
-
-    options.push({
-      kind: "goal",
-      id: goal.id,
-      goalId: goal.id,
-      label: goal.title,
-      detail: formatRewardGoalDetail(goal, packageNames),
-      pointsRequired: goal.points_required,
-      discountCents: discount.ok ? discount.discountCents : 0,
-      applicable: discount.ok,
-      reason: discount.ok ? undefined : discount.message,
-    });
   }
 
   return {

@@ -47,3 +47,17 @@ export function computeLoyaltyDiscountCents(
   }
   return { ok: true, discountCents: addon.price_cents };
 }
+
+/** Add-on reward where the only blocker is the add-on not being in the cart yet. */
+export function addonRewardNeedsCheckoutAdd(
+  reward: LoyaltyRewardTarget,
+  addonNames: string[],
+  addons: Pick<CatalogAddonRow, "name" | "price_cents">[],
+): { addonName: string; discountCents: number } | null {
+  if (reward.reward_kind !== "addon") return null;
+  const addonName = reward.reward_addon_name?.trim();
+  if (!addonName || addonNames.includes(addonName)) return null;
+  const addon = addons.find((a) => a.name === addonName);
+  if (!addon || addon.price_cents <= 0) return null;
+  return { addonName, discountCents: addon.price_cents };
+}

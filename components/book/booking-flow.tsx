@@ -123,9 +123,17 @@ interface BookingState {
     redemptionId: string;
     label: string;
     discountCents: number;
+    autoAddedAddon?: string;
   } | null;
   loyaltyMessage: string | null;
   selectedRewardKey: string;
+  selectedRewardPreview: {
+    discountCents: number;
+    autoAddedAddon?: string;
+    label: string;
+  } | null;
+  /** Server-calculated total after promo/reward apply (cents). */
+  checkoutTotalCents: number | null;
 }
 
 const VEHICLE_TOP: { key: VehicleKey | "suv"; label: string; icon: IconName }[] = [
@@ -180,6 +188,8 @@ function emptyState(
     appliedLoyalty: null,
     loyaltyMessage: null,
     selectedRewardKey: "",
+    selectedRewardPreview: null,
+    checkoutTotalCents: null,
   };
 }
 
@@ -236,6 +246,7 @@ export function BookingFlow({
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
   const paymentRef = useRef<BookingCardCaptureApi | null>(null);
+  const skipDiscountClearRef = useRef(false);
 
   const update = <K extends keyof BookingState>(
     key: K,
@@ -264,12 +275,29 @@ export function BookingFlow({
       }, 0),
     [state.addons, addons],
   );
+  const previewAddonDollars =
+    !state.appliedLoyalty && state.selectedRewardPreview?.autoAddedAddon
+      ? (addons.find(
+          (a) => a.name === state.selectedRewardPreview?.autoAddedAddon,
+        )?.price ?? 0)
+      : 0;
   const subtotal = pkgPrice !== null ? pkgPrice + addonTotal : null;
+  const displaySubtotal =
+    subtotal !== null ? subtotal + previewAddonDollars : null;
+  const loyaltyDiscountCents =
+    state.appliedLoyalty?.discountCents ??
+    state.selectedRewardPreview?.discountCents ??
+    0;
   const discountCents =
-    (state.appliedPromo?.discountCents ?? 0) +
-    (state.appliedLoyalty?.discountCents ?? 0);
+    (state.appliedPromo?.discountCents ?? 0) + loyaltyDiscountCents;
+  const computedTotal =
+    displaySubtotal !== null
+      ? Math.max(0, displaySubtotal - discountCents / 100)
+      : null;
   const total =
-    subtotal !== null ? Math.max(0, subtotal - discountCents / 100) : null;
+    state.checkoutTotalCents !== null && !state.selectedRewardPreview
+      ? state.checkoutTotalCents / 100
+      : computedTotal;
 
   const serviceAreaSlugs = useMemo(
     () =>
@@ -337,12 +365,18 @@ export function BookingFlow({
   const addonKey = Array.from(state.addons).sort().join("|");
 
   useEffect(() => {
+    if (skipDiscountClearRef.current) {
+      skipDiscountClearRef.current = false;
+      return;
+    }
     setState((s) => {
       if (
         !s.appliedPromo &&
         !s.promoMessage &&
         !s.appliedLoyalty &&
-        !s.loyaltyMessage
+        !s.loyaltyMessage &&
+        !s.selectedRewardPreview &&
+        s.checkoutTotalCents === null
       ) {
         return s;
       }
@@ -353,6 +387,8 @@ export function BookingFlow({
         appliedLoyalty: null,
         loyaltyMessage: null,
         selectedRewardKey: "",
+        selectedRewardPreview: null,
+        checkoutTotalCents: null,
       };
     });
   }, [state.packageKey, state.vehicleKey, addonKey]);
@@ -705,13 +741,17 @@ export function BookingFlow({
           update={update}
           setState={setState}
           setError={setError}
+          skipDiscountClearRef={skipDiscountClearRef}
           paymentRef={paymentRef}
           pkg={pkg}
           pkgPrice={pkgPrice}
           addonTotal={addonTotal}
+          previewAddonDollars={previewAddonDollars}
           subtotal={subtotal}
+          displaySubtotal={displaySubtotal}
           total={total}
           discountCents={discountCents}
+          loyaltyDiscountCents={loyaltyDiscountCents}
         />
       )}
 
@@ -1595,25 +1635,33 @@ function Step4({
   update,
   setState,
   setError,
+  skipDiscountClearRef,
   paymentRef,
   pkg,
   pkgPrice,
   addonTotal,
+  previewAddonDollars,
   subtotal,
+  displaySubtotal,
   total,
   discountCents,
+  loyaltyDiscountCents,
 }: {
   state: BookingState;
   update: <K extends keyof BookingState>(k: K, v: BookingState[K]) => void;
   setState: Dispatch<SetStateAction<BookingState>>;
   setError: Dispatch<SetStateAction<string | null>>;
+  skipDiscountClearRef: RefObject<boolean>;
   paymentRef: RefObject<BookingCardCaptureApi | null>;
   pkg: SitePackage | null;
   pkgPrice: number | null;
   addonTotal: number;
+  previewAddonDollars: number;
   subtotal: number | null;
+  displaySubtotal: number | null;
   total: number | null;
   discountCents: number;
+  loyaltyDiscountCents: number;
 }) {
   const [promoPending, startPromoTransition] = useTransition();
   const [loyaltyPending, startLoyaltyTransition] = useTransition();
@@ -1690,6 +1738,8 @@ function Step4({
                 discountCents: result.loyaltyDiscountCents,
               }
             : null,
+          checkoutTotalCents: result.totalCents,
+          selectedRewardPreview: null,
           promoMessage: `${result.code} applied — you save ${formatCurrency(result.discountCents / 100)}.`,
         }));
         setError(null);
@@ -1708,7 +1758,18 @@ function Step4({
     const option = rewardsContext?.options.find(
       (o) => `${o.kind}:${o.id}` === state.selectedRewardKey,
     );
-    if (!option?.applicable) return;
+    if (!option || (!option.applicable && !option.addAddonAtCheckout)) return;
+
+    let addonNames = Array.from(state.addons);
+    let autoAddedAddon: string | undefined;
+    if (
+      option.addAddonAtCheckout &&
+      option.rewardAddonName &&
+      !addonNames.includes(option.rewardAddonName)
+    ) {
+      addonNames = [...addonNames, option.rewardAddonName];
+      autoAddedAddon = option.rewardAddonName;
+    }
 
     startLoyaltyTransition(async () => {
       const result = await applyLoyaltyForBooking({
@@ -1721,13 +1782,22 @@ function Step4({
         promoCode: state.appliedPromo?.code,
       });
       if (result.ok) {
+        if (autoAddedAddon) {
+          skipDiscountClearRef.current = true;
+        }
         setState((s) => ({
           ...s,
+          addons: autoAddedAddon
+            ? new Set([...s.addons, autoAddedAddon])
+            : s.addons,
           appliedLoyalty: {
             redemptionId: result.redemptionId,
             label: result.label,
             discountCents: result.discountCents,
+            autoAddedAddon,
           },
+          checkoutTotalCents: result.totalCents,
+          selectedRewardPreview: null,
           loyaltyMessage: `${result.label} applied — you save ${formatCurrency(result.discountCents / 100)}.`,
           selectedRewardKey: `${option.kind}:${option.id}`,
         }));
@@ -1743,8 +1813,11 @@ function Step4({
   };
 
   const promoDiscountDollars = (state.appliedPromo?.discountCents ?? 0) / 100;
-  const loyaltyDiscountDollars =
-    (state.appliedLoyalty?.discountCents ?? 0) / 100;
+  const loyaltyDiscountDollars = loyaltyDiscountCents / 100;
+  const loyaltyPreview =
+    !state.appliedLoyalty && state.selectedRewardPreview !== null;
+  const loyaltyLabel =
+    state.appliedLoyalty?.label ?? state.selectedRewardPreview?.label;
   const hasDiscount = discountCents > 0;
 
   return (
@@ -1780,6 +1853,7 @@ function Step4({
                       appliedPromo: null,
                       promoMessage: null,
                       promoCodeInput: "",
+                      checkoutTotalCents: null,
                     }))
                   }
                 >
@@ -1846,12 +1920,21 @@ function Step4({
                   variant="outline"
                   size="sm"
                   onClick={() =>
-                    setState((s) => ({
-                      ...s,
-                      appliedLoyalty: null,
-                      loyaltyMessage: null,
-                      selectedRewardKey: "",
-                    }))
+                    setState((s) => {
+                      const nextAddons = new Set(s.addons);
+                      if (s.appliedLoyalty?.autoAddedAddon) {
+                        nextAddons.delete(s.appliedLoyalty.autoAddedAddon);
+                      }
+                      return {
+                        ...s,
+                        addons: nextAddons,
+                        appliedLoyalty: null,
+                        loyaltyMessage: null,
+                        selectedRewardKey: "",
+                        selectedRewardPreview: null,
+                        checkoutTotalCents: null,
+                      };
+                    })
                   }
                 >
                   Remove
@@ -1875,13 +1958,16 @@ function Step4({
                     {rewardsContext.options.map((option) => {
                       const key = `${option.kind}:${option.id}`;
                       const selected = state.selectedRewardKey === key;
+                      const selectable =
+                        option.applicable || option.addAddonAtCheckout;
                       return (
                         <label
                           key={key}
                           className={cn(
-                            "flex cursor-pointer gap-3 rounded-md border px-4 py-3 transition-colors",
-                            !option.applicable &&
-                              "cursor-not-allowed opacity-50",
+                            "flex gap-3 rounded-md border px-4 py-3 transition-colors",
+                            selectable
+                              ? "cursor-pointer"
+                              : "cursor-not-allowed opacity-50",
                             selected
                               ? "border-y bg-y/[0.08]"
                               : "border-border-faint bg-card hover:border-y/20",
@@ -1891,10 +1977,21 @@ function Step4({
                             type="radio"
                             name="checkout-reward"
                             className="mt-1 accent-[var(--y)]"
-                            disabled={!option.applicable}
+                            disabled={!selectable}
                             checked={selected}
                             onChange={() =>
-                              update("selectedRewardKey", key)
+                              setState((s) => ({
+                                ...s,
+                                selectedRewardKey: key,
+                                selectedRewardPreview: {
+                                  discountCents: option.discountCents,
+                                  autoAddedAddon: option.addAddonAtCheckout
+                                    ? (option.rewardAddonName ?? undefined)
+                                    : undefined,
+                                  label: option.label,
+                                },
+                                checkoutTotalCents: null,
+                              }))
                             }
                           />
                           <span className="min-w-0 flex-1">
@@ -1903,9 +2000,11 @@ function Step4({
                             </span>
                             <span className="mt-0.5 block font-mono text-[10px] text-text/45">
                               {option.detail}
-                              {option.applicable
+                              {selectable &&
+                              option.discountCents > 0 &&
+                              !option.detail.includes("Save ")
                                 ? ` · Save ${formatCurrency(option.discountCents / 100)}`
-                                : option.reason
+                                : !selectable && option.reason
                                   ? ` · ${option.reason}`
                                   : ""}
                             </span>
@@ -1927,7 +2026,7 @@ function Step4({
                         !rewardsContext.options.some(
                           (o) =>
                             `${o.kind}:${o.id}` === state.selectedRewardKey &&
-                            o.applicable,
+                            (o.applicable || o.addAddonAtCheckout),
                         )
                       }
                       className="mt-3"
@@ -1940,6 +2039,15 @@ function Step4({
                 {state.loyaltyMessage && (
                   <p className="mt-3 rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 font-mono text-xs text-red-200">
                     {state.loyaltyMessage}
+                  </p>
+                )}
+                {(state.appliedLoyalty || loyaltyPreview) && total !== null && (
+                  <p className="mt-4 rounded-md border border-y/20 bg-y/[0.04] px-4 py-3 font-mono text-xs text-text/60">
+                    Estimated total with this reward:{" "}
+                    <span className="font-bold text-y">
+                      {formatCurrency(total)}
+                    </span>
+                    {loyaltyPreview ? " (preview — tap Apply reward to confirm)" : null}
                   </p>
                 )}
               </>
@@ -2061,9 +2169,20 @@ function Step4({
             {addonTotal > 0 && (
               <BreakdownRow large label="Add-Ons" value={`+${formatCurrency(addonTotal)}`} />
             )}
-            {subtotal !== null && hasDiscount && (
+            {previewAddonDollars > 0 && state.selectedRewardPreview?.autoAddedAddon && (
+              <BreakdownRow
+                large
+                label={`Add-On (${state.selectedRewardPreview.autoAddedAddon})`}
+                value={`+${formatCurrency(previewAddonDollars)}`}
+              />
+            )}
+            {displaySubtotal !== null && hasDiscount && (
               <>
-                <BreakdownRow large label="Subtotal" value={formatCurrency(subtotal)} />
+                <BreakdownRow
+                  large
+                  label="Subtotal"
+                  value={formatCurrency(displaySubtotal)}
+                />
                 {state.appliedPromo && promoDiscountDollars > 0 && (
                   <BreakdownRow
                     large
@@ -2071,10 +2190,10 @@ function Step4({
                     value={`−${formatCurrency(promoDiscountDollars)}`}
                   />
                 )}
-                {state.appliedLoyalty && loyaltyDiscountDollars > 0 && (
+                {loyaltyDiscountDollars > 0 && loyaltyLabel && (
                   <BreakdownRow
                     large
-                    label={`Rewards (${state.appliedLoyalty.label})`}
+                    label={`Rewards (${loyaltyLabel})${loyaltyPreview ? " — preview" : ""}`}
                     value={`−${formatCurrency(loyaltyDiscountDollars)}`}
                   />
                 )}

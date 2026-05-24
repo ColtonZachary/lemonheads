@@ -39,6 +39,8 @@ export type RewardsCheckoutContextResult =
         pointsRequired: number;
         discountCents: number;
         applicable: boolean;
+        addAddonAtCheckout: boolean;
+        rewardAddonName: string | null;
         reason?: string;
       }[];
     }
