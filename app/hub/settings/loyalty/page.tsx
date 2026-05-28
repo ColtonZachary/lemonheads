@@ -30,7 +30,7 @@ export default async function HubLoyaltySettingsPage() {
   };
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <Link
         href="/hub/settings"
         className="font-mono text-[10px] uppercase tracking-[0.12em] text-text/40 hover:text-y"
@@ -39,19 +39,13 @@ export default async function HubLoyaltySettingsPage() {
       </Link>
       <h1 className="mt-4 font-display text-5xl tracking-[0.04em] text-y">LOYALTY</h1>
       <p className="mt-2 text-sm text-text/45">
-        Optional customer rewards: points per dollar spent when jobs are billed, multiple redeemable
-        goals, and pending redemptions for your team to fulfill.
-      </p>
-      <p className="mt-2 font-mono text-[10px] text-text/35">
-        Public page:{" "}
-        <Link href="/rewards" className="text-y/70 hover:text-y">
-          /rewards
-        </Link>
+        Customer points, redeemable goals, and unused redemptions. Checkout rewards
+        link to bookings automatically.
       </p>
 
-      <div className="mt-10">
+      <div className="mt-6 max-w-4xl space-y-6">
         {!schemaReady ? (
-          <p className="mb-6 rounded border border-y/25 bg-y/10 px-4 py-3 font-mono text-xs text-y/90">
+          <p className="rounded border border-y/25 bg-y/10 px-4 py-3 font-mono text-xs text-y/90">
             Loyalty tables are not visible to the API yet. In Supabase SQL Editor run:{" "}
             <code className="text-y">NOTIFY pgrst, &apos;reload schema&apos;;</code> then refresh.
           </p>

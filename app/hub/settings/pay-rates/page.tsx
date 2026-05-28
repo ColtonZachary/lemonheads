@@ -11,7 +11,7 @@ export default async function HubSettingsPayRatesPage() {
   const { packages, addons } = await fetchPayRatesForEditor(supabase!);
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <Link
         href="/hub/settings"
         className="font-mono text-[10px] uppercase tracking-[0.12em] text-text/40 hover:text-y"
@@ -22,11 +22,11 @@ export default async function HubSettingsPayRatesPage() {
         PAY RATES
       </h1>
       <p className="mt-2 text-sm text-text/45">
-        What detailers earn per package and add-on (Regular vs Senior). Used in
-        Reports and My pay — not customer prices.
+        Detailer pay per package and add-on (Regular vs Senior). Used in Reports
+        and My pay — not customer prices.
       </p>
 
-      <div className="mt-6">
+      <div className="mt-6 max-w-4xl">
         <DetailerPayRatesPanel packages={packages} addons={addons} />
       </div>
     </div>
