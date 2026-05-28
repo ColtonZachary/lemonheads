@@ -8,6 +8,7 @@ import {
   setBookingBilled,
   type HubCalendarActionState,
 } from "@/app/actions/hub-calendar";
+import { DetailJobProgressBadge } from "@/components/hub/detail-job-progress-badge";
 import { Button } from "@/components/ui/button";
 import { formatCentralTime } from "@/lib/hub/format";
 import { addDaysToDateInput } from "@/lib/bookings/scheduling-limits";
@@ -59,11 +60,18 @@ function BookingCard({
         >
           {booking.customer_name}
         </span>
-        {billed && (
-          <span className="shrink-0 font-mono text-[8px] uppercase tracking-[0.1em] text-emerald-300/90">
-            Billed
-          </span>
-        )}
+        <div className="flex shrink-0 flex-col items-end gap-0.5">
+          <DetailJobProgressBadge
+            status={booking.status}
+            detailPhase={booking.detail_phase}
+            size="sm"
+          />
+          {billed && (
+            <span className="font-mono text-[8px] uppercase tracking-[0.1em] text-emerald-300/90">
+              Billed
+            </span>
+          )}
+        </div>
       </div>
       <div className={cn("font-mono text-[9px]", billed ? "text-emerald-200/70" : "text-text/45")}>
         {formatCentralTime(booking.starts_at)}

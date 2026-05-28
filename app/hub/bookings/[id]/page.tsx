@@ -2,8 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BookingDetailForm } from "@/components/hub/booking-detail-form";
+import { BookingDetailProgress } from "@/components/hub/booking-detail-progress";
+import { DetailJobProgressBadge } from "@/components/hub/detail-job-progress-badge";
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import { fetchBookableDetailerNames } from "@/lib/bookings/bookable-detailers";
+import { BookingJobPhotosSection } from "@/components/hub/booking-job-photos-section";
+import { listBookingJobPhotos } from "@/lib/hub/booking-job-photos";
 import { fetchHubBookingDetail } from "@/lib/hub/fetch-booking-detail";
 import { formatCentralDateTime } from "@/lib/hub/format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -20,7 +24,10 @@ export default async function HubBookingDetailPage({
   const booking = await fetchHubBookingDetail(supabase!, id);
   if (!booking) notFound();
 
-  const detailerNames = await fetchBookableDetailerNames(supabase!);
+  const [detailerNames, jobPhotos] = await Promise.all([
+    fetchBookableDetailerNames(supabase!),
+    listBookingJobPhotos(supabase!, id),
+  ]);
 
   const { data: audit } = await supabase!
     .from("booking_audit_log")
@@ -38,15 +45,34 @@ export default async function HubBookingDetailPage({
         ← Calendar
       </Link>
 
-      <h1 className="mt-4 font-display text-5xl tracking-[0.04em] text-y">
-        {booking.reference_id}
-      </h1>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <h1 className="font-display text-5xl tracking-[0.04em] text-y">
+          {booking.reference_id}
+        </h1>
+        <DetailJobProgressBadge
+          status={booking.status}
+          detailPhase={booking.detail_phase as string | undefined}
+        />
+      </div>
       <p className="mt-2 font-mono text-xs tracking-[0.08em] text-text/40">
         {formatCentralDateTime(booking.starts_at)} Central
         {booking.deleted_at ? " · deleted" : ""}
       </p>
 
-      <div className="mt-8">
+      <div className="mt-8 space-y-8">
+        <BookingDetailProgress
+          status={booking.status}
+          detailPhase={booking.detail_phase as string | undefined}
+          detailEnRouteAt={booking.detail_en_route_at}
+          detailArrivedAt={booking.detail_arrived_at}
+          detailFinishedAt={booking.detail_finished_at}
+          detailChecklistCompletedAt={booking.detail_checklist_completed_at}
+        />
+        <BookingJobPhotosSection
+          photos={jobPhotos}
+          detailPhase={booking.detail_phase as string | undefined}
+          status={booking.status}
+        />
         <BookingDetailForm booking={booking} detailerNames={detailerNames} />
       </div>
 

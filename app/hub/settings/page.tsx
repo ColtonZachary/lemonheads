@@ -25,6 +25,11 @@ const settingsLinks = [
     description: "Customer points, reward goals, and redemptions",
   },
   {
+    href: "/hub/settings/checklist",
+    title: "Detail checklist",
+    description: "Items detailers confirm after each job in the app",
+  },
+  {
     href: "/hub/settings/appearance",
     title: "Hub colors",
     description: "Your personal hub theme",

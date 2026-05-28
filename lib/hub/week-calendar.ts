@@ -21,6 +21,7 @@ export type WeekCalendarBooking = {
   starts_at: string;
   ends_at: string;
   status: string;
+  detail_phase: string | null;
   city: string;
   billed_at: string | null;
   is_billed: boolean;

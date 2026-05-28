@@ -76,6 +76,11 @@ export type HubBookingDetail = {
   cancelled_at: string | null;
   deleted_at: string | null;
   billed_at: string | null;
+  detail_phase?: string | null;
+  detail_en_route_at?: string | null;
+  detail_arrived_at?: string | null;
+  detail_finished_at?: string | null;
+  detail_checklist_completed_at?: string | null;
 };
 
 function ActionBanner({ state }: { state: HubBookingActionState }) {

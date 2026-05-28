@@ -194,3 +194,75 @@ export async function notifyCustomerBookingCancelled(
     },
   );
 }
+
+function renderDetailerEnRouteSms(d: CustomerBookingSmsData): string {
+  return (
+    `Lemonhead's: ${detailerLabel(d.detailerName)} is on the way for your ${d.service} ` +
+    `today (${d.time}). Ref ${d.referenceId}. ${SITE.phone.main.display}`
+  );
+}
+
+function renderDetailerArrivedSms(d: CustomerBookingSmsData): string {
+  return (
+    `Lemonhead's: ${detailerLabel(d.detailerName)} has arrived for your ${d.service}. ` +
+    `Ref ${d.referenceId}. ${SITE.phone.main.display}`
+  );
+}
+
+function renderDetailerFinishedSms(d: CustomerBookingSmsData): string {
+  return (
+    `Lemonhead's: Your ${d.service} is complete! Thank you, ${firstName(d.customerName)}. ` +
+    `Ref ${d.referenceId}. ${SITE.phone.main.display}`
+  );
+}
+
+export async function notifyCustomerDetailerEnRoute(
+  client: SupabaseClient | null,
+  data: CustomerBookingSmsData,
+): Promise<SmsNotifyResult> {
+  return deliverCustomerSms(
+    client,
+    "detailer.en_route",
+    data.phone,
+    renderDetailerEnRouteSms(data),
+    {
+      reference_id: data.referenceId,
+      booking_id: data.bookingId ?? null,
+      template: "en_route",
+    },
+  );
+}
+
+export async function notifyCustomerDetailerArrived(
+  client: SupabaseClient | null,
+  data: CustomerBookingSmsData,
+): Promise<SmsNotifyResult> {
+  return deliverCustomerSms(
+    client,
+    "detailer.arrived",
+    data.phone,
+    renderDetailerArrivedSms(data),
+    {
+      reference_id: data.referenceId,
+      booking_id: data.bookingId ?? null,
+      template: "arrived",
+    },
+  );
+}
+
+export async function notifyCustomerDetailerFinished(
+  client: SupabaseClient | null,
+  data: CustomerBookingSmsData,
+): Promise<SmsNotifyResult> {
+  return deliverCustomerSms(
+    client,
+    "detailer.finished",
+    data.phone,
+    renderDetailerFinishedSms(data),
+    {
+      reference_id: data.referenceId,
+      booking_id: data.bookingId ?? null,
+      template: "finished",
+    },
+  );
+}

@@ -14,6 +14,8 @@ const BOOKING_DETAIL_SELECT = `
   estimated_price_cents, discount_cents, final_price_cents,
   promo_code_id,
   manager_notes, cancellation_reason, cancelled_at, deleted_at, billed_at,
+  detail_phase, detail_en_route_at, detail_arrived_at, detail_finished_at,
+  detail_checklist_completed_at,
   promo_codes ( code )
 `;
 

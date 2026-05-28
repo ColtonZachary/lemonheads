@@ -12,6 +12,16 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+### Mobile app (employee — Phase 0)
+
+Expo app in `apps/mobile/`. First-time setup: **[docs/MOBILE_APP_EMPLOYEE_PHASE0.md](docs/MOBILE_APP_EMPLOYEE_PHASE0.md)**.
+
+```bash
+cp apps/mobile/.env.example apps/mobile/.env   # fill Supabase + API URL
+npm run dev          # terminal 1 — website + mobile API
+npm run mobile       # terminal 2 — Expo
+```
+
 ## GitHub Pages (preview hosting)
 
 The site exports as static HTML for **GitHub Pages** at:
@@ -70,7 +80,11 @@ Public `site-media` files are served by URL only — do not add a broad `SELECT`
 
 ### Bookings table
 
-Run `supabase/migrations/20260521000000_bookings.sql` in the SQL Editor. Set `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` so the booking server action can insert rows (RLS blocks anonymous inserts). View data in **Table Editor → bookings**.
+Run `supabase/migrations/20260521000000_bookings.sql` in the SQL Editor.
+
+### Mobile app (employee — Phase 0)
+
+Expo app under `apps/mobile/`. See **[docs/MOBILE_APP_EMPLOYEE_PHASE0.md](docs/MOBILE_APP_EMPLOYEE_PHASE0.md)** for first-time setup. Quick start: copy `apps/mobile/.env.example` → `.env`, run `npm run dev` in the repo root, then `npm run mobile`. Set `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` so the booking server action can insert rows (RLS blocks anonymous inserts). View data in **Table Editor → bookings**.
 
 Bookings block overlapping times for the same detailer (`pending`, `confirmed`, `in_progress`). Auto-assign picks the first free detailer; named detailers show unavailable slots in the calendar UI.
 

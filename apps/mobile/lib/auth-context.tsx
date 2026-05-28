@@ -1,0 +1,144 @@
+import { Session } from "@supabase/supabase-js";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+
+import { apiGet } from "@/lib/api";
+import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
+import type { EmployeeMeResponse } from "@/lib/types";
+
+type AuthState = {
+  loading: boolean;
+  session: Session | null;
+  employee: EmployeeMeResponse | null;
+  error: string | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  refreshEmployee: () => Promise<void>;
+};
+
+const AuthContext = createContext<AuthState | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
+  const [employee, setEmployee] = useState<EmployeeMeResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadEmployee = useCallback(async (accessToken: string) => {
+    const me = await apiGet<EmployeeMeResponse>("/api/mobile/employee/me", accessToken);
+    setEmployee(me);
+    setError(null);
+  }, []);
+
+  const refreshEmployee = useCallback(async () => {
+    if (!session?.access_token) return;
+    await loadEmployee(session.access_token);
+  }, [loadEmployee, session?.access_token]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured()) {
+      setError(
+        "Supabase env missing. In apps/mobile/.env use EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY (not NEXT_PUBLIC_).",
+      );
+      setLoading(false);
+      return;
+    }
+
+    const supabase = getSupabase();
+
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setLoading(false);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+    });
+
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!session?.access_token) {
+      setEmployee(null);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    loadEmployee(session.access_token)
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setEmployee(null);
+          setError(err instanceof Error ? err.message : "Could not load employee profile");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadEmployee, session?.access_token]);
+
+  const signIn = useCallback(
+    async (email: string, password: string) => {
+      setError(null);
+      setLoading(true);
+      const supabase = getSupabase();
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (signInError) {
+        setLoading(false);
+        throw new Error(signInError.message);
+      }
+      const nextSession = data.session;
+      if (!nextSession?.access_token) {
+        setLoading(false);
+        throw new Error("Sign in succeeded but no session was returned.");
+      }
+      setSession(nextSession);
+      await loadEmployee(nextSession.access_token);
+      setLoading(false);
+    },
+    [loadEmployee],
+  );
+
+  const signOut = useCallback(async () => {
+    const supabase = getSupabase();
+    await supabase.auth.signOut();
+    setEmployee(null);
+    setError(null);
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      loading,
+      session,
+      employee,
+      error,
+      signIn,
+      signOut,
+      refreshEmployee,
+    }),
+    [loading, session, employee, error, signIn, signOut, refreshEmployee],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth(): AuthState {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
+}

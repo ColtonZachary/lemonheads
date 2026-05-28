@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { isMissingDetailPhaseColumn } from "@/lib/hub/detail-job-progress";
 import { resolveDetailerColor } from "@/lib/hub/detailer-colors";
 import { addDaysToDateInput } from "@/lib/bookings/scheduling-limits";
 import {
@@ -45,7 +46,7 @@ export async function fetchWeekCalendarData(
   let bookingQuery = client
     .from("bookings")
     .select(
-      "id, reference_id, customer_name, service_name, detailer_name, starts_at, ends_at, status, city, billed_at",
+      "id, reference_id, customer_name, service_name, detailer_name, starts_at, ends_at, status, detail_phase, city, billed_at",
     )
     .is("deleted_at", null)
     .gte("appointment_date", weekMonday)
@@ -61,20 +62,26 @@ export async function fetchWeekCalendarData(
 
   const billedColumnMissing =
     bookingError != null && isMissingBilledColumn(bookingError);
+  const detailPhaseColumnMissing =
+    bookingError != null && isMissingDetailPhaseColumn(bookingError);
 
   let rows = bookingRows ?? [];
-  if (billedColumnMissing) {
+  if (billedColumnMissing || detailPhaseColumnMissing) {
     const { data: fallback } = await client
       .from("bookings")
       .select(
-        "id, reference_id, customer_name, service_name, detailer_name, starts_at, ends_at, status, city",
+        "id, reference_id, customer_name, service_name, detailer_name, starts_at, ends_at, status, city, billed_at",
       )
       .is("deleted_at", null)
       .gte("appointment_date", weekMonday)
       .lte("appointment_date", weekEnd)
       .neq("status", "cancelled")
       .order("starts_at", { ascending: true });
-    rows = (fallback ?? []).map((r) => ({ ...r, billed_at: null }));
+    rows = (fallback ?? []).map((r) => ({
+      ...r,
+      billed_at: (r as { billed_at?: string | null }).billed_at ?? null,
+      detail_phase: null,
+    }));
   } else if (bookingError) {
     console.error("[week-calendar] bookings:", bookingError.message);
     rows = [];
@@ -104,6 +111,7 @@ export async function fetchWeekCalendarData(
     starts_at: r.starts_at,
     ends_at: r.ends_at,
     status: r.status,
+    detail_phase: (r as { detail_phase?: string | null }).detail_phase ?? null,
     city: r.city ?? "",
     billed_at: r.billed_at ?? null,
     is_billed: Boolean(r.billed_at) || paidBookingIds.has(r.id),
