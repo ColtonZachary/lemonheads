@@ -122,7 +122,8 @@ export default async function RewardsPage() {
                 <ul className="mt-3 list-inside list-disc space-y-2 text-sm text-text/50">
                   <li>
                     Earn {settings.points_per_dollar} point
-                    {settings.points_per_dollar === 1 ? "" : "s"} per $1 on billed details
+                    {settings.points_per_dollar === 1 ? "" : "s"} per $1 on billed details (not
+                    when a promo code is used)
                   </li>
                   <li>Multiple rewards to choose from — pick the goal you want</li>
                   <li>Optional sign-in to view balance and redeem</li>

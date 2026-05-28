@@ -1840,7 +1840,8 @@ function Step4({
                     {state.appliedPromo.code}
                   </p>
                   <p className="mt-1 font-mono text-[10px] text-text/50">
-                    Saves {formatCurrency(promoDiscountDollars)}
+                    Saves {formatCurrency(promoDiscountDollars)}. Loyalty points are not earned on
+                    promo bookings.
                   </p>
                 </div>
                 <Button

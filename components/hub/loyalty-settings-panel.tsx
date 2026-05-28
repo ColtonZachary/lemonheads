@@ -178,8 +178,8 @@ export function LoyaltySettingsPanel({
       <section className="rounded-lg border border-white/10 p-5">
         <h2 className="font-mono text-xs uppercase tracking-[0.12em] text-y">Program settings</h2>
         <p className="mt-1 text-sm text-text/45">
-          Points are awarded when a booking is marked billed in the hub. Customers earn optional
-          rewards — login is not required to book.
+          Points are awarded when a booking is marked billed in the hub (not if a promo code was
+          used). Customers earn optional rewards — login is not required to book.
         </p>
         <form action={settingsAction} className="mt-4 space-y-3">
           <label className="flex items-center gap-2">

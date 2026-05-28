@@ -12,6 +12,7 @@ type BookingForLoyalty = {
   final_price_cents: number | null;
   price_cents: number | null;
   estimated_price_cents: number | null;
+  promo_code_id: string | null;
 };
 
 function bookingSpendCents(booking: BookingForLoyalty): number {
@@ -33,7 +34,7 @@ export async function syncLoyaltyPointsForBooking(
   const { data: booking, error } = await client
     .from("bookings")
     .select(
-      "id, customer_id, billed_at, final_price_cents, price_cents, estimated_price_cents",
+      "id, customer_id, billed_at, final_price_cents, price_cents, estimated_price_cents, promo_code_id",
     )
     .eq("id", bookingId)
     .maybeSingle();
@@ -58,6 +59,8 @@ export async function syncLoyaltyPointsForBooking(
 
     const settings = await fetchLoyaltySettings(client);
     if (!settings.enabled) return;
+
+    if (row.promo_code_id) return;
 
     const amountCents = bookingSpendCents(row);
     const points = pointsForSpendCents(amountCents, settings.points_per_dollar);

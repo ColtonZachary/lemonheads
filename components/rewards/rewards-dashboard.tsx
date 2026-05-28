@@ -70,7 +70,7 @@ export function RewardsDashboard({
             <>
               Earn {settings.points_per_dollar} point
               {settings.points_per_dollar === 1 ? "" : "s"} per $1 spent on completed, billed
-              details.
+              details. Promo codes do not earn points.
             </>
           ) : (
             <>The rewards program is paused. Your balance is saved.</>
