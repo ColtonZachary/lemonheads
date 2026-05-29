@@ -153,3 +153,53 @@ export function renderContactEmail(d: ContactEmailData) {
   `;
   return SHELL("New contact form submission", body);
 }
+
+function authShell(title: string, body: string) {
+  return SHELL(title, body).replace(
+    "Mobile Detail · Notification",
+    "Mobile Detail · Account",
+  );
+}
+
+function authButton(label: string, href: string) {
+  return `
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px 0 8px;">
+      <tr>
+        <td style="border-radius:6px;background:#F0C93A;">
+          <a href="${escapeHtml(href)}" style="display:inline-block;padding:14px 24px;font-family:Menlo,Consolas,monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#080808;text-decoration:none;font-weight:700;">${escapeHtml(label)}</a>
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
+export function renderAuthInviteEmail(input: {
+  link: string;
+  fullName: string;
+  role: string;
+}) {
+  const roleLabel =
+    input.role === "admin"
+      ? "admin"
+      : input.role === "manager"
+        ? "manager"
+        : "detailer";
+
+  const body = `
+    <h1 style="font-family:'Bebas Neue','Impact',sans-serif;font-size:30px;letter-spacing:0.06em;color:#F0C93A;margin:0 0 6px;">YOU&rsquo;RE INVITED</h1>
+    <p style="margin:0 0 18px;color:rgba(237,234,224,0.7);font-size:14px;">Hi ${escapeHtml(input.fullName.split(" ")[0])}, you&rsquo;ve been invited to Lemonhead&rsquo;s as a <strong style="color:#edeae0;">${escapeHtml(roleLabel)}</strong>. Use the button below to set your password and sign in.</p>
+    ${authButton("Accept invitation", input.link)}
+    <p style="margin:18px 0 0;font-size:12px;color:rgba(237,234,224,0.45);line-height:1.7;">This link expires in 24 hours. If you didn&rsquo;t expect this email, you can ignore it.</p>
+  `;
+  return authShell("Lemonhead's hub invitation", body);
+}
+
+export function renderAuthMagicLinkEmail(input: { link: string; intro: string }) {
+  const body = `
+    <h1 style="font-family:'Bebas Neue','Impact',sans-serif;font-size:30px;letter-spacing:0.06em;color:#F0C93A;margin:0 0 6px;">SIGN IN</h1>
+    <p style="margin:0 0 18px;color:rgba(237,234,224,0.7);font-size:14px;">${escapeHtml(input.intro)}</p>
+    ${authButton("Continue", input.link)}
+    <p style="margin:18px 0 0;font-size:12px;color:rgba(237,234,224,0.45);line-height:1.7;">This link expires in 1 hour. If you didn&rsquo;t request it, you can ignore this email.</p>
+  `;
+  return authShell("Your Lemonhead's sign-in link", body);
+}

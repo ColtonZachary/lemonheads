@@ -1,9 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 import { isAddonIcon } from "@/lib/hub/catalog-icons";
 import { vehicleKeysForCatalog } from "@/lib/hub/catalog-db";
+import { PUBLIC_CATALOG_CACHE_TAG } from "@/lib/catalog/cached-public-catalog";
 import { requireManagerSupabase } from "@/lib/hub/require-manager-supabase";
 import { VEHICLE_OPTIONS } from "@/lib/data";
 
@@ -15,11 +16,13 @@ export type HubCatalogActionState = {
 const CATALOG_PATHS = ["/hub/catalog", "/hub/catalog/packages", "/hub/catalog/addons", "/hub/catalog/locations"];
 
 function revalidateCatalog() {
+  revalidateTag(PUBLIC_CATALOG_CACHE_TAG, "max");
   for (const path of CATALOG_PATHS) {
     revalidatePath(path);
   }
   revalidatePath("/hub/bookings/new");
   revalidatePath("/book");
+  revalidatePath("/");
 }
 
 function parseSortOrder(raw: string): number {
