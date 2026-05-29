@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",
     "build:pages": "node scripts/prepare-static-export.mjs && NEXT_OUTPUT=export NEXT_PUBLIC_BASE_PATH=/lemonheads NEXT_PUBLIC_STATIC_EXPORT=true next build && node scripts/restore-static-export.mjs",
     "start": "next start",

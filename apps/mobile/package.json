@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "start": "expo start",
+    "mobile": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web"
@@ -12,7 +13,6 @@
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
     "@supabase/supabase-js": "^2.106.2",
-    "babel-preset-expo": "~54.0.10",
     "expo": "~54.0.0",
     "expo-constants": "~18.0.13",
     "expo-image-picker": "~17.0.11",

@@ -2,17 +2,44 @@ function apiBaseUrl(): string {
   const base = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, "");
   if (!base) {
     throw new Error(
-      "EXPO_PUBLIC_API_URL is not set. Use http://localhost:3000 on simulator, or your computer LAN IP on a physical phone.",
+      "EXPO_PUBLIC_API_URL is not set. Use http://localhost:3000 on simulator, or http://YOUR_MAC_IP:3000 on a physical phone.",
     );
   }
   return base;
+}
+
+function networkErrorMessage(url: string, err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (!/network request failed|failed to fetch|could not connect/i.test(msg)) {
+    return msg;
+  }
+  const isLocalhost = /localhost|127\.0\.0\.1/.test(url);
+  if (isLocalhost) {
+    return (
+      "Cannot reach the website API at localhost. On a real phone, set EXPO_PUBLIC_API_URL " +
+      "in apps/mobile/.env to your Mac's Wi‑Fi IP (e.g. http://192.168.1.42:3000), then restart Expo. " +
+      "Also run npm run dev in the project root on the same Wi‑Fi."
+    );
+  }
+  return (
+    `Cannot reach ${url}. Is npm run dev running in the project root? Phone and Mac must be on the same Wi‑Fi.`
+  );
+}
+
+async function apiFetch(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (err) {
+    throw new Error(networkErrorMessage(url, err));
+  }
 }
 
 export async function apiGet<T>(
   path: string,
   accessToken: string,
 ): Promise<T> {
-  const res = await fetch(`${apiBaseUrl()}${path}`, {
+  const url = `${apiBaseUrl()}${path}`;
+  const res = await apiFetch(url, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       Accept: "application/json",
@@ -35,7 +62,8 @@ export async function apiPost<T>(
   accessToken: string,
   payload: Record<string, unknown>,
 ): Promise<T> {
-  const res = await fetch(`${apiBaseUrl()}${path}`, {
+  const url = `${apiBaseUrl()}${path}`;
+  const res = await apiFetch(url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -77,7 +105,8 @@ export async function apiUploadPhoto(
     type: "image/jpeg",
   } as unknown as Blob);
 
-  const res = await fetch(`${apiBaseUrl()}/api/mobile/employee/jobs/${bookingId}/photos`, {
+  const url = `${apiBaseUrl()}/api/mobile/employee/jobs/${bookingId}/photos`;
+  const res = await apiFetch(url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,

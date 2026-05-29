@@ -93,23 +93,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, password: string) => {
       setError(null);
       setLoading(true);
-      const supabase = getSupabase();
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-      if (signInError) {
+      try {
+        const supabase = getSupabase();
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+        if (signInError) {
+          throw new Error(signInError.message);
+        }
+        const nextSession = data.session;
+        if (!nextSession?.access_token) {
+          throw new Error("Sign in succeeded but no session was returned.");
+        }
+        setSession(nextSession);
+        try {
+          await loadEmployee(nextSession.access_token);
+        } catch (err) {
+          const detail = err instanceof Error ? err.message : "Could not load profile";
+          throw new Error(
+            `Signed in to Supabase, but the app could not reach your website API. ${detail}`,
+          );
+        }
+      } finally {
         setLoading(false);
-        throw new Error(signInError.message);
       }
-      const nextSession = data.session;
-      if (!nextSession?.access_token) {
-        setLoading(false);
-        throw new Error("Sign in succeeded but no session was returned.");
-      }
-      setSession(nextSession);
-      await loadEmployee(nextSession.access_token);
-      setLoading(false);
     },
     [loadEmployee],
   );
