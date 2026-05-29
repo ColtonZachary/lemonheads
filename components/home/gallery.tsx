@@ -1,10 +1,10 @@
 import Image from "next/image";
 
 import { Section, SectionLabel, SectionTitle } from "@/components/ui/section";
-import { getGalleryItems } from "@/lib/media";
+import { getCachedGalleryItems } from "@/lib/media/cached-gallery";
 
 export async function Gallery() {
-  const items = await getGalleryItems();
+  const items = await getCachedGalleryItems();
 
   return (
     <Section id="gallery" className="bg-dk py-20">

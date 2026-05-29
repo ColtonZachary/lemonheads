@@ -33,6 +33,11 @@ export async function middleware(request: NextRequest) {
   const authRedirect = redirectAuthLanding(request);
   if (authRedirect) return authRedirect;
 
+  // Home is public — skip auth refresh (saves a Supabase round trip on every visit).
+  if (request.nextUrl.pathname === "/") {
+    return NextResponse.next({ request });
+  }
+
   return updateSession(request);
 }
 

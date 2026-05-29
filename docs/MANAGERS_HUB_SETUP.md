@@ -549,14 +549,12 @@ Work through when you are ready to go live with customer points and email sign-i
 | Run `NOTIFY pgrst, 'reload schema';` if tables/functions are missing in the app | ☐ |
 | Hub → **Settings → Loyalty** — set points rate and at least one reward goal | ☐ |
 | Supabase → **URL configuration** — add `…/auth/finish**` (and `…/auth/confirm**`) redirect URLs | ☐ |
-| **Resend SMTP for Supabase Auth** (rewards magic links + hub invites — separate from `RESEND_API_KEY` in Vercel) | ☐ |
-| Resend → verify domain → Supabase → **Authentication → Email → SMTP Settings** | ☐ |
-| Host `smtp.resend.com`, port `465`, user `resend`, password = Resend API key | ☐ |
-| Sender e.g. `noreply@lemonheadsdetail.com` (must be on verified domain) | ☐ |
-| Optional: Resend → **Integrations → Supabase** (auto-configures SMTP) | ☐ |
+| **Resend for auth emails** (hub invites + rewards magic links) | ☐ |
+| Set `RESEND_API_KEY` + `RESEND_FROM_EMAIL` in Vercel (same as booking emails) | ☐ |
+| Verify your domain in Resend so `FROM` can be e.g. `noreply@lemonheadsdetail.com` | ☐ |
 | Test customer seed: `supabase/seed/test_loyalty_customer.sql` | ☐ |
 
-**Note:** Booking/contact emails use the Resend API via `RESEND_*` in Vercel. Auth emails (magic links, invites) only use Resend after SMTP is configured in the **Supabase** dashboard.
+**Note:** Hub invites and customer magic-link sign-in are sent via the Resend API (`RESEND_*` in Vercel). Supabase only generates the secure link — it no longer sends those emails itself. Without `RESEND_API_KEY`, links are logged to the server console instead (fine for local dev).
 
 ---
 

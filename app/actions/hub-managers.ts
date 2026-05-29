@@ -14,7 +14,7 @@ import {
 } from "@/lib/hub/hub-access-permissions";
 import { requireManagerSupabase } from "@/lib/hub/require-manager-supabase";
 import { getAppBaseUrl } from "@/lib/app-url";
-import { formatAuthEmailError } from "@/lib/auth/email-errors";
+import { sendHubInviteAuthEmail } from "@/lib/auth/send-auth-email";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export type HubManagersActionState = {
@@ -174,22 +174,19 @@ export async function inviteHubUser(
 
   const redirectTo = `${appUrl}/auth/confirm?next=/auth/set-password`;
 
-  const { data: inviteData, error: inviteError } =
-    await admin.auth.admin.inviteUserByEmail(email, {
-      redirectTo,
-    });
+  const inviteResult = await sendHubInviteAuthEmail(admin, {
+    email,
+    redirectTo,
+    fullName: full_name,
+    role,
+  });
 
-  if (inviteError || !inviteData.user) {
-    return {
-      ok: false,
-      message:
-        formatAuthEmailError(inviteError?.message ?? "") ||
-        "Could not send invite. User may already exist — update them below.",
-    };
+  if (!inviteResult.ok) {
+    return { ok: false, message: inviteResult.message };
   }
 
   const { error: profileError } = await admin.from("profiles").upsert({
-    id: inviteData.user.id,
+    id: inviteResult.userId,
     email,
     full_name,
     phone,

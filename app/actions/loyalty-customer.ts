@@ -5,8 +5,10 @@ import { redirect } from "next/navigation";
 
 import { getAppBaseUrl, authRedirectPath } from "@/lib/app-url";
 import { formatAuthEmailError } from "@/lib/auth/email-errors";
+import { sendMagicLinkAuthEmail } from "@/lib/auth/send-auth-email";
 import { linkCustomerAuthUser } from "@/lib/loyalty/link-customer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export type LoyaltyCustomerActionState = {
   ok: boolean;
@@ -64,21 +66,24 @@ export async function sendRewardsMagicLink(
 
   const redirectTo = authRedirectPath("/auth/finish?next=/rewards");
 
-  const supabase = await createSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, message: "Sign-in is not configured." };
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return {
+      ok: false,
+      message: "Server is missing SUPABASE_SERVICE_ROLE_KEY for sign-in emails.",
+    };
   }
 
-  const { error } = await supabase.auth.signInWithOtp({
+  const result = await sendMagicLinkAuthEmail(admin, {
     email,
-    options: {
-      shouldCreateUser: true,
-      emailRedirectTo: redirectTo,
-    },
+    redirectTo,
+    subject: "Your Lemonhead's rewards sign-in link",
+    intro:
+      "Tap the button below to sign in to your rewards account. Use the same email you use when booking.",
   });
 
-  if (error) {
-    return { ok: false, message: formatAuthEmailError(error.message) };
+  if (!result.ok) {
+    return { ok: false, message: result.message };
   }
 
   return {

@@ -3,7 +3,7 @@ export function formatAuthEmailError(message: string): string {
   const lower = message.toLowerCase();
 
   if (lower.includes("rate limit") || lower.includes("email rate limit exceeded")) {
-    return "Too many sign-in emails were sent recently (Supabase limit). Wait about an hour, check spam for an earlier link, or ask us to enable custom SMTP for higher limits.";
+    return "Too many sign-in emails were sent recently. Wait about an hour or check spam for an earlier link.";
   }
 
   if (lower.includes("signup is disabled")) {

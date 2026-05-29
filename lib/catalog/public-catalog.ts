@@ -104,13 +104,18 @@ export function staticPublicCatalog(): PublicCatalog {
 
 export async function fetchPublicCatalog(
   client: SupabaseClient | null,
+  options: { includeLocations?: boolean } = {},
 ): Promise<PublicCatalog> {
   if (!client) return staticPublicCatalog();
+
+  const includeLocations = options.includeLocations ?? true;
 
   const [packageRows, addonRows, locationRows] = await Promise.all([
     fetchCatalogPackages(client),
     fetchCatalogAddons(client),
-    fetchBookingLocationTypes(client),
+    includeLocations
+      ? fetchBookingLocationTypes(client)
+      : Promise.resolve([] as Awaited<ReturnType<typeof fetchBookingLocationTypes>>),
   ]);
 
   const activePackages = packageRows.filter((p) => p.active);

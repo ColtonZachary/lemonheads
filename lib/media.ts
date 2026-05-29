@@ -1,5 +1,8 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { assetPath } from "@/lib/asset-path";
 import { TEAM, type TeamMember } from "@/lib/data";
+import { createPublicReadClient } from "@/lib/supabase/public-read";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPublicMediaUrl } from "@/lib/supabase/storage";
 
@@ -60,12 +63,19 @@ function withPublicAssetPaths(items: GalleryItem[]): GalleryItem[] {
   return items.map((item) => ({ ...item, src: assetPath(item.src) }));
 }
 
-export async function getGalleryItems(): Promise<GalleryItem[]> {
+export async function getGalleryItems(options?: {
+  usePublicReadClient?: boolean;
+}): Promise<GalleryItem[]> {
   if (process.env.NEXT_PUBLIC_STATIC_EXPORT === "true") {
     return withPublicAssetPaths(FALLBACK_GALLERY);
   }
 
-  const supabase = await createSupabaseServerClient();
+  let supabase: SupabaseClient | null = null;
+  if (options?.usePublicReadClient) {
+    supabase = createPublicReadClient();
+  } else {
+    supabase = await createSupabaseServerClient();
+  }
   if (!supabase) return withPublicAssetPaths(FALLBACK_GALLERY);
 
   const { data, error } = await supabase
