@@ -9,8 +9,8 @@ import {
 } from "@/lib/hub/calendar-month";
 import { cn } from "@/lib/utils";
 
-const labelClass =
-  "font-mono text-[9px] uppercase tracking-[0.12em] text-text/40";
+import { HubFieldLabel } from "@/components/hub/hub-form";
+import { Button } from "@/components/ui/button";
 
 function normalizeRange(
   a: string,
@@ -74,48 +74,52 @@ export function HubDateRangePicker({
 
   return (
     <div className="sm:col-span-2">
-      <span className={labelClass}>Date range *</span>
-      <p className="mt-1 text-xs text-text/40">
+      <HubFieldLabel>Date range *</HubFieldLabel>
+      <p className="mt-1 text-xs text-muted-foreground">
         One calendar — select the first and last day of time off.
       </p>
 
       <input type="hidden" name="appointment_date" value={start} required />
       <input type="hidden" name="appointment_date_end" value={end} required />
 
-      <div className="mt-3 rounded-md border border-white/10 bg-card2/30 p-4">
+      <div className="mt-3 rounded-md border border-border bg-muted/30 p-4">
         <div className="flex items-center justify-between">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
+            className="font-mono text-[10px]"
             onClick={() =>
               setCursor((c) =>
                 c.m === 0 ? { y: c.y - 1, m: 11 } : { y: c.y, m: c.m - 1 },
               )
             }
-            className="cursor-pointer rounded border border-white/10 px-3 py-1.5 font-mono text-[10px] text-text/50 transition-colors hover:border-y/25 hover:text-y"
           >
             ← Prev
-          </button>
-          <div className="font-display text-lg tracking-[0.05em] text-y/90">
+          </Button>
+          <div className="font-display text-lg tracking-[0.05em] text-primary/90">
             {HUB_CALENDAR_MONTHS[cursor.m]} {cursor.y}
           </div>
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
+            className="font-mono text-[10px]"
             onClick={() =>
               setCursor((c) =>
                 c.m === 11 ? { y: c.y + 1, m: 0 } : { y: c.y, m: c.m + 1 },
               )
             }
-            className="cursor-pointer rounded border border-white/10 px-3 py-1.5 font-mono text-[10px] text-text/50 transition-colors hover:border-y/25 hover:text-y"
           >
             Next →
-          </button>
+          </Button>
         </div>
 
         <div className="mt-3 grid grid-cols-7 gap-1">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
             <div
               key={d}
-              className="py-1 text-center font-mono text-[8px] font-bold uppercase tracking-[0.12em] text-text/30"
+              className="py-1 text-center font-mono text-[8px] font-bold uppercase tracking-[0.12em] text-muted-foreground/60"
             >
               {d}
             </div>
@@ -135,12 +139,12 @@ export function HubDateRangePicker({
                 className={cn(
                   "flex h-9 items-center justify-center rounded border border-transparent text-sm font-semibold transition-all",
                   cell.disabled
-                    ? "cursor-not-allowed text-white/15"
-                    : "cursor-pointer text-text/65 hover:border-y/30 hover:bg-y/[0.06] hover:text-y",
-                  role === "between" && "bg-y/15 text-y/90",
+                    ? "cursor-not-allowed text-muted-foreground/30"
+                    : "cursor-pointer text-foreground/65 hover:border-primary/30 hover:bg-primary/[0.06] hover:text-primary",
+                  role === "between" && "bg-primary/15 text-primary/90",
                   (role === "start" || role === "end") &&
-                    "border-y bg-y font-bold text-black",
-                  role === "start" && !end && "border-y bg-y font-bold text-black",
+                    "border-primary bg-primary font-bold text-primary-foreground",
+                  role === "start" && !end && "border-primary bg-primary font-bold text-primary-foreground",
                 )}
               >
                 {cell.day}
@@ -149,12 +153,12 @@ export function HubDateRangePicker({
           })}
         </div>
 
-        <p className="mt-3 font-mono text-[10px] text-text/40">
-          <span className="text-y/80">{rangeLabel}</span>
+        <p className="mt-3 font-mono text-[10px] text-muted-foreground">
+          <span className="text-primary/80">{rangeLabel}</span>
           {start && end ? (
             <button
               type="button"
-              className="ml-3 cursor-pointer text-text/45 underline hover:text-y"
+              className="ml-3 cursor-pointer text-muted-foreground underline hover:text-primary"
               onClick={() => applyRange("", "")}
             >
               Clear

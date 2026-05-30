@@ -32,7 +32,7 @@ function DeleteBlockButton({ blockId, compact }: { blockId: string; compact?: bo
         <button
           type="submit"
           disabled={pending}
-          className="cursor-pointer font-mono text-[9px] text-text/40 hover:text-red-300 disabled:opacity-50"
+          className="cursor-pointer font-mono text-[9px] text-muted-foreground hover:text-destructive disabled:opacity-50"
         >
           {pending ? "…" : "Remove"}
         </button>
@@ -142,14 +142,14 @@ export function ScheduleBlocksList({
                 className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
               >
                 <div>
-                  <div className="font-mono text-sm text-y/80">
+                  <div className="font-mono text-sm text-primary/80">
                     {block.staff_members?.display_name ?? "—"}
                   </div>
-                  <div className="mt-0.5 text-sm text-text/55">
+                  <div className="mt-0.5 text-sm text-muted-foreground">
                     {formatBlockTimeRange(block)}
                     {block.reason ? (
                       <>
-                        <span className="text-text/30"> · </span>
+                        <span className="text-muted-foreground/50"> · </span>
                         {block.reason}
                       </>
                     ) : null}

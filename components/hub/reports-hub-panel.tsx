@@ -1,11 +1,15 @@
 import Link from "next/link";
 
 import { ReportsAutoRefresh } from "@/components/hub/reports-auto-refresh";
-import { HubDetailsSection } from "@/components/hub/hub-page";
-import { HubFormField, HubInput } from "@/components/hub/hub-form";
+import { ReportsStatsPanel } from "@/components/hub/reports-stats-panel";
+import type { WebsitePerformanceSnapshot } from "@/lib/hub/website-performance-stats";
+import { HubPageHeader, HubStatCard } from "@/components/hub/hub-page";
+import { HubFieldRow, HubFormField, HubInput } from "@/components/hub/hub-form";
 import { ReportsDetailerPaySection } from "@/components/hub/reports-detailer-pay";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -22,7 +26,44 @@ import {
   type HubReportsSnapshot,
   type ReportBreakdownRow,
 } from "@/lib/hub/reports-db";
-import { cn } from "@/lib/utils";
+
+function ReportsSummaryStrip({ report }: { report: HubReportsSnapshot }) {
+  const { summary } = report;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <Badge variant="outline" className="font-mono text-xs font-normal">
+          {report.from} → {report.to} · Central appointment dates
+        </Badge>
+        <ReportsAutoRefresh />
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <HubStatCard
+          label="Revenue"
+          value={formatReportCents(summary.revenueCents)}
+          sub={`${summary.countedJobs} billable jobs`}
+        />
+        <HubStatCard label="Avg per job" value={formatReportCents(summary.avgJobCents)} />
+        <HubStatCard
+          label="Promo discounts"
+          value={formatReportCents(summary.discountCents)}
+        />
+        <HubStatCard
+          label="Scheduled hours"
+          value={formatReportHours(summary.scheduledHours)}
+        />
+        <HubStatCard
+          label="Total jobs"
+          value={String(summary.totalJobs)}
+          sub={`${summary.cancelledJobs} cancelled`}
+        />
+        <HubStatCard label="Billable jobs" value={String(summary.countedJobs)} />
+      </div>
+    </div>
+  );
+}
 
 export function ReportsPeriodForm({
   from,
@@ -30,14 +71,12 @@ export function ReportsPeriodForm({
   preset,
   action = "/hub/reports",
   showThisWeek,
-  compact,
 }: {
   from: string;
   to: string;
   preset?: string;
   action?: string;
   showThisWeek?: boolean;
-  compact?: boolean;
 }) {
   const today = getCentralTodayDateInput();
   const monthStart = `${today.slice(0, 7)}-01`;
@@ -48,75 +87,16 @@ export function ReportsPeriodForm({
 
   const thisMonthActive = !preset && from === monthStart && to === today;
 
-  if (compact) {
-    return (
-      <div className="flex flex-wrap items-center gap-2">
-        {showThisWeek ? (
-          <Button
-            asChild
-            variant={preset === "thisWeek" ? "default" : "outline"}
-            size="xs"
-          >
-            <Link href={presetLink("thisWeek")}>This week</Link>
-          </Button>
-        ) : null}
-        <Button
-          asChild
-          variant={thisMonthActive ? "default" : "outline"}
-          size="xs"
-        >
-          <Link href={`${action}?from=${monthStart}&to=${today}`}>This month</Link>
-        </Button>
-        <Button
-          asChild
-          variant={preset === "last30" ? "default" : "outline"}
-          size="xs"
-        >
-          <Link href={presetLink("last30")}>30 days</Link>
-        </Button>
-        <Button
-          asChild
-          variant={preset === "lastMonth" ? "default" : "outline"}
-          size="xs"
-        >
-          <Link href={presetLink("lastMonth")}>Last month</Link>
-        </Button>
-        <form
-          method="get"
-          action={action}
-          className="flex flex-wrap items-center gap-1.5 border-l border-border/60 pl-2"
-        >
-          <HubInput
-            type="date"
-            name="from"
-            required
-            defaultValue={from}
-            className="hub-date-input h-7 w-[8.5rem] text-[11px]"
-            aria-label="From date"
-          />
-          <span className="font-mono text-[9px] text-muted-foreground">→</span>
-          <HubInput
-            type="date"
-            name="to"
-            required
-            defaultValue={to}
-            className="hub-date-input h-7 w-[8.5rem] text-[11px]"
-            aria-label="To date"
-          />
-          <Button type="submit" size="xs" variant="outline">
-            Apply
-          </Button>
-        </form>
-      </div>
-    );
-  }
-
   return (
     <Card className="border-border/80 bg-card/40">
       <CardHeader className="pb-3">
         <CardTitle className="font-mono text-[10px] uppercase tracking-[0.15em] text-primary">
           Date range
         </CardTitle>
+        <CardDescription className="text-sm">
+          Appointment dates in America/Chicago · revenue excludes cancelled and deleted
+          jobs
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-2">
@@ -151,118 +131,93 @@ export function ReportsPeriodForm({
             <Link href={presetLink("lastMonth")}>Last month</Link>
           </Button>
         </div>
-        <form method="get" action={action} className="flex flex-wrap items-end gap-3">
-          <HubFormField label="From" htmlFor="reports-from" required>
-            <HubInput
-              id="reports-from"
-              type="date"
-              name="from"
-              required
-              defaultValue={from}
-              className="hub-date-input"
-            />
-          </HubFormField>
-          <HubFormField label="To" htmlFor="reports-to" required>
-            <HubInput
-              id="reports-to"
-              type="date"
-              name="to"
-              required
-              defaultValue={to}
-              className="hub-date-input"
-            />
-          </HubFormField>
-          <Button type="submit" size="sm">
-            Update range
-          </Button>
+        <form method="get" action={action}>
+          <HubFieldRow className="items-end">
+            <HubFormField label="From (Central)" htmlFor="reports-from" required>
+              <HubInput
+                id="reports-from"
+                type="date"
+                name="from"
+                required
+                defaultValue={from}
+                className="hub-date-input"
+              />
+            </HubFormField>
+            <HubFormField label="To (Central)" htmlFor="reports-to" required>
+              <HubInput
+                id="reports-to"
+                type="date"
+                name="to"
+                required
+                defaultValue={to}
+                className="hub-date-input"
+              />
+            </HubFormField>
+            <div className="flex items-end pb-0.5">
+              <Button type="submit" size="sm">
+                Update range
+              </Button>
+            </div>
+          </HubFieldRow>
         </form>
       </CardContent>
     </Card>
   );
 }
 
-function CompactStat({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-}) {
-  return (
-    <div className="min-w-0 flex-1 rounded-md border border-border/80 bg-card/50 px-2.5 py-1.5">
-      <p className="truncate font-mono text-[8px] uppercase tracking-[0.1em] text-muted-foreground">
-        {label}
-      </p>
-      <p className="font-mono text-base leading-tight text-foreground">{value}</p>
-      {sub ? (
-        <p className="truncate font-mono text-[8px] text-muted-foreground">{sub}</p>
-      ) : null}
-    </div>
-  );
-}
-
 function BreakdownTable({
   title,
+  subtitle,
   rows,
   showHours,
-  compact,
 }: {
   title: string;
-  subtitle?: string;
+  subtitle: string;
   rows: ReportBreakdownRow[];
   showHours?: boolean;
-  compact?: boolean;
 }) {
   return (
-    <Card
-      className={cn(
-        "flex min-h-0 flex-col overflow-hidden border-border/80",
-        compact && "h-full",
-      )}
-    >
-      <CardHeader className="shrink-0 border-b border-border/60 px-3 py-1.5">
-        <CardTitle className="font-mono text-[9px] uppercase tracking-[0.12em] text-primary">
+    <Card className="flex flex-col border-border/80">
+      <CardHeader className="border-b border-border/60 pb-3">
+        <CardTitle className="font-mono text-[10px] uppercase tracking-[0.15em] text-primary">
           {title}
         </CardTitle>
+        <CardDescription className="text-sm">{subtitle}</CardDescription>
       </CardHeader>
-      <CardContent className="min-h-0 flex-1 overflow-auto p-0">
+      <CardContent className="p-0">
         {rows.length ? (
           <Table>
-            <TableHeader className="sticky top-0 z-10 bg-card">
+            <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="h-7 px-2 font-mono text-[8px] uppercase text-muted-foreground">
+                <TableHead className="h-10 px-4 font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
                   Name
                 </TableHead>
-                <TableHead className="h-7 px-2 text-right font-mono text-[8px] uppercase text-muted-foreground">
+                <TableHead className="h-10 px-4 text-right font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
                   Jobs
                 </TableHead>
                 {showHours ? (
-                  <TableHead className="h-7 px-2 text-right font-mono text-[8px] uppercase text-muted-foreground">
-                    Hrs
+                  <TableHead className="h-10 px-4 text-right font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+                    Hours
                   </TableHead>
                 ) : null}
-                <TableHead className="h-7 px-2 text-right font-mono text-[8px] uppercase text-muted-foreground">
-                  Rev
+                <TableHead className="h-10 px-4 text-right font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+                  Revenue
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((row) => (
-                <TableRow key={row.label} className="font-mono text-[10px]">
-                  <TableCell className="max-w-[7rem] truncate px-2 py-1">
-                    {row.label}
-                  </TableCell>
-                  <TableCell className="px-2 py-1 text-right text-muted-foreground">
+                <TableRow key={row.label} className="font-mono text-sm">
+                  <TableCell className="px-4 py-2.5">{row.label}</TableCell>
+                  <TableCell className="px-4 py-2.5 text-right text-muted-foreground">
                     {row.count}
                   </TableCell>
                   {showHours ? (
-                    <TableCell className="px-2 py-1 text-right text-muted-foreground">
+                    <TableCell className="px-4 py-2.5 text-right text-muted-foreground">
                       {formatReportHours(row.hours)}
                     </TableCell>
                   ) : null}
-                  <TableCell className="px-2 py-1 text-right text-primary">
+                  <TableCell className="px-4 py-2.5 text-right font-medium text-primary">
                     {formatReportCents(row.revenueCents)}
                   </TableCell>
                 </TableRow>
@@ -270,8 +225,8 @@ function BreakdownTable({
             </TableBody>
           </Table>
         ) : (
-          <p className="px-3 py-4 text-center font-mono text-[10px] text-muted-foreground">
-            No data
+          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+            No data in this range.
           </p>
         )}
       </CardContent>
@@ -285,76 +240,51 @@ export function ReportsHubPanel({
   payWeekLabel,
   payWeekPrevHref,
   payWeekNextHref,
-  compact = true,
 }: {
   report: HubReportsSnapshot;
   detailerPay: DetailerPayReport;
   payWeekLabel: string;
   payWeekPrevHref: string;
   payWeekNextHref: string;
-  compact?: boolean;
 }) {
-  const { summary } = report;
-
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
-      <div className="flex shrink-0 gap-1.5">
-        <CompactStat
-          label="Revenue"
-          value={formatReportCents(summary.revenueCents)}
-          sub={`${summary.countedJobs} billable`}
-        />
-        <CompactStat label="Avg / job" value={formatReportCents(summary.avgJobCents)} />
-        <CompactStat
-          label="Promos"
-          value={formatReportCents(summary.discountCents)}
-        />
-        <CompactStat
-          label="Hours"
-          value={formatReportHours(summary.scheduledHours)}
-        />
-        <CompactStat
-          label="Total jobs"
-          value={String(summary.totalJobs)}
-          sub={`${summary.cancelledJobs} cancelled`}
-        />
-        <CompactStat label="Billable" value={String(summary.countedJobs)} />
-      </div>
+    <div className="space-y-8">
+      <ReportsSummaryStrip report={report} />
 
-      <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-2 gap-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         <BreakdownTable
-          compact
-          title="By package"
+          title="Revenue by package"
+          subtitle="Grouped by service name on the booking"
           rows={report.byPackage}
         />
         <BreakdownTable
-          compact
-          title="Detailers"
+          title="Detailer utilization"
+          subtitle="Jobs and scheduled hours per detailer"
           rows={report.byDetailer}
           showHours
         />
-        <BreakdownTable compact title="Add-ons" rows={report.byAddon} />
-        <BreakdownTable compact title="By city" rows={report.byCity} />
+        <BreakdownTable
+          title="Add-ons"
+          subtitle="Times selected · revenue is catalog price per job"
+          rows={report.byAddon}
+        />
+        <BreakdownTable
+          title="By city"
+          subtitle="Customer city on the booking"
+          rows={report.byCity}
+        />
       </div>
 
-      <HubDetailsSection
-        summary={`Detailer pay · ${payWeekLabel} · ${formatReportCents(detailerPay.grandTotalCents)}`}
-        className="shrink-0 [&_summary]:py-2"
-        contentClassName="max-h-40 overflow-y-auto px-3 py-2"
-      >
-        <ReportsDetailerPaySection
-          pay={detailerPay}
-          payWeekLabel={payWeekLabel}
-          payWeekPrevHref={payWeekPrevHref}
-          payWeekNextHref={payWeekNextHref}
-          embedded
-        />
-      </HubDetailsSection>
+      <ReportsDetailerPaySection
+        pay={detailerPay}
+        payWeekLabel={payWeekLabel}
+        payWeekPrevHref={payWeekPrevHref}
+        payWeekNextHref={payWeekNextHref}
+      />
     </div>
   );
 }
 
-/** Full-height reports dashboard: toolbar, stats, 2×2 tables, collapsible pay. */
 export function ReportsDashboard({
   from,
   to,
@@ -364,6 +294,8 @@ export function ReportsDashboard({
   payWeekLabel,
   payWeekPrevHref,
   payWeekNextHref,
+  initialTab,
+  sitePerformance,
 }: {
   from: string;
   to: string;
@@ -373,32 +305,50 @@ export function ReportsDashboard({
   payWeekLabel: string;
   payWeekPrevHref: string;
   payWeekNextHref: string;
+  initialTab?: "overview" | "stats";
+  sitePerformance: WebsitePerformanceSnapshot;
 }) {
   return (
-    <div className="flex h-[calc(100svh-3.5rem-2rem)] max-h-[calc(100svh-3.5rem-2rem)] flex-col gap-2 overflow-hidden md:h-[calc(100svh-3.5rem-4rem)] md:max-h-[calc(100svh-3.5rem-4rem)] md:gap-2.5">
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1">
-        <div className="min-w-0">
-          <h1 className="font-display text-2xl uppercase tracking-[0.04em] text-primary md:text-3xl">
-            Reports
-          </h1>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-            <ReportsAutoRefresh />
-            <span className="font-mono text-[9px] text-muted-foreground">
-              {report.from} → {report.to} · Central
-            </span>
-          </div>
-        </div>
-        <ReportsPeriodForm from={from} to={to} preset={preset} compact />
+    <div className="max-w-6xl">
+      <HubPageHeader
+        title="Reports"
+        description="Revenue, detailer hours, packages, add-ons, and cities · Central dates"
+      />
+
+      <div className="mt-6">
+        <ReportsPeriodForm from={from} to={to} preset={preset} />
       </div>
 
-      <ReportsHubPanel
-        report={report}
-        detailerPay={detailerPay}
-        payWeekLabel={payWeekLabel}
-        payWeekPrevHref={payWeekPrevHref}
-        payWeekNextHref={payWeekNextHref}
-        compact
-      />
+      <Tabs
+        defaultValue={initialTab ?? "overview"}
+        className="mt-8 flex flex-col-reverse gap-6"
+      >
+        <TabsList
+          variant="line"
+          className="h-auto w-full justify-start gap-1 rounded-none border-t border-border bg-transparent p-0 pt-4"
+        >
+          <TabsTrigger value="overview" className="font-mono text-[10px] uppercase">
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="stats" className="font-mono text-[10px] uppercase">
+            Stats
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="stats" className="mt-0">
+          <ReportsStatsPanel sitePerformance={sitePerformance} />
+        </TabsContent>
+
+        <TabsContent value="overview" className="mt-0">
+          <ReportsHubPanel
+            report={report}
+            detailerPay={detailerPay}
+            payWeekLabel={payWeekLabel}
+            payWeekPrevHref={payWeekPrevHref}
+            payWeekNextHref={payWeekNextHref}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

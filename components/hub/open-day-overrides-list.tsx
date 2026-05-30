@@ -36,7 +36,7 @@ function DeleteOpenDayButton({ id, compact }: { id: string; compact?: boolean })
         <button
           type="submit"
           disabled={pending}
-          className="cursor-pointer font-mono text-[9px] text-text/40 hover:text-red-300 disabled:opacity-50"
+          className="cursor-pointer font-mono text-[9px] text-muted-foreground hover:text-destructive disabled:opacity-50"
         >
           {pending ? "…" : "Remove"}
         </button>
@@ -141,7 +141,7 @@ export function OpenDayOverridesList({
           key={name}
           className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04] px-4 py-3.5"
         >
-          <div className="font-mono text-sm text-y/85">{name}</div>
+          <div className="font-mono text-sm text-primary/85">{name}</div>
           <ul className="mt-3 space-y-2">
             {staffOverrides
               .sort((a, b) => a.override_date.localeCompare(b.override_date))
@@ -150,12 +150,12 @@ export function OpenDayOverridesList({
                   key={o.id}
                   className="flex flex-wrap items-center justify-between gap-2 text-sm"
                 >
-                  <span className="text-text/65">
+                  <span className="text-foreground/65">
                     <span className="font-medium text-emerald-200/90">
                       {dateInputToLabel(o.override_date)}
                     </span>
                     {o.reason ? (
-                      <span className="text-text/45"> · {o.reason}</span>
+                      <span className="text-muted-foreground"> · {o.reason}</span>
                     ) : null}
                     <span className="ml-2 font-mono text-[9px] uppercase tracking-[0.08em] text-emerald-400/60">
                       Bookable

@@ -41,7 +41,7 @@ function BookingCard({
         "rounded border px-2 py-1.5 text-left text-[11px] leading-snug transition-colors",
         billed
           ? "border-emerald-400/60 bg-emerald-500/20"
-          : "border-white/10 bg-white/[0.04]",
+          : "border-border bg-muted/30",
         cancelled && "opacity-50",
       )}
       style={
@@ -54,7 +54,7 @@ function BookingCard({
         <span
           className={cn(
             "font-semibold",
-            billed ? "text-emerald-100" : "text-text/90",
+            billed ? "text-emerald-100" : "text-foreground/90",
           )}
         >
           {booking.customer_name}
@@ -72,11 +72,11 @@ function BookingCard({
           )}
         </div>
       </div>
-      <div className={cn("font-mono text-[9px]", billed ? "text-emerald-200/70" : "text-text/45")}>
+      <div className={cn("font-mono text-[9px]", billed ? "text-emerald-200/70" : "text-muted-foreground")}>
         {formatCentralTime(booking.starts_at)}
         {booking.city ? ` · ${booking.city}` : ""}
       </div>
-      <div className={cn("truncate", billed ? "text-emerald-100/60" : "text-text/50")}>
+      <div className={cn("truncate", billed ? "text-emerald-100/60" : "text-muted-foreground")}>
         {booking.service_name}
       </div>
       {canManage && href && (
@@ -87,7 +87,7 @@ function BookingCard({
             type="submit"
             className={cn(
               "font-mono text-[8px] uppercase tracking-[0.1em] underline-offset-2 hover:underline",
-              billed ? "text-emerald-200/80" : "text-y/70",
+              billed ? "text-emerald-200/80" : "text-primary/70",
             )}
           >
             {billed ? "Unmark billed" : "Mark billed"}
@@ -95,7 +95,7 @@ function BookingCard({
         </form>
       )}
       {state.message && (
-        <p className="mt-1 font-mono text-[8px] text-y/80">{state.message}</p>
+        <p className="mt-1 font-mono text-[8px] text-primary/80">{state.message}</p>
       )}
     </div>
   );
@@ -151,7 +151,7 @@ export function WeekCalendar({
               ← Prev
             </Link>
           </Button>
-          <span className="font-display text-2xl tracking-[0.04em] text-y">
+          <span className="font-display text-2xl tracking-[0.04em] text-primary">
             {weekLabel}
           </span>
           <Button asChild variant="outline" size="sm">
@@ -161,7 +161,7 @@ export function WeekCalendar({
           </Button>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-text/40">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
             Central Time · Mon–Sun
           </p>
           {canBook && onOpenBook && (
@@ -172,7 +172,7 @@ export function WeekCalendar({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-4 font-mono text-[9px] uppercase tracking-[0.1em] text-text/50">
+      <div className="flex flex-wrap gap-4 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
         {detailers.map((d) => (
           <span key={d.name} className="inline-flex items-center gap-1.5">
             <span
@@ -191,8 +191,8 @@ export function WeekCalendar({
       <div className="max-w-full overflow-x-auto rounded-md border border-border">
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
-            <tr className="border-b border-white/10 bg-card2">
-              <th className="sticky left-0 z-10 w-[120px] border-r border-border bg-card2 px-3 py-2 text-left font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+            <tr className="border-b border-border bg-muted/40">
+              <th className="sticky left-0 z-10 w-[120px] border-r border-border bg-muted/40 px-3 py-2 text-left font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
                 Detailer
               </th>
               {days.map((day) => (
@@ -200,13 +200,13 @@ export function WeekCalendar({
                   key={day.dateKey}
                   className="min-w-[100px] border-r border-border/50 px-2 py-2 text-center font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground last:border-r-0"
                 >
-                  <div className="text-y/80">{day.weekday}</div>
-                  <div className="text-text/50">{day.label}</div>
+                  <div className="text-primary/80">{day.weekday}</div>
+                  <div className="text-muted-foreground">{day.label}</div>
                   {canBook && onBookDay && (
                     <button
                       type="button"
                       onClick={() => onBookDay(day.dateKey)}
-                      className="mt-1 font-mono text-[8px] uppercase tracking-[0.1em] text-y/60 hover:text-y hover:underline"
+                      className="mt-1 font-mono text-[8px] uppercase tracking-[0.1em] text-primary/60 hover:text-primary hover:underline"
                     >
                       + Book
                     </button>
@@ -221,7 +221,7 @@ export function WeekCalendar({
               return (
                 <tr
                   key={detailer.name}
-                  className="border-b border-white/5 align-top"
+                  className="border-b border-border/50 align-top"
                 >
                   <td className="sticky left-0 z-10 border-r border-border bg-card px-3 py-2">
                     <div className="flex items-center gap-2">
@@ -229,7 +229,7 @@ export function WeekCalendar({
                         className="h-3 w-3 shrink-0 rounded-full"
                         style={{ backgroundColor: detailer.color }}
                       />
-                      <span className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-text/80">
+                      <span className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-foreground/80">
                         {detailer.name}
                       </span>
                     </div>
@@ -248,12 +248,12 @@ export function WeekCalendar({
                               <button
                                 type="button"
                                 onClick={() => onBookSlot(day.dateKey, detailer.name)}
-                                className="flex min-h-[52px] w-full items-center justify-center rounded border border-dashed border-white/10 font-mono text-[9px] uppercase tracking-[0.1em] text-text/25 transition-colors hover:border-y/30 hover:bg-y/[0.04] hover:text-y/70"
+                                className="flex min-h-[52px] w-full items-center justify-center rounded border border-dashed border-border font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground/50 transition-colors hover:border-primary/30 hover:bg-primary/[0.04] hover:text-primary/70"
                               >
                                 + Book
                               </button>
                             ) : (
-                              <span className="px-1 py-2 font-mono text-[9px] text-text/20">
+                              <span className="px-1 py-2 font-mono text-[9px] text-muted-foreground/40">
                                 —
                               </span>
                             )
@@ -277,7 +277,7 @@ export function WeekCalendar({
           </tbody>
         </table>
         {detailers.length === 0 && (
-          <p className="p-8 text-center font-mono text-xs text-text/35">
+          <p className="p-8 text-center font-mono text-xs text-muted-foreground">
             No detailers configured for this week.
           </p>
         )}

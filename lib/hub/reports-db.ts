@@ -33,9 +33,34 @@ export type ReportBreakdownRow = {
   hours: number;
 };
 
+export type ReportDailyPoint = {
+  date: string;
+  /** Short label for chart axis, e.g. "Apr 2" */
+  label: string;
+  revenueCents: number;
+  totalJobs: number;
+  billableJobs: number;
+};
+
+export type ReportPeriodTotals = {
+  revenueCents: number;
+  countedJobs: number;
+  avgJobCents: number;
+  scheduledHours: number;
+};
+
+export type HubReportsPeriodComparison = {
+  priorFrom: string;
+  priorTo: string;
+  current: ReportPeriodTotals;
+  prior: ReportPeriodTotals;
+};
+
 export type HubReportsSnapshot = {
   from: string;
   to: string;
+  dailySeries: ReportDailyPoint[];
+  comparison: HubReportsPeriodComparison;
   summary: {
     totalJobs: number;
     countedJobs: number;
@@ -165,6 +190,80 @@ function bumpBreakdown(
   map.set(key, existing);
 }
 
+function formatDailyChartLabel(dateInput: string): string {
+  const [y, m, d] = dateInput.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+  return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+}
+
+function enumerateCentralDates(from: string, to: string): string[] {
+  const out: string[] = [];
+  let cur = from;
+  while (cur <= to) {
+    out.push(cur);
+    cur = addDaysToDateInput(cur, 1);
+    if (out.length > 400) break;
+  }
+  return out;
+}
+
+/** Same-length window immediately before `from`. */
+export function priorReportPeriod(
+  from: string,
+  to: string,
+): { from: string; to: string } {
+  const days = enumerateCentralDates(from, to).length;
+  const priorTo = addDaysToDateInput(from, -1);
+  const priorFrom = addDaysToDateInput(priorTo, -(days - 1));
+  return { from: priorFrom, to: priorTo };
+}
+
+export function summarizeReportPeriod(
+  rows: ReportBookingRow[],
+  from: string,
+  to: string,
+): ReportPeriodTotals {
+  const active = rows.filter(
+    (r) =>
+      !r.deleted_at &&
+      r.appointment_date >= from &&
+      r.appointment_date <= to,
+  );
+  const counted = active.filter(isCountedForRevenue);
+
+  let revenueCents = 0;
+  let scheduledHours = 0;
+  for (const row of counted) {
+    revenueCents += bookingRevenueCents(row);
+    scheduledHours += bookingScheduledHours(row);
+  }
+
+  return {
+    revenueCents,
+    countedJobs: counted.length,
+    avgJobCents:
+      counted.length > 0 ? Math.round(revenueCents / counted.length) : 0,
+    scheduledHours,
+  };
+}
+
+export function reportPercentChange(
+  current: number,
+  prior: number,
+): number | null {
+  if (prior === 0) {
+    if (current === 0) return 0;
+    return null;
+  }
+  return ((current - prior) / prior) * 100;
+}
+
+export function formatReportPercentChange(pct: number | null): string {
+  if (pct === null) return "—";
+  const sign = pct > 0 ? "+" : "";
+  return `${sign}${pct.toFixed(1)}%`;
+}
+
 function sortBreakdown(rows: ReportBreakdownRow[]): ReportBreakdownRow[] {
   return [...rows].sort((a, b) => {
     if (b.revenueCents !== a.revenueCents) return b.revenueCents - a.revenueCents;
@@ -177,6 +276,7 @@ export function buildReportsSnapshot(
   from: string,
   to: string,
   catalog: ReportCatalog,
+  comparisonRows?: ReportBookingRow[],
 ): HubReportsSnapshot {
   const active = rows.filter((r) => !r.deleted_at);
   const counted = active.filter(isCountedForRevenue);
@@ -196,6 +296,14 @@ export function buildReportsSnapshot(
   const byDetailer = new Map<string, ReportBreakdownRow>();
   const byCity = new Map<string, ReportBreakdownRow>();
 
+  const dailyByDate = new Map<
+    string,
+    { revenueCents: number; totalJobs: number; billableJobs: number }
+  >();
+  for (const date of enumerateCentralDates(from, to)) {
+    dailyByDate.set(date, { revenueCents: 0, totalJobs: 0, billableJobs: 0 });
+  }
+
   for (const row of active) {
     bumpBreakdown(byPackage, row.service_name, row);
     bumpBreakdown(byDetailer, row.detailer_name ?? "Unassigned", row);
@@ -204,11 +312,40 @@ export function buildReportsSnapshot(
     for (const addon of row.addons ?? []) {
       bumpAddonBreakdown(byAddon, addon, row, catalog);
     }
+
+    const day = dailyByDate.get(row.appointment_date);
+    if (!day) continue;
+    day.totalJobs += 1;
+    if (isCountedForRevenue(row)) {
+      day.billableJobs += 1;
+      day.revenueCents += bookingRevenueCents(row);
+    }
   }
+
+  const dailySeries: ReportDailyPoint[] = enumerateCentralDates(from, to).map((date) => {
+    const day = dailyByDate.get(date)!;
+    return {
+      date,
+      label: formatDailyChartLabel(date),
+      revenueCents: day.revenueCents,
+      totalJobs: day.totalJobs,
+      billableJobs: day.billableJobs,
+    };
+  });
+
+  const prior = priorReportPeriod(from, to);
+  const compareSource = comparisonRows ?? rows;
 
   return {
     from,
     to,
+    dailySeries,
+    comparison: {
+      priorFrom: prior.from,
+      priorTo: prior.to,
+      current: summarizeReportPeriod(compareSource, from, to),
+      prior: summarizeReportPeriod(compareSource, prior.from, prior.to),
+    },
     summary: {
       totalJobs: active.length,
       countedJobs: counted.length,
@@ -231,11 +368,13 @@ export async function fetchHubReports(
   from: string,
   to: string,
 ): Promise<HubReportsSnapshot> {
+  const prior = priorReportPeriod(from, to);
+
   const [bookingsResult, addons] = await Promise.all([
     client
       .from("bookings")
       .select(BOOKING_SELECT)
-      .gte("appointment_date", from)
+      .gte("appointment_date", prior.from)
       .lte("appointment_date", to)
       .order("appointment_date", { ascending: true })
       .limit(3000),
@@ -250,7 +389,10 @@ export async function fetchHubReports(
   }
 
   const rows = (bookingsResult.data ?? []) as ReportBookingRow[];
-  return buildReportsSnapshot(rows, from, to, catalog);
+  const currentRows = rows.filter(
+    (r) => r.appointment_date >= from && r.appointment_date <= to,
+  );
+  return buildReportsSnapshot(currentRows, from, to, catalog, rows);
 }
 
 /** Preserve revenue period filters when changing detailer pay week. */

@@ -32,7 +32,7 @@ export function HubShell({
               Managers hub
             </span>
           </header>
-          <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto p-4 md:p-8">
+          <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8">
             {children}
           </div>
         </SidebarInset>

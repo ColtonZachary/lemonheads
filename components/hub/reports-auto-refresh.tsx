@@ -46,7 +46,7 @@ export function ReportsAutoRefresh({
   }, []);
 
   return (
-    <span className="font-mono text-[9px] text-muted-foreground">
+    <span className="font-mono text-xs text-muted-foreground">
       {refreshing ? (
         "Refreshing…"
       ) : (

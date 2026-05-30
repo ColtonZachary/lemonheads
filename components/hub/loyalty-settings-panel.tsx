@@ -11,28 +11,28 @@ import {
   updateLoyaltySettings,
   type HubLoyaltyActionState,
 } from "@/app/actions/hub-loyalty";
+import {
+  HubActionAlert,
+  HubDetailsSection,
+  HubStatCard,
+} from "@/components/hub/hub-page";
+import {
+  HubFieldRow,
+  HubFormField,
+  HubFormSection,
+  HubInput,
+  HubNativeSelect,
+} from "@/components/hub/hub-form";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   formatRewardGoalDetail,
   type LoyaltyRedemptionRow,
   type LoyaltyRewardGoalRow,
   type LoyaltySettingsRow,
 } from "@/lib/hub/loyalty-db";
-import { cn } from "@/lib/utils";
-
 const EMPTY: HubLoyaltyActionState = { ok: false, message: "" };
-
-const fieldClass =
-  "mt-1 w-full rounded border border-white/15 bg-dk px-2.5 py-1.5 text-sm";
-const labelClass =
-  "font-mono text-[9px] uppercase tracking-[0.12em] text-text/40";
-
-function feedbackClass(ok: boolean) {
-  return cn(
-    "mt-3 rounded border px-3 py-2 font-mono text-[10px]",
-    ok ? "border-y/30 bg-y/10 text-y" : "border-red-500/30 bg-red-500/10 text-red-200",
-  );
-}
 
 export type LoyaltyCatalogOptions = {
   packages: { key: string; name: string }[];
@@ -54,19 +54,17 @@ function RewardKindFields({
 }) {
   return (
     <>
-      <label className="block sm:col-span-2">
-        <span className={labelClass}>Reward type *</span>
-        <select name="reward_kind" defaultValue={defaultKind ?? "package"} className={fieldClass}>
+      <HubFormField label="Reward type" htmlFor="reward_kind" className="sm:col-span-2" required>
+        <HubNativeSelect id="reward_kind" name="reward_kind" defaultValue={defaultKind ?? "package"}>
           <option value="package">Free package</option>
           <option value="addon">Free add-on</option>
-        </select>
-      </label>
-      <label className="block sm:col-span-2">
-        <span className={labelClass}>Package</span>
-        <select
+        </HubNativeSelect>
+      </HubFormField>
+      <HubFormField label="Package" htmlFor="reward_package_key" className="sm:col-span-2">
+        <HubNativeSelect
+          id="reward_package_key"
           name="reward_package_key"
           defaultValue={defaultPackageKey ?? ""}
-          className={fieldClass}
         >
           <option value="">Select package…</option>
           {packages.map((p) => (
@@ -74,14 +72,13 @@ function RewardKindFields({
               {p.name}
             </option>
           ))}
-        </select>
-      </label>
-      <label className="block sm:col-span-2">
-        <span className={labelClass}>Add-on</span>
-        <select
+        </HubNativeSelect>
+      </HubFormField>
+      <HubFormField label="Add-on" htmlFor="reward_addon_name" className="sm:col-span-2">
+        <HubNativeSelect
+          id="reward_addon_name"
           name="reward_addon_name"
           defaultValue={defaultAddonName ?? ""}
-          className={fieldClass}
         >
           <option value="">Select add-on…</option>
           {addons.map((a) => (
@@ -89,8 +86,8 @@ function RewardKindFields({
               {a.name}
             </option>
           ))}
-        </select>
-      </label>
+        </HubNativeSelect>
+      </HubFormField>
     </>
   );
 }
@@ -107,38 +104,34 @@ function GoalEditForm({
   return (
     <form
       action={action}
-      className="border-t border-white/10 bg-white/[0.02] px-3 py-3 sm:px-4"
+      className="border-t border-border bg-muted/20 px-3 py-3 sm:px-4"
     >
       <input type="hidden" name="goal_id" value={goal.id} />
-      <div className="grid gap-2.5 sm:grid-cols-2">
-        <label className="block sm:col-span-2">
-          <span className={labelClass}>Title *</span>
-          <input name="title" defaultValue={goal.title} required className={fieldClass} />
-        </label>
-        <label className="block sm:col-span-2">
-          <span className={labelClass}>Description</span>
-          <input name="description" defaultValue={goal.description} className={fieldClass} />
-        </label>
-        <label className="block">
-          <span className={labelClass}>Points required *</span>
-          <input
+      <HubFieldRow className="gap-2.5">
+        <HubFormField label="Title" htmlFor={`edit-title-${goal.id}`} className="sm:col-span-2" required>
+          <HubInput id={`edit-title-${goal.id}`} name="title" defaultValue={goal.title} required />
+        </HubFormField>
+        <HubFormField label="Description" htmlFor={`edit-desc-${goal.id}`} className="sm:col-span-2">
+          <HubInput id={`edit-desc-${goal.id}`} name="description" defaultValue={goal.description} />
+        </HubFormField>
+        <HubFormField label="Points required" htmlFor={`edit-pts-${goal.id}`} required>
+          <HubInput
+            id={`edit-pts-${goal.id}`}
             name="points_required"
             type="number"
             min={1}
             defaultValue={goal.points_required}
             required
-            className={fieldClass}
           />
-        </label>
-        <label className="block">
-          <span className={labelClass}>Sort order</span>
-          <input
+        </HubFormField>
+        <HubFormField label="Sort order" htmlFor={`edit-sort-${goal.id}`}>
+          <HubInput
+            id={`edit-sort-${goal.id}`}
             name="sort_order"
             type="number"
             defaultValue={goal.sort_order}
-            className={fieldClass}
           />
-        </label>
+        </HubFormField>
         <RewardKindFields
           packages={catalog.packages}
           addons={catalog.addons}
@@ -147,12 +140,12 @@ function GoalEditForm({
           defaultAddonName={goal.reward_addon_name ?? undefined}
         />
         <label className="flex items-end gap-1.5 pb-0.5 text-xs sm:col-span-2">
-          <input type="checkbox" name="active" defaultChecked={goal.active} className="size-3.5" />
+          <input type="checkbox" name="active" defaultChecked={goal.active} className="size-3.5 rounded border-input" />
           Active
         </label>
-      </div>
-      {state.message ? <p className={feedbackClass(state.ok)}>{state.message}</p> : null}
-      <Button type="submit" className="mt-3 h-auto min-h-0 px-3 py-1.5 text-xs" disabled={pending}>
+      </HubFieldRow>
+      <HubActionAlert state={state} className="mt-3" />
+      <Button type="submit" className="mt-3" size="sm" disabled={pending}>
         {pending ? "Saving…" : "Save goal"}
       </Button>
     </form>
@@ -173,22 +166,22 @@ function GoalListRow({
   onToggleEdit: () => void;
 }) {
   return (
-    <li className="rounded-lg border border-white/10">
+    <li className="rounded-lg border border-border">
       <div className="flex items-center gap-3 px-3 py-2 sm:px-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-mono text-sm text-y/90">{goal.title}</span>
+            <span className="font-mono text-sm text-primary/90">{goal.title}</span>
             {!goal.active ? (
-              <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[8px] uppercase text-text/50">
+              <Badge variant="secondary" className="font-mono text-[8px] uppercase">
                 Inactive
-              </span>
+              </Badge>
             ) : null}
           </div>
-          <p className="mt-0.5 font-mono text-[9px] text-text/45">
+          <p className="mt-0.5 font-mono text-[9px] text-muted-foreground">
             {goal.points_required} pts · {formatRewardGoalDetail(goal, packageNames)}
           </p>
           {goal.description ? (
-            <p className="mt-0.5 truncate text-[10px] text-text/40">{goal.description}</p>
+            <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{goal.description}</p>
           ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -196,7 +189,7 @@ function GoalListRow({
           <Button
             type="button"
             variant="outline"
-            className="h-auto min-h-0 px-2 py-1 text-[10px]"
+            size="sm"
             onClick={onToggleEdit}
           >
             {expanded ? "Close" : "Edit"}
@@ -217,7 +210,8 @@ function DeleteGoalButton({ goalId }: { goalId: string }) {
       <Button
         type="submit"
         variant="outline"
-        className="h-auto min-h-0 border-red-500/30 px-2 py-1 text-[10px] text-red-200"
+        size="sm"
+        className="border-destructive/40 text-destructive hover:bg-destructive/10"
         disabled={pending}
       >
         {pending ? "…" : "Delete"}
@@ -249,7 +243,7 @@ function PendingRedemptionAction({
       <Button
         type="submit"
         variant="outline"
-        className="h-auto min-h-0 px-2 py-1 text-[10px]"
+        size="sm"
         disabled={pending}
       >
         {pending ? "…" : label}
@@ -289,39 +283,24 @@ export function LoyaltySettingsPanel({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-3">
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">
-            Reward goals
-          </p>
-          <p className="font-display text-2xl text-y">{goals.length}</p>
-        </div>
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">
-            Active goals
-          </p>
-          <p className="font-display text-2xl text-y">{activeGoals}</p>
-        </div>
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">
-            Unused redemptions
-          </p>
-          <p className="font-display text-2xl text-y">{pendingRedemptions.length}</p>
-        </div>
+        <HubStatCard label="Reward goals" value={goals.length} />
+        <HubStatCard label="Active goals" value={activeGoals} />
+        <HubStatCard label="Unused redemptions" value={pendingRedemptions.length} />
       </div>
 
-      <section className="rounded-lg border border-white/10 px-4 py-4">
+      <Card className="border-border/80 bg-card/40 px-4 py-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-primary">
             Program settings
           </h2>
           <Link
             href="/rewards"
-            className="font-mono text-[9px] text-y/60 hover:text-y"
+            className="font-mono text-[9px] text-primary/60 hover:text-primary"
           >
             Public /rewards →
           </Link>
         </div>
-        <p className="text-xs text-text/45">
+        <p className="text-xs text-muted-foreground">
           Points on billed jobs (not with promo codes). Checkout rewards link automatically.
         </p>
         <form action={settingsAction} className="mt-4 space-y-3">
@@ -331,53 +310,48 @@ export function LoyaltySettingsPanel({
                 type="checkbox"
                 name="enabled"
                 defaultChecked={settings.enabled}
-                className="size-3.5 rounded"
+                className="size-3.5 rounded border-input"
               />
-              <span className={labelClass}>Program enabled</span>
+              <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+                Program enabled
+              </span>
             </label>
-            <label className="block max-w-[8rem]">
-              <span className={labelClass}>Points per $1</span>
-              <input
+            <HubFormField label="Points per $1" htmlFor="points_per_dollar" className="max-w-[8rem]">
+              <HubInput
+                id="points_per_dollar"
                 name="points_per_dollar"
                 type="number"
                 step="0.01"
                 min={0}
                 defaultValue={settings.points_per_dollar}
-                className={fieldClass}
               />
-            </label>
+            </HubFormField>
           </div>
-          {settingsState.message ? (
-            <p className={feedbackClass(settingsState.ok)}>{settingsState.message}</p>
-          ) : null}
-          <Button
-            type="submit"
-            className="h-auto min-h-0 px-3 py-1.5 text-xs"
-            disabled={settingsPending}
-          >
+          <HubActionAlert state={settingsState} />
+          <Button type="submit" size="sm" disabled={settingsPending}>
             {settingsPending ? "Saving…" : "Save settings"}
           </Button>
         </form>
-      </section>
+      </Card>
 
       {pendingRedemptions.length > 0 ? (
         <section>
           <div className="mb-2 flex items-center justify-between gap-2">
-            <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
+            <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-primary">
               Unused redemptions
             </h2>
-            <span className="font-mono text-[9px] text-text/35">Redeemed, not on a booking</span>
+            <span className="font-mono text-[9px] text-muted-foreground">Redeemed, not on a booking</span>
           </div>
-          <ul className="max-h-48 space-y-1.5 overflow-y-auto rounded-lg border border-y/20 bg-y/[0.03]">
+          <ul className="max-h-48 space-y-1.5 overflow-y-auto rounded-lg border border-primary/20 bg-primary/[0.03]">
             {pendingRedemptions.map((r) => (
               <li
                 key={r.id}
-                className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 px-3 py-2 last:border-0"
+                className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-3 py-2 last:border-0"
               >
                 <div className="min-w-0 text-sm">
-                  <span className="text-y/90">{r.goal_title ?? "Reward"}</span>
-                  <span className="text-text/45"> · {r.points_spent} pts</span>
-                  <p className="truncate font-mono text-[9px] text-text/40">
+                  <span className="text-primary/90">{r.goal_title ?? "Reward"}</span>
+                  <span className="text-muted-foreground"> · {r.points_spent} pts</span>
+                  <p className="truncate font-mono text-[9px] text-muted-foreground">
                     {r.customer_name || "Customer"} · {r.customer_email}
                   </p>
                 </div>
@@ -392,15 +366,9 @@ export function LoyaltySettingsPanel({
         </section>
       ) : null}
 
-      <section>
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
-            Reward goals
-          </h2>
-          <span className="font-mono text-[9px] text-text/35">Tap Edit to change a goal</span>
-        </div>
+      <HubFormSection title="Reward goals" description="Tap Edit to change a goal">
         {!goals.length ? (
-          <p className="rounded-lg border border-white/10 px-4 py-6 text-sm text-text/40">
+          <p className="rounded-lg border border-border px-4 py-6 text-sm text-muted-foreground">
             No goals yet. Add one below.
           </p>
         ) : (
@@ -418,59 +386,46 @@ export function LoyaltySettingsPanel({
           </ul>
         )}
 
-        <details className="mt-4 rounded-lg border border-white/10 bg-card/30">
-          <summary className="cursor-pointer list-none px-4 py-3 font-mono text-[10px] uppercase tracking-[0.12em] text-y [&::-webkit-details-marker]:hidden">
-            + Add reward goal
-          </summary>
-          <form action={createAction} className="border-t border-white/10 px-4 py-4">
-            <div className="grid gap-2.5 sm:grid-cols-2">
-              <label className="block sm:col-span-2">
-                <span className={labelClass}>Title *</span>
-                <input
+        <HubDetailsSection summary="+ Add reward goal" className="mt-4">
+          <form action={createAction}>
+            <HubFieldRow className="gap-2.5">
+              <HubFormField label="Title" htmlFor="new-goal-title" className="sm:col-span-2" required>
+                <HubInput
+                  id="new-goal-title"
                   name="title"
                   required
                   placeholder="e.g. Free Gold wash"
-                  className={fieldClass}
                 />
-              </label>
-              <label className="block sm:col-span-2">
-                <span className={labelClass}>Description</span>
-                <input name="description" className={fieldClass} />
-              </label>
-              <label className="block">
-                <span className={labelClass}>Points required *</span>
-                <input
+              </HubFormField>
+              <HubFormField label="Description" htmlFor="new-goal-desc" className="sm:col-span-2">
+                <HubInput id="new-goal-desc" name="description" />
+              </HubFormField>
+              <HubFormField label="Points required" htmlFor="new-goal-pts" required>
+                <HubInput
+                  id="new-goal-pts"
                   name="points_required"
                   type="number"
                   min={1}
                   required
                   placeholder="500"
-                  className={fieldClass}
                 />
-              </label>
-              <label className="block">
-                <span className={labelClass}>Sort order</span>
-                <input name="sort_order" type="number" defaultValue={0} className={fieldClass} />
-              </label>
+              </HubFormField>
+              <HubFormField label="Sort order" htmlFor="new-goal-sort">
+                <HubInput id="new-goal-sort" name="sort_order" type="number" defaultValue={0} />
+              </HubFormField>
               <RewardKindFields packages={catalog.packages} addons={catalog.addons} />
               <label className="flex items-end gap-1.5 pb-0.5 text-xs sm:col-span-2">
-                <input type="checkbox" name="active" defaultChecked className="size-3.5" />
+                <input type="checkbox" name="active" defaultChecked className="size-3.5 rounded border-input" />
                 Active
               </label>
-            </div>
-            <Button
-              type="submit"
-              className="mt-4 h-auto min-h-0 px-4 py-2 text-xs"
-              disabled={createPending}
-            >
+            </HubFieldRow>
+            <Button type="submit" className="mt-4" size="sm" disabled={createPending}>
               {createPending ? "Adding…" : "Add goal"}
             </Button>
-            {createState.message ? (
-              <p className={feedbackClass(createState.ok)}>{createState.message}</p>
-            ) : null}
+            <HubActionAlert state={createState} className="mt-3" />
           </form>
-        </details>
-      </section>
+        </HubDetailsSection>
+      </HubFormSection>
     </div>
   );
 }

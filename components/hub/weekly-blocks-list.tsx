@@ -115,14 +115,14 @@ export function WeeklyBlocksList({
             key={name}
             className="rounded-lg border border-amber-500/20 bg-amber-500/[0.04] px-4 py-3.5"
           >
-            <div className="font-mono text-sm text-y/85">{name}</div>
-            <p className="mt-1 text-sm text-text/50">
+            <div className="font-mono text-sm text-primary/85">{name}</div>
+            <p className="mt-1 text-sm text-muted-foreground">
               Off every week on{" "}
               {sorted.map((b) => WEEKDAY_LABELS[b.day_of_week]).join(", ")}
               {reason ? (
                 <>
                   {" "}
-                  · <span className="text-text/60">{reason}</span>
+                  · <span className="text-foreground/60">{reason}</span>
                 </>
               ) : null}
             </p>

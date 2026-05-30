@@ -121,15 +121,15 @@ export function HubStatCard({
   return (
     <Card
       className={cn(
-        "min-w-[9rem] flex-none border-border/80 bg-card/60",
+        "min-w-[10rem] flex-none border-border/80 bg-card/60",
         className,
       )}
     >
-      <CardHeader className="gap-1 px-4 py-3">
+      <CardHeader className="gap-1.5 px-4 py-4">
         <CardDescription className="font-mono text-[9px] uppercase tracking-[0.14em]">
           {label}
         </CardDescription>
-        <CardTitle className="font-display text-3xl font-normal tracking-[0.04em] text-foreground">
+        <CardTitle className="font-display text-3xl font-normal tracking-[0.04em] text-foreground md:text-4xl">
           {value}
         </CardTitle>
         {sub ? (
