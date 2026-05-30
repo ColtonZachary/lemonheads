@@ -6,8 +6,15 @@ import {
   createScheduleBlock,
   type HubBlockActionState,
 } from "@/app/actions/hub-blocks";
+import { HubActionAlert } from "@/components/hub/hub-page";
 import { HubDatePicker } from "@/components/hub/hub-date-picker";
 import { HubDateRangePicker } from "@/components/hub/hub-date-range-picker";
+import {
+  HubFieldLabel,
+  HubFormField,
+  HubInput,
+  HubNativeSelect,
+} from "@/components/hub/hub-form";
 import { HubMultiDatePicker } from "@/components/hub/hub-multi-date-picker";
 import { HubTimeRangeSelect } from "@/components/hub/hub-time-select";
 import { Button } from "@/components/ui/button";
@@ -23,11 +30,6 @@ import { dateInputToLabel } from "@/lib/hub/schedule-labels";
 import { cn } from "@/lib/utils";
 
 const EMPTY: HubBlockActionState = { ok: false, message: "" };
-
-const fieldClass =
-  "mt-1 w-full rounded border border-white/15 bg-dk px-2.5 py-1.5 text-sm";
-const labelClass =
-  "font-mono text-[9px] uppercase tracking-[0.12em] text-text/40";
 
 const INTENT_FORM_COPY: Record<
   ScheduleIntent,
@@ -133,8 +135,8 @@ export function ScheduleBlockForm({
 
   if (!staff.length) {
     return (
-      <p className="mt-3 text-sm text-text/45">
-        No active detailers. Add staff under <span className="text-y/80">Staff</span>{" "}
+      <p className="mt-3 text-sm text-muted-foreground">
+        No active detailers. Add staff under <span className="text-primary">Staff</span>{" "}
         first.
       </p>
     );
@@ -147,13 +149,13 @@ export function ScheduleBlockForm({
     <form
       action={action}
       className={cn(
-        compact ? "mt-4" : "rounded-lg border border-white/10 bg-card/30 p-4 sm:p-5",
+        compact ? "mt-4" : "rounded-lg border border-border bg-card/30 p-4 sm:p-5",
       )}
     >
       <input type="hidden" name="block_mode" value={mode} />
 
       {!compact ? (
-        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-y/80">
+        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-primary">
           {intentTitle}
         </p>
       ) : null}
@@ -161,7 +163,7 @@ export function ScheduleBlockForm({
       {intent === "time_off" && (
         <div
           className={cn(
-            "grid grid-cols-3 gap-1 rounded border border-white/10 bg-dk/50 p-1",
+            "grid grid-cols-3 gap-1 rounded-md border border-border bg-muted/30 p-1",
             compact ? "mt-0" : "mt-3",
           )}
         >
@@ -173,8 +175,8 @@ export function ScheduleBlockForm({
               className={cn(
                 "cursor-pointer rounded px-2 py-1.5 text-center transition-colors",
                 timeOffShape === shape.id
-                  ? "bg-y/15 text-y"
-                  : "text-text/45 hover:bg-white/[0.05] hover:text-text/70",
+                  ? "bg-primary/15 text-primary"
+                  : "text-muted-foreground hover:bg-accent/40 hover:text-foreground",
               )}
             >
               <span className="block font-mono text-[9px] uppercase tracking-[0.08em]">
@@ -191,12 +193,11 @@ export function ScheduleBlockForm({
           compact ? "mt-3 sm:grid-cols-2" : "mt-4 space-y-3",
         )}
       >
-        <label className="block">
-          <span className={labelClass}>Detailer</span>
-          <select
+        <HubFormField label="Detailer" htmlFor="schedule-staff" required>
+          <HubNativeSelect
+            id="schedule-staff"
             name="staff_member_id"
             required
-            className={fieldClass}
             value={staffId}
             onChange={(e) => setStaffId(e.target.value)}
           >
@@ -208,12 +209,12 @@ export function ScheduleBlockForm({
                 {s.display_name}
               </option>
             ))}
-          </select>
-        </label>
+          </HubNativeSelect>
+        </HubFormField>
 
-        <label className="block">
-          <span className={labelClass}>Reason</span>
-          <input
+        <HubFormField label="Reason" htmlFor="schedule-reason" required>
+          <HubInput
+            id="schedule-reason"
             name="reason"
             required
             placeholder={
@@ -223,9 +224,8 @@ export function ScheduleBlockForm({
                   ? "Extra Saturday shift"
                   : "Vacation"
             }
-            className={fieldClass}
           />
-        </label>
+        </HubFormField>
 
         {(mode === "single" || mode === "open_day") && (
           <HubDatePicker
@@ -238,7 +238,7 @@ export function ScheduleBlockForm({
 
         {mode === "range" && (
           <div className="sm:col-span-2">
-            <span className={labelClass}>{copy.stepWhen}</span>
+            <HubFieldLabel className="mb-1 block">{copy.stepWhen}</HubFieldLabel>
             <HubDateRangePicker
               onRangeChange={(s, e) => {
                 setStartDate(s);
@@ -252,7 +252,7 @@ export function ScheduleBlockForm({
           <div className="sm:col-span-2">
             <HubMultiDatePicker onSelectionChange={setCustomDates} />
             {customDates.length > 0 ? (
-              <p className="mt-1 text-[10px] text-y/80">
+              <p className="mt-1 text-[10px] text-primary">
                 {customDates.length} day{customDates.length === 1 ? "" : "s"} selected
               </p>
             ) : null}
@@ -261,32 +261,34 @@ export function ScheduleBlockForm({
 
         {mode === "weekly" && (
           <fieldset className="sm:col-span-2">
-            <legend className={labelClass}>{copy.stepWhen}</legend>
+            <legend className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+              {copy.stepWhen}
+            </legend>
             <div className="mt-1 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
               {WEEKDAY_LABELS.map((label, index) => (
                 <label
                   key={label}
-                  className="flex cursor-pointer items-center gap-1.5 rounded border border-white/10 px-2 py-1.5 text-xs hover:border-white/20 has-checked:border-y/30 has-checked:bg-y/5"
+                  className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-2 py-1.5 text-xs hover:border-primary/25 has-checked:border-primary/30 has-checked:bg-primary/5"
                 >
                   <input
                     type="checkbox"
                     name="weekday"
                     value={String(index)}
-                    className="size-3.5"
+                    className="size-3.5 rounded border-input"
                   />
-                  <span className="text-text/80">{label}</span>
+                  <span className="text-foreground/80">{label}</span>
                 </label>
               ))}
             </div>
-            <p className="mt-1 text-[10px] text-text/35">
+            <p className="mt-1 text-[10px] text-muted-foreground">
               Checked = off every week. Uncheck all to clear.
             </p>
           </fieldset>
         )}
 
         {showTimedBlock && (
-          <div className="space-y-2.5 rounded border border-white/10 bg-dk/30 px-3 py-2.5 sm:col-span-2">
-            <span className={labelClass}>Block time</span>
+          <div className="space-y-2.5 rounded-md border border-border bg-muted/20 px-3 py-2.5 sm:col-span-2">
+            <HubFieldLabel className="block">Block time</HubFieldLabel>
             {showAllDayOption ? (
               <label className="flex items-center gap-2 text-xs">
                 <input
@@ -296,13 +298,13 @@ export function ScheduleBlockForm({
                   onChange={(e) => setAllDay(e.target.checked)}
                   className="size-3.5"
                 />
-                <span className="text-text/70">
+                <span className="text-muted-foreground">
                   All day (8 AM – 4 PM Central) — no start/end needed
                 </span>
               </label>
             ) : null}
             {allDay ? null : !timeDateInput ? (
-              <p className="text-[10px] leading-snug text-text/40">
+              <p className="text-[10px] leading-snug text-muted-foreground">
                 Select at least one date above, then choose when the block starts
                 and ends.
               </p>
@@ -339,7 +341,7 @@ export function ScheduleBlockForm({
       </div>
 
       {preview ? (
-        <p className="mt-3 text-[10px] leading-snug text-y/75">{preview}</p>
+        <p className="mt-3 text-[10px] leading-snug text-primary/90">{preview}</p>
       ) : null}
 
       {mode === "weekly" && <input type="hidden" name="appointment_date" value="" />}
@@ -352,19 +354,7 @@ export function ScheduleBlockForm({
         {pending ? "Saving…" : copy.submit}
       </Button>
 
-      {state.message ? (
-        <p
-          className={cn(
-            "mt-3 rounded border px-3 py-2 font-mono text-[10px]",
-            state.ok
-              ? "border-y/30 bg-y/10 text-y"
-              : "border-red-500/30 bg-red-500/10 text-red-200",
-          )}
-          role="status"
-        >
-          {state.message}
-        </p>
-      ) : null}
+      <HubActionAlert state={state} className="mt-3" />
     </form>
   );
 }

@@ -8,7 +8,7 @@ import {
   type LoyaltyCustomerActionState,
 } from "@/app/actions/loyalty-customer";
 import { Button } from "@/components/ui/button";
-import { Input, Label } from "@/components/ui/field";
+import { Input, Label } from "@/components/ui/site-field";
 import { cn } from "@/lib/utils";
 
 const EMPTY: LoyaltyCustomerActionState = { ok: false, message: "" };

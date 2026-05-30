@@ -2,20 +2,52 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import {
   cancelHubBooking,
   deleteHubBookingForm,
-  removeBookingLoyaltyReward,
   updateHubBooking,
   type HubBookingActionState,
 } from "@/app/actions/hub-bookings";
+import { BookingLoyaltyRewardRemove } from "@/components/hub/booking-loyalty-reward-remove";
+import { BookingPriceDisplay } from "@/components/hub/booking-price-display";
+import {
+  BookingUpdatePreservedFields,
+  type BookingEditSection,
+} from "@/components/hub/booking-update-preserved-fields";
+import {
+  HubFieldRow,
+  HubFormField,
+  HubInput,
+  HubNativeSelect,
+  HubTextarea,
+} from "@/components/hub/hub-form";
 import { HubDatePicker } from "@/components/hub/hub-date-picker";
 import { HubTimeSelect } from "@/components/hub/hub-time-select";
-import { BookingPriceDisplay } from "@/components/hub/booking-price-display";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { BOOKING_LOCATION_TYPES } from "@/lib/bookings/constants";
+import { vehicleKeyFromTypeLabel } from "@/lib/bookings/vehicle-key-from-label";
+import { ADDONS, PACKAGES, VEHICLE_OPTIONS } from "@/lib/data";
+import { formatCentralDateTime } from "@/lib/hub/format";
 import { centralScheduleLabels } from "@/lib/hub/schedule-labels";
+import { cn } from "@/lib/utils";
 
 const EMPTY: HubBookingActionState = { ok: false, message: "" };
 
@@ -38,6 +70,7 @@ export type HubBookingDetail = {
   city: string;
   zip: string;
   service_name: string;
+  service_key: string | null;
   vehicle_type: string;
   vehicle_info: string;
   addons: string[];
@@ -83,31 +116,132 @@ export type HubBookingDetail = {
   detail_checklist_completed_at?: string | null;
 };
 
+function resolvePackageKey(booking: HubBookingDetail): string {
+  if (booking.service_key) return booking.service_key;
+  const pkg = PACKAGES.find((p) => p.name === booking.service_name);
+  return pkg?.key ?? "";
+}
+
 function ActionBanner({ state }: { state: HubBookingActionState }) {
   if (!state.message) return null;
   return (
-    <p
-      className={`mt-4 rounded-md border px-4 py-3 font-mono text-xs ${
-        state.ok
-          ? "border-y/30 bg-y/10 text-y"
-          : "border-red-500/30 bg-red-500/10 text-red-200"
-      }`}
-    >
-      {state.message}
-    </p>
+    <Alert variant={state.ok ? "default" : "destructive"}>
+      <AlertDescription className="font-mono text-xs">{state.message}</AlertDescription>
+    </Alert>
+  );
+}
+
+function SummaryCard({
+  title,
+  onEdit,
+  canEdit,
+  children,
+  className,
+}: {
+  title: string;
+  onEdit: () => void;
+  canEdit: boolean;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <Card className={cn("border-border/80 bg-card/40", className)}>
+      <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+        <CardTitle className="font-mono text-[10px] uppercase tracking-[0.15em] text-primary">
+          {title}
+        </CardTitle>
+        {canEdit ? (
+          <Button type="button" variant="outline" size="sm" onClick={onEdit}>
+            Edit
+          </Button>
+        ) : null}
+      </CardHeader>
+      <CardContent className="space-y-0.5 pt-0 text-sm">{children}</CardContent>
+    </Card>
+  );
+}
+
+function BookingEditDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  formAction,
+  section,
+  preservedProps,
+  updatePending,
+  children,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description?: string;
+  formAction: (payload: FormData) => void;
+  section: BookingEditSection;
+  preservedProps: Omit<
+    React.ComponentProps<typeof BookingUpdatePreservedFields>,
+    "omit"
+  >;
+  updatePending: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[min(88vh,720px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
+        <DialogHeader className="shrink-0 border-b border-border px-4 py-3">
+          <DialogTitle className="font-mono text-xs uppercase tracking-[0.14em]">
+            {title}
+          </DialogTitle>
+          {description ? (
+            <DialogDescription className="text-xs">{description}</DialogDescription>
+          ) : null}
+        </DialogHeader>
+        <form action={formAction} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">{children}</div>
+          <DialogFooter className="shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={updatePending}
+            >
+              Close
+            </Button>
+            <Button type="submit" disabled={updatePending}>
+              {updatePending ? "Saving…" : "Save"}
+            </Button>
+            <BookingUpdatePreservedFields omit={section} {...preservedProps} />
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 export function BookingDetailForm({
   booking,
   detailerNames,
+  lineItemsLocked,
 }: {
   booking: HubBookingDetail;
   detailerNames: string[];
+  lineItemsLocked?: boolean;
 }) {
   const router = useRouter();
   const labels = centralScheduleLabels(booking.starts_at);
   const [dateInput, setDateInput] = useState(labels.dateInput);
+  const [editSection, setEditSection] = useState<BookingEditSection | "cancel" | "delete" | null>(
+    null,
+  );
+  const packageKey = useMemo(() => resolvePackageKey(booking), [booking]);
+  const vehicleKey = useMemo(
+    () => vehicleKeyFromTypeLabel(booking.vehicle_type) ?? "",
+    [booking.vehicle_type],
+  );
+  const promoCode = Array.isArray(booking.promo_codes)
+    ? booking.promo_codes[0]?.code ?? ""
+    : booking.promo_codes?.code ?? "";
+
   const overrideDollars =
     booking.price_override_cents != null
       ? String(booking.price_override_cents / 100)
@@ -125,23 +259,24 @@ export function BookingDetailForm({
     deleteHubBookingForm.bind(null, booking.id),
     EMPTY,
   );
-  const [removeRewardState, removeRewardAction, removeRewardPending] =
-    useActionState(removeBookingLoyaltyReward.bind(null, booking.id), EMPTY);
 
   useEffect(() => {
     if (deleteState.ok) router.push("/hub/calendar");
   }, [deleteState.ok, router]);
 
   useEffect(() => {
-    if (removeRewardState.ok) router.refresh();
-  }, [removeRewardState.ok, router]);
+    if (updateState.ok) {
+      setEditSection(null);
+      router.refresh();
+    }
+  }, [updateState.ok, router]);
 
   const isDeleted = Boolean(booking.deleted_at);
   const isCancelled = booking.status === "cancelled";
   const isBilled = Boolean(booking.billed_at);
-  const promoCode = Array.isArray(booking.promo_codes)
-    ? booking.promo_codes[0]?.code
-    : booking.promo_codes?.code;
+  const locked = lineItemsLocked || isBilled;
+  const canEdit = !isDeleted && !locked;
+
   const loyaltyRedemption = Array.isArray(booking.loyalty_redemptions)
     ? booking.loyalty_redemptions[0]
     : booking.loyalty_redemptions;
@@ -153,290 +288,586 @@ export function BookingDetailForm({
     Boolean(booking.loyalty_redemption_id) &&
     loyaltyRedemption?.status !== "cancelled";
 
-  return (
-    <div className="space-y-10">
-      <section className="rounded-md border border-y/15 bg-y/[0.04] px-5 py-4">
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
-          Pricing
-        </h2>
-        <div className="mt-3">
-          <BookingPriceDisplay booking={booking} />
-        </div>
-        {promoCode && (booking.discount_cents ?? 0) > 0 && (
-          <p className="mt-2 font-mono text-[10px] text-text/45">
-            Promo code: <span className="text-y/80">{promoCode}</span>
-          </p>
-        )}
-        {hasActiveReward && loyaltyTitle && (
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-y/20 bg-y/[0.04] px-4 py-3">
-            <div>
-              <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-y/70">
-                Rewards applied
-              </p>
-              <p className="mt-1 text-sm text-text/80">{loyaltyTitle}</p>
-              <p className="font-mono text-[10px] text-text/40">
-                {loyaltyRedemption?.points_spent} points · applied at checkout
-              </p>
-            </div>
-            {!isDeleted && (
-              <form action={removeRewardAction}>
-                <Button
-                  type="submit"
-                  variant="outline"
-                  size="sm"
-                  disabled={removeRewardPending}
-                  onClick={(e) => {
-                    if (
-                      !confirm(
-                        "Remove this reward from the booking? Points will be refunded to the customer and the price will update.",
-                      )
-                    ) {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                  {removeRewardPending ? "Removing…" : "Remove reward"}
-                </Button>
-              </form>
-            )}
-          </div>
-        )}
-        <ActionBanner state={removeRewardState} />
-        {booking.price_override_cents != null && (
-          <p className="mt-1 font-mono text-[10px] text-text/35">
-            Manager price override applied
-          </p>
-        )}
-      </section>
+  const preservedProps = {
+    booking,
+    packageKey,
+    vehicleKey,
+    dateInput,
+    timeLabel: labels.timeLabel,
+    overrideDollars,
+    promoCode,
+    isBilled,
+  };
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <section className="rounded-md border border-white/10 bg-card2/40 p-5">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
-            Customer
-          </h2>
-          <p className="mt-3 text-lg">{booking.customer_name}</p>
-          <p className="font-mono text-xs text-text/50">{booking.email}</p>
-          <p className="font-mono text-xs text-text/50">{booking.phone}</p>
-        </section>
-        <section className="rounded-md border border-white/10 bg-card2/40 p-5">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
-            Service & vehicle
-          </h2>
-          <p className="mt-3">{booking.service_name}</p>
-          <p className="text-sm text-text/60">
+  const detailerLabel = booking.detailer_auto_assigned
+    ? "Auto-assign"
+    : booking.detailer_name ?? "—";
+
+  if (isDeleted) {
+    return (
+      <Alert>
+        <AlertDescription className="font-mono text-xs">
+          This booking was deleted. Edits are disabled.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  const editDialogProps = {
+    formAction: updateAction,
+    preservedProps,
+    updatePending,
+    onOpenChange: (o: boolean) => !o && setEditSection(null),
+  };
+
+  return (
+    <div className="space-y-4">
+      {locked ? (
+        <Alert>
+          <AlertTitle className="font-mono text-[10px] uppercase tracking-[0.12em]">
+            Locked for billing
+          </AlertTitle>
+          <AlertDescription>
+            Unmark billed on the calendar before editing line items.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      <ActionBanner state={updateState} />
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <SummaryCard
+          title="Customer"
+          canEdit={canEdit}
+          onEdit={() => setEditSection("customer")}
+        >
+          <p className="font-medium">{booking.customer_name}</p>
+          <p className="font-mono text-xs text-muted-foreground">{booking.email}</p>
+          <p className="font-mono text-xs text-muted-foreground">{booking.phone}</p>
+        </SummaryCard>
+
+        <SummaryCard
+          title="Service"
+          canEdit={canEdit}
+          onEdit={() => setEditSection("service")}
+        >
+          <p>{booking.service_name}</p>
+          <p className="text-muted-foreground">
             {booking.vehicle_type}
             {booking.vehicle_info ? ` · ${booking.vehicle_info}` : ""}
           </p>
-          {booking.addons.length > 0 && (
-            <p className="mt-2 font-mono text-[10px] text-text/40">
-              Add-ons: {booking.addons.join(", ")}
+          {booking.addons.length > 0 ? (
+            <p className="font-mono text-[10px] text-muted-foreground">
+              {booking.addons.join(", ")}
             </p>
-          )}
-        </section>
-        <section className="rounded-md border border-white/10 bg-card2/40 p-5 md:col-span-2">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
-            Location
-          </h2>
-          <p className="mt-3">
+          ) : null}
+          {booking.plastic_shine ? (
+            <p className="font-mono text-[10px] text-primary">Plastic shine</p>
+          ) : null}
+        </SummaryCard>
+
+        <SummaryCard
+          title="Location"
+          canEdit={canEdit}
+          onEdit={() => setEditSection("location")}
+          className="md:col-span-2 lg:col-span-1"
+        >
+          <p>
             {booking.location_type}
             {booking.address_line ? ` — ${booking.address_line}` : ""}
           </p>
-          <p className="text-sm text-text/50">
+          <p className="text-muted-foreground">
             {[booking.city, booking.zip].filter(Boolean).join(", ") || "—"}
           </p>
-          {booking.customer_notes && (
-            <p className="mt-3 text-sm text-text/60">
-              Customer notes: {booking.customer_notes}
+          {booking.customer_notes ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Note: {booking.customer_notes}
             </p>
-          )}
-        </section>
+          ) : null}
+        </SummaryCard>
+
+        <SummaryCard
+          title="Schedule"
+          canEdit={canEdit}
+          onEdit={() => setEditSection("schedule")}
+        >
+          <p className="font-mono text-xs">
+            {formatCentralDateTime(booking.starts_at)} Central
+          </p>
+          <p className="text-muted-foreground">
+            {detailerLabel} · {booking.status}
+          </p>
+        </SummaryCard>
+
+        <SummaryCard
+          title="Pricing"
+          canEdit={canEdit}
+          onEdit={() => setEditSection("pricing")}
+        >
+          <BookingPriceDisplay booking={booking} />
+          {promoCode ? (
+            <p className="font-mono text-[10px] text-muted-foreground">
+              Promo: {promoCode}
+            </p>
+          ) : null}
+          {isBilled ? (
+            <p className="font-mono text-[10px] text-primary">Billed</p>
+          ) : null}
+          {hasActiveReward && loyaltyTitle ? (
+            <p className="font-mono text-[10px] text-muted-foreground">
+              Reward: {loyaltyTitle}
+            </p>
+          ) : null}
+        </SummaryCard>
+
+        <SummaryCard
+          title="Manager notes"
+          canEdit={canEdit}
+          onEdit={() => setEditSection("notes")}
+          className="md:col-span-2"
+        >
+          <p className="text-muted-foreground">
+            {booking.manager_notes.trim() || "—"}
+          </p>
+        </SummaryCard>
       </div>
 
-      {!isDeleted && (
-        <form action={updateAction} className="rounded-md border border-white/10 p-6">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-y">
-            Edit booking
-          </h2>
+      <div className="flex flex-wrap gap-2">
+        <Button asChild variant="outline" size="sm">
+          <Link href="/hub/calendar">Back to calendar</Link>
+        </Button>
+        {!isCancelled ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={() => setEditSection("cancel")}
+          >
+            Cancel booking
+          </Button>
+        ) : null}
+        {!locked ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setEditSection("delete")}
+          >
+            Delete
+          </Button>
+        ) : null}
+      </div>
 
-          <div className="mt-6 grid gap-5 sm:grid-cols-2">
-            <label className="block">
-              <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-text/40">
-                Status
+      {/* Customer */}
+      <BookingEditDialog
+        open={editSection === "customer"}
+        section="customer"
+        title="Edit customer"
+        description="Contact info on this booking"
+        {...editDialogProps}
+      >
+          <HubFieldRow>
+            <HubFormField label="Name" htmlFor="dlg_customer_name" required>
+              <HubInput
+                id="dlg_customer_name"
+                name="customer_name"
+                required
+                defaultValue={booking.customer_name}
+              />
+            </HubFormField>
+            <HubFormField label="Phone" htmlFor="dlg_phone" required>
+              <HubInput
+                id="dlg_phone"
+                name="phone"
+                type="tel"
+                required
+                defaultValue={booking.phone}
+              />
+            </HubFormField>
+            <HubFormField
+              label="Email"
+              htmlFor="dlg_email"
+              required
+              className="sm:col-span-2"
+            >
+              <HubInput
+                id="dlg_email"
+                name="email"
+                type="email"
+                required
+                defaultValue={booking.email}
+              />
+            </HubFormField>
+          </HubFieldRow>
+      </BookingEditDialog>
+
+      {/* Service */}
+      <BookingEditDialog
+        open={editSection === "service"}
+        section="service"
+        title="Edit service"
+        description="Package, vehicle, and add-ons — price recalculates on save"
+        {...editDialogProps}
+      >
+        <HubFieldRow>
+          <HubFormField label="Package" htmlFor="dlg_package_key" required>
+            <HubNativeSelect
+              id="dlg_package_key"
+              name="package_key"
+              required
+              defaultValue={packageKey || undefined}
+            >
+              <option value="" disabled>
+                Select package…
+              </option>
+              {PACKAGES.map((p) => (
+                <option key={p.key} value={p.key}>
+                  {p.name}
+                </option>
+              ))}
+            </HubNativeSelect>
+          </HubFormField>
+          <HubFormField label="Vehicle" htmlFor="dlg_vehicle_key" required>
+            <HubNativeSelect
+              id="dlg_vehicle_key"
+              name="vehicle_key"
+              required
+              defaultValue={vehicleKey || undefined}
+            >
+              <option value="" disabled>
+                Select vehicle…
+              </option>
+              {VEHICLE_OPTIONS.map((v) => (
+                <option key={v.key} value={v.key}>
+                  {v.label}
+                </option>
+              ))}
+            </HubNativeSelect>
+          </HubFormField>
+          <HubFormField
+            label="Vehicle notes"
+            htmlFor="dlg_vehicle_info"
+            className="sm:col-span-2"
+          >
+            <HubInput
+              id="dlg_vehicle_info"
+              name="vehicle_info"
+              defaultValue={booking.vehicle_info}
+            />
+          </HubFormField>
+        </HubFieldRow>
+        <div className="mt-4 grid grid-cols-1 gap-2">
+          {ADDONS.map((a) => (
+            <label
+              key={a.name}
+              className="flex cursor-pointer items-start gap-3 rounded-md border border-border px-3 py-2 text-sm"
+            >
+              <input
+                type="checkbox"
+                name="addons"
+                value={a.name}
+                defaultChecked={booking.addons.includes(a.name)}
+                className="mt-0.5 size-4 accent-primary"
+              />
+              <span>
+                {a.name}
+                <span className="ml-1 font-mono text-[10px] text-primary">
+                  +${a.price}
+                </span>
               </span>
-              <select
+            </label>
+          ))}
+        </div>
+        <label className="mt-3 flex items-center gap-3 text-sm">
+          <input
+            type="checkbox"
+            name="plastic_shine"
+            value="Yes"
+            defaultChecked={booking.plastic_shine}
+            className="size-4 accent-primary"
+          />
+          Plastic shine
+        </label>
+      </BookingEditDialog>
+
+      {/* Location */}
+      <BookingEditDialog
+        open={editSection === "location"}
+        section="location"
+        title="Edit location"
+        {...editDialogProps}
+      >
+        <HubFieldRow>
+          <HubFormField
+            label="Location type"
+            htmlFor="dlg_location"
+            required
+            className="sm:col-span-2"
+          >
+            <HubNativeSelect
+              id="dlg_location"
+              name="location"
+              required
+              defaultValue={booking.location_type || undefined}
+            >
+              <option value="" disabled>
+                Select…
+              </option>
+              {BOOKING_LOCATION_TYPES.map((loc) => (
+                <option key={loc} value={loc}>
+                  {loc}
+                </option>
+              ))}
+            </HubNativeSelect>
+          </HubFormField>
+          <HubFormField
+            label="Street address"
+            htmlFor="dlg_address"
+            className="sm:col-span-2"
+          >
+            <HubInput
+              id="dlg_address"
+              name="address"
+              defaultValue={booking.address_line}
+            />
+          </HubFormField>
+          <HubFormField label="City" htmlFor="dlg_city">
+            <HubInput id="dlg_city" name="city" defaultValue={booking.city} />
+          </HubFormField>
+          <HubFormField label="ZIP" htmlFor="dlg_zip">
+            <HubInput id="dlg_zip" name="zip" defaultValue={booking.zip} maxLength={10} />
+          </HubFormField>
+          <HubFormField
+            label="Customer notes"
+            htmlFor="dlg_customer_notes"
+            className="sm:col-span-2"
+          >
+            <HubTextarea
+              id="dlg_customer_notes"
+              name="customer_notes"
+              rows={2}
+              defaultValue={booking.customer_notes}
+            />
+          </HubFormField>
+        </HubFieldRow>
+      </BookingEditDialog>
+
+      {/* Schedule */}
+      <BookingEditDialog
+        open={editSection === "schedule"}
+        section="schedule"
+        title="Edit schedule"
+        description="Central time · detailer availability checked on save"
+        {...editDialogProps}
+      >
+        <div className="space-y-4">
+          <HubDatePicker
+            name="appointment_date"
+            label="Date"
+            defaultValue={labels.dateInput}
+            disablePast={false}
+            stacked
+            onDateChange={setDateInput}
+          />
+          <HubTimeSelect
+            dateInput={dateInput}
+            name="time"
+            label="Time"
+            defaultValue={labels.timeLabel}
+          />
+          <HubFieldRow>
+            <HubFormField label="Detailer" htmlFor="dlg_detailer" required>
+              <HubNativeSelect
+                id="dlg_detailer"
+                name="detailer"
+                defaultValue={
+                  booking.detailer_auto_assigned
+                    ? "auto"
+                    : (booking.detailer_name ?? "auto")
+                }
+              >
+                <option value="auto">Auto-assign</option>
+                {[...new Set([...detailerNames, ...(booking.detailer_name ? [booking.detailer_name] : [])])].map(
+                  (name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ),
+                )}
+              </HubNativeSelect>
+            </HubFormField>
+            <HubFormField label="Status" htmlFor="dlg_status" required>
+              <HubNativeSelect
+                id="dlg_status"
                 name="status"
                 defaultValue={booking.status}
-                className="mt-1 w-full rounded border border-white/15 bg-dk px-3 py-2 font-mono text-sm"
               >
                 {STATUS_OPTIONS.map((s) => (
                   <option key={s} value={s}>
                     {s}
                   </option>
                 ))}
-              </select>
-            </label>
+              </HubNativeSelect>
+            </HubFormField>
+          </HubFieldRow>
+        </div>
+      </BookingEditDialog>
 
-            <label className="flex items-end gap-2 pb-2 text-sm">
-              <input
-                type="checkbox"
-                name="billed"
-                defaultChecked={isBilled}
-                className="size-4 accent-emerald-500"
+      {/* Pricing */}
+      <BookingEditDialog
+        open={editSection === "pricing"}
+        section="pricing"
+        title="Edit pricing"
+        description="Recalculates from service unless you set an override"
+        {...editDialogProps}
+      >
+        <div className="mb-4 rounded-md border border-border bg-muted/20 px-3 py-2">
+          <BookingPriceDisplay booking={booking} />
+        </div>
+        <HubFieldRow>
+          <HubFormField label="Promo code" htmlFor="dlg_promo_code">
+            <HubInput
+              id="dlg_promo_code"
+              name="promo_code"
+              defaultValue={promoCode}
+              placeholder="Leave blank to clear"
+              className="uppercase"
+            />
+          </HubFormField>
+          <HubFormField label="Price override ($)" htmlFor="dlg_price_override">
+            <HubInput
+              id="dlg_price_override"
+              name="price_override"
+              defaultValue={overrideDollars}
+              placeholder="Blank = calculated"
+            />
+          </HubFormField>
+        </HubFieldRow>
+        {hasActiveReward && loyaltyTitle ? (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2">
+            <p className="text-sm">{loyaltyTitle}</p>
+            <BookingLoyaltyRewardRemove bookingId={booking.id} />
+          </div>
+        ) : null}
+        <label className="mt-4 flex items-center gap-3 text-sm">
+          <input
+            type="checkbox"
+            name="billed"
+            defaultChecked={isBilled}
+            className="size-4 accent-primary"
+          />
+          Customer billed (locks edits after save)
+        </label>
+      </BookingEditDialog>
+
+      {/* Notes */}
+      <BookingEditDialog
+        open={editSection === "notes"}
+        section="notes"
+        title="Manager notes"
+        {...editDialogProps}
+      >
+        <HubFormField label="Internal notes" htmlFor="dlg_manager_notes">
+          <HubTextarea
+            id="dlg_manager_notes"
+            name="manager_notes"
+            rows={4}
+            defaultValue={booking.manager_notes}
+          />
+        </HubFormField>
+      </BookingEditDialog>
+
+      {/* Cancel */}
+      <Dialog
+        open={editSection === "cancel"}
+        onOpenChange={(o) => !o && setEditSection(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-mono text-xs uppercase tracking-[0.14em]">
+              Cancel booking
+            </DialogTitle>
+            <DialogDescription>
+              This cannot be undone from the hub without rebooking.
+            </DialogDescription>
+          </DialogHeader>
+          <form action={cancelAction}>
+            <HubFormField label="Reason" htmlFor="dlg_cancel_reason" required>
+              <HubInput
+                id="dlg_cancel_reason"
+                name="cancellation_reason"
+                required
+                placeholder="Customer requested reschedule"
               />
-              <span>
-                Customer billed{" "}
-                <span className="font-mono text-[10px] text-text/40">
-                  (shows green on calendar)
-                </span>
-              </span>
-            </label>
-
-            <label className="block">
-              <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-text/40">
-                Detailer
-              </span>
-              <select
-                name="detailer"
-                defaultValue={
-                  booking.detailer_auto_assigned ? "auto" : (booking.detailer_name ?? "auto")
-                }
-                className="mt-1 w-full rounded border border-white/15 bg-dk px-3 py-2 font-mono text-sm"
+            </HubFormField>
+            <DialogFooter className="mt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditSection(null)}
               >
-                <option value="auto">Auto-assign (next available)</option>
-                {[
-                  ...new Set([
-                    ...detailerNames,
-                    ...(booking.detailer_name ? [booking.detailer_name] : []),
-                  ]),
-                ].map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </label>
+                Back
+              </Button>
+              <Button type="submit" variant="destructive" disabled={cancelPending}>
+                {cancelPending ? "Cancelling…" : "Cancel booking"}
+              </Button>
+            </DialogFooter>
+            <ActionBanner state={cancelState} />
+          </form>
+        </DialogContent>
+      </Dialog>
 
-            <HubDatePicker
-              name="appointment_date"
-              label="Date (Central)"
-              defaultValue={labels.dateInput}
-              disablePast
-              onDateChange={setDateInput}
-            />
+      {/* Delete */}
+      <Dialog
+        open={editSection === "delete"}
+        onOpenChange={(o) => !o && setEditSection(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-mono text-xs uppercase tracking-[0.14em]">
+              Delete booking
+            </DialogTitle>
+            <DialogDescription>
+              Soft-deletes this booking (hidden from calendar). Audit log is kept.
+            </DialogDescription>
+          </DialogHeader>
+          <form action={deleteAction}>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditSection(null)}
+              >
+                Back
+              </Button>
+              <Button
+                type="submit"
+                variant="destructive"
+                disabled={deletePending}
+                onClick={(e) => {
+                  if (
+                    !confirm(
+                      "Delete this booking? This cannot be undone from the hub.",
+                    )
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
+              >
+                {deletePending ? "Deleting…" : "Delete"}
+              </Button>
+            </DialogFooter>
+            <ActionBanner state={deleteState} />
+          </form>
+        </DialogContent>
+      </Dialog>
 
-            <HubTimeSelect
-              dateInput={dateInput}
-              name="time"
-              label="Time (Central)"
-              defaultValue={labels.timeLabel}
-            />
-
-            <label className="block">
-              <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-text/40">
-                Price override ($)
-              </span>
-              <input
-                type="text"
-                name="price_override"
-                placeholder={booking.price_display || "e.g. 209"}
-                defaultValue={overrideDollars}
-                className="mt-1 w-full rounded border border-white/15 bg-dk px-3 py-2 font-mono text-sm"
-              />
-              <span className="mt-1 block font-mono text-[9px] text-text/30">
-                Leave blank to keep current estimate
-              </span>
-            </label>
-
-            <label className="block sm:col-span-2">
-              <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-text/40">
-                Manager notes
-              </span>
-              <textarea
-                name="manager_notes"
-                rows={3}
-                defaultValue={booking.manager_notes}
-                className="mt-1 w-full rounded border border-white/15 bg-dk px-3 py-2 text-sm"
-              />
-            </label>
-          </div>
-
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Button type="submit" disabled={updatePending}>
-              {updatePending ? "Saving…" : "Save changes"}
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/hub/calendar">Back to calendar</Link>
-            </Button>
-          </div>
-          <ActionBanner state={updateState} />
-        </form>
-      )}
-
-      {!isDeleted && !isCancelled && (
-        <form action={cancelAction} className="rounded-md border border-red-500/20 p-6">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-red-300/80">
-            Cancel booking
-          </h2>
-          <label className="mt-4 block">
-            <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-text/40">
-              Reason (required)
-            </span>
-            <input
-              type="text"
-              name="cancellation_reason"
-              required
-              placeholder="Customer requested reschedule"
-              className="mt-1 w-full max-w-lg rounded border border-white/15 bg-dk px-3 py-2 text-sm"
-            />
-          </label>
-          <Button
-            type="submit"
-            variant="outline"
-            className="mt-4 border-red-500/40 text-red-200 hover:border-red-400"
-            disabled={cancelPending}
-          >
-            {cancelPending ? "Cancelling…" : "Cancel booking"}
-          </Button>
-          <ActionBanner state={cancelState} />
-        </form>
-      )}
-
-      {booking.cancellation_reason && (
-        <p className="font-mono text-xs text-text/45">
+      {booking.cancellation_reason ? (
+        <p className="font-mono text-xs text-muted-foreground">
           Cancellation reason: {booking.cancellation_reason}
         </p>
-      )}
-
-      {!isDeleted && (
-        <form action={deleteAction} className="rounded-md border border-white/10 p-6">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-text/40">
-            Delete booking
-          </h2>
-          <p className="mt-2 max-w-xl text-sm text-text/50">
-            Soft-deletes this booking (hidden from calendar). Audit log is kept.
-          </p>
-          <Button
-            type="submit"
-            variant="outline"
-            className="mt-4"
-            disabled={deletePending}
-            onClick={(e) => {
-              if (!confirm("Delete this booking? This cannot be undone from the hub.")) {
-                e.preventDefault();
-              }
-            }}
-          >
-            {deletePending ? "Deleting…" : "Delete booking"}
-          </Button>
-          <ActionBanner state={deleteState} />
-        </form>
-      )}
-
-      {isDeleted && (
-        <p className="rounded-md border border-white/10 bg-white/[0.02] px-4 py-3 font-mono text-xs text-text/50">
-          This booking was deleted. Edits are disabled.
-        </p>
-      )}
+      ) : null}
     </div>
   );
 }

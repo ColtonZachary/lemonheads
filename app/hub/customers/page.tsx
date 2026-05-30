@@ -3,6 +3,7 @@ import {
   CustomerProfileView,
   CustomersSearchForm,
 } from "@/components/hub/customers-hub-panel";
+import { HubPageHeader } from "@/components/hub/hub-page";
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import {
   fetchCustomerProfileByEmail,
@@ -48,21 +49,21 @@ export default async function HubCustomersPage({
 
   return (
     <div>
-      <h1 className="font-display text-5xl tracking-[0.04em] text-y">CUSTOMERS</h1>
-      <p className="mt-2 font-mono text-xs tracking-[0.08em] text-text/40">
-        Search booking history by email or phone · links open job detail
-      </p>
+      <HubPageHeader
+        title="Customers"
+        description="Search booking history by email or phone · links open job detail"
+      />
 
       <CustomersSearchForm defaultQuery={q || selectedPhone || undefined} />
 
       {showHint ? (
-        <p className="mt-8 rounded-md border border-dashed border-white/10 p-10 text-center font-mono text-xs text-text/40">
+        <p className="mt-8 rounded-md border border-dashed border-border p-10 text-center font-mono text-xs text-muted-foreground">
           Enter a customer email or phone number to see jobs and totals.
         </p>
       ) : null}
 
       {showNoResults ? (
-        <p className="mt-8 rounded-md border border-white/10 p-10 text-center font-mono text-xs text-text/40">
+        <p className="mt-8 rounded-md border border-border p-10 text-center font-mono text-xs text-muted-foreground">
           No bookings found for &ldquo;{q}&rdquo;.
         </p>
       ) : null}
@@ -74,7 +75,7 @@ export default async function HubCustomersPage({
       {activeProfile ? (
         <CustomerProfileView profile={activeProfile} />
       ) : (selectedEmail || selectedPhone) && !activeProfile ? (
-        <p className="mt-8 rounded-md border border-white/10 p-10 text-center font-mono text-xs text-text/40">
+        <p className="mt-8 rounded-md border border-border p-10 text-center font-mono text-xs text-muted-foreground">
           No bookings found for {selectedEmail || selectedPhone}.
         </p>
       ) : null}

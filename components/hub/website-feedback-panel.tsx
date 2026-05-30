@@ -8,20 +8,25 @@ import {
   markWebsiteFeedbackReviewed,
   type HubWebsiteFeedbackActionState,
 } from "@/app/actions/hub-website-feedback";
+import { HubActionAlert } from "@/components/hub/hub-page";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   formatSiteExperienceRating,
   type WebsiteFeedbackRow,
   type WebsiteFeedbackStatus,
 } from "@/lib/feedback/website-feedback";
-import { cn } from "@/lib/utils";
 
 const EMPTY: HubWebsiteFeedbackActionState = { ok: false, message: "" };
 
-const statusStyles: Record<WebsiteFeedbackStatus, string> = {
-  pending: "bg-y/10 text-y/80",
-  reviewed: "bg-emerald-500/10 text-emerald-200",
-  dismissed: "bg-white/10 text-text/45",
+const statusVariant: Record<
+  WebsiteFeedbackStatus,
+  "default" | "secondary" | "outline"
+> = {
+  pending: "default",
+  reviewed: "secondary",
+  dismissed: "outline",
 };
 
 function FeedbackActions({ row }: { row: WebsiteFeedbackRow }) {
@@ -34,33 +39,23 @@ function FeedbackActions({ row }: { row: WebsiteFeedbackRow }) {
 
   const flash =
     reviewedState.message || dismissState.message || deleteState.message;
-  const flashOk =
-    reviewedState.ok || dismissState.ok || deleteState.ok;
+  const flashOk = reviewedState.ok || dismissState.ok || deleteState.ok;
 
   return (
-    <div className="flex flex-col gap-3 border-t border-white/10 pt-4">
-      {flash && (
-        <p
-          className={cn(
-            "font-mono text-[10px]",
-            flashOk ? "text-y/70" : "text-red-300/90",
-          )}
-        >
-          {flash}
-        </p>
-      )}
+    <div className="flex flex-col gap-3 border-t border-border pt-4">
+      <HubActionAlert state={{ ok: flashOk, message: flash }} />
       <div className="flex flex-wrap gap-2">
         {row.status === "pending" && (
           <>
             <form action={reviewedAction}>
               <input type="hidden" name="id" value={row.id} />
-              <Button type="submit" size="sm" variant="primary">
+              <Button type="submit" size="sm">
                 Mark reviewed
               </Button>
             </form>
             <form action={dismissAction}>
               <input type="hidden" name="id" value={row.id} />
-              <Button type="submit" size="sm" variant="ghost">
+              <Button type="submit" size="sm" variant="outline">
                 Dismiss
               </Button>
             </form>
@@ -68,7 +63,12 @@ function FeedbackActions({ row }: { row: WebsiteFeedbackRow }) {
         )}
         <form action={deleteAction}>
           <input type="hidden" name="id" value={row.id} />
-          <Button type="submit" size="sm" variant="ghost" className="text-red-300/80">
+          <Button
+            type="submit"
+            size="sm"
+            variant="outline"
+            className="border-destructive/40 text-destructive hover:bg-destructive/10"
+          >
             Delete
           </Button>
         </form>
@@ -84,50 +84,71 @@ function FeedbackCard({ row }: { row: WebsiteFeedbackRow }) {
   });
 
   return (
-    <article className="rounded-md border border-white/10 bg-dk/80 p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <Card className="border-border/80 bg-card/40">
+      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
         <div>
-          <div className="font-semibold text-text/90">{row.submitter_name}</div>
-          {row.submitter_email && (
-            <div className="font-mono text-[10px] text-text/45">
+          <p className="font-semibold text-foreground">{row.submitter_name}</p>
+          {row.submitter_email ? (
+            <p className="font-mono text-[10px] text-muted-foreground">
               {row.submitter_email}
-            </div>
-          )}
+            </p>
+          ) : null}
         </div>
-        <span
-          className={cn(
-            "rounded px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em]",
-            statusStyles[row.status],
-          )}
-        >
+        <Badge variant={statusVariant[row.status]} className="font-mono text-[9px] uppercase">
           {row.status}
-        </span>
-      </div>
-
-      <div className="mt-3 font-mono text-sm tracking-[0.15em] text-y">
-        {formatSiteExperienceRating(row.rating)}
-        <span className="ml-2 text-[10px] tracking-[0.1em] text-text/40">
-          site experience
-        </span>
-      </div>
-
-      <p className="mt-3 text-sm leading-relaxed text-text/75">{row.feedback_text}</p>
-
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[10px] text-text/35">
-        <span>Submitted {submitted}</span>
-        {row.page_path && <span>Page {row.page_path}</span>}
-        {row.reviewed_at && (
-          <span>
-            Handled{" "}
-            {new Date(row.reviewed_at).toLocaleDateString("en-US", {
-              dateStyle: "medium",
-            })}
+        </Badge>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="font-mono text-sm tracking-[0.12em] text-primary">
+          {formatSiteExperienceRating(row.rating)}
+          <span className="ml-2 text-[10px] tracking-[0.08em] text-muted-foreground">
+            site experience
           </span>
-        )}
-      </div>
+        </p>
 
-      <FeedbackActions row={row} />
-    </article>
+        <p className="text-sm leading-relaxed text-foreground/90">{row.feedback_text}</p>
+
+        <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[10px] text-muted-foreground">
+          <span>Submitted {submitted}</span>
+          {row.page_path ? <span>Page {row.page_path}</span> : null}
+          {row.reviewed_at ? (
+            <span>
+              Handled{" "}
+              {new Date(row.reviewed_at).toLocaleDateString("en-US", {
+                dateStyle: "medium",
+              })}
+            </span>
+          ) : null}
+        </div>
+
+        <FeedbackActions row={row} />
+      </CardContent>
+    </Card>
+  );
+}
+
+function FeedbackSection({
+  title,
+  count,
+  rows,
+}: {
+  title: string;
+  count: number;
+  rows: WebsiteFeedbackRow[];
+}) {
+  if (count === 0) return null;
+
+  return (
+    <section>
+      <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-primary">
+        {title} ({count})
+      </h2>
+      <div className="mt-4 flex flex-col gap-4">
+        {rows.map((r) => (
+          <FeedbackCard key={r.id} row={r} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -139,11 +160,11 @@ export function WebsiteFeedbackPanel({ rows }: { rows: WebsiteFeedbackRow[] }) {
   return (
     <div className="flex max-w-3xl flex-col gap-10">
       <section>
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-y/70">
+        <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-primary">
           New ({pending.length})
         </h2>
         {pending.length === 0 ? (
-          <p className="mt-3 text-sm text-text/40">No new website feedback.</p>
+          <p className="mt-3 text-sm text-muted-foreground">No new website feedback.</p>
         ) : (
           <div className="mt-4 flex flex-col gap-4">
             {pending.map((r) => (
@@ -153,31 +174,8 @@ export function WebsiteFeedbackPanel({ rows }: { rows: WebsiteFeedbackRow[] }) {
         )}
       </section>
 
-      {reviewed.length > 0 && (
-        <section>
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-text/50">
-            Reviewed ({reviewed.length})
-          </h2>
-          <div className="mt-4 flex flex-col gap-4">
-            {reviewed.map((r) => (
-              <FeedbackCard key={r.id} row={r} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {dismissed.length > 0 && (
-        <section>
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-text/40">
-            Dismissed ({dismissed.length})
-          </h2>
-          <div className="mt-4 flex flex-col gap-4">
-            {dismissed.map((r) => (
-              <FeedbackCard key={r.id} row={r} />
-            ))}
-          </div>
-        </section>
-      )}
+      <FeedbackSection title="Reviewed" count={reviewed.length} rows={reviewed} />
+      <FeedbackSection title="Dismissed" count={dismissed.length} rows={dismissed} />
     </div>
   );
 }

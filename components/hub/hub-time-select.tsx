@@ -7,13 +7,9 @@ import {
   isTimeSlotSelectableForDateInput,
   listTimeSlotStates,
 } from "@/lib/bookings/scheduling-limits";
+import { HubFormField, HubNativeSelect } from "@/components/hub/hub-form";
 import { dateInputToLabel } from "@/lib/hub/schedule-labels";
 import { cn } from "@/lib/utils";
-
-const fieldClass =
-  "mt-1 w-full rounded border border-white/15 bg-dk px-3 py-2 font-mono text-sm";
-const labelClass =
-  "font-mono text-[9px] uppercase tracking-[0.12em] text-text/40";
 
 export function HubTimeSelect({
   dateInput,
@@ -56,27 +52,29 @@ export function HubTimeSelect({
   );
 
   useEffect(() => {
-    if (!value || !dateInput) return;
+    if (!dateInput || !value) return;
     if (!isTimeSlotSelectableForDateInput(dateInput, value)) {
-      setValue("");
+      if (controlledValue !== undefined) {
+        onValueChange?.("");
+      } else {
+        setInternalValue("");
+      }
     }
-  }, [dateInput, value]);
+    // onValueChange omitted — setState from useState is stable; including it can loop
+  }, [dateInput, value, controlledValue]);
 
   const disabled = onDateInputRequired && !dateInput;
 
   return (
-    <label className="block">
-      <span className={labelClass}>
-        {label}
-        {required ? " *" : ""}
-      </span>
-      <select
+    <HubFormField label={label} htmlFor={name} required={required} className="w-full min-w-0">
+      <HubNativeSelect
+        id={name}
         name={name}
         required={required}
         value={value}
         disabled={disabled}
         onChange={(e) => setValue(e.target.value)}
-        className={cn(fieldClass, disabled && "opacity-50")}
+        className={cn(disabled && "opacity-50")}
       >
         <option value="">{disabled ? "Pick a date first…" : "Select time…"}</option>
         {BOOKING_TIME_SLOTS.map((slot) => {
@@ -90,8 +88,8 @@ export function HubTimeSelect({
             </option>
           );
         })}
-      </select>
-    </label>
+      </HubNativeSelect>
+    </HubFormField>
   );
 }
 
@@ -182,18 +180,19 @@ export function HubTimeRangeSelect({
         required={required && !disabled}
         onDateInputRequired
       />
-      <label className="block">
-        <span className={labelClass}>
-          {endLabel}
-          {required && !disabled ? " *" : ""}
-        </span>
-        <select
+      <HubFormField
+        label={endLabel}
+        htmlFor={endName}
+        required={required && !disabled}
+      >
+        <HubNativeSelect
+          id={endName}
           name={disabled ? undefined : endName}
           required={required && !disabled}
           value={end}
           disabled={fieldsDisabled || !start}
           onChange={(e) => setEnd(e.target.value)}
-          className={cn(fieldClass, (fieldsDisabled || !start) && "opacity-50")}
+          className={cn((fieldsDisabled || !start) && "opacity-50")}
         >
           <option value="">
             {dateMissing
@@ -212,8 +211,8 @@ export function HubTimeRangeSelect({
               </option>
             );
           })}
-        </select>
-      </label>
+        </HubNativeSelect>
+      </HubFormField>
     </>
   );
 }

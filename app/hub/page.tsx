@@ -1,7 +1,18 @@
 import Link from "next/link";
 
+import { HubPageHeader, HubSection, HubStatCard } from "@/components/hub/hub-page";
+import { Button } from "@/components/ui/button";
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+const quickLinks = [
+  { href: "/hub/calendar", label: "Team calendar" },
+  { href: "/hub/blocks", label: "Schedule blocks (PTO)" },
+  { href: "/hub/settings/rules", label: "Rules & blackouts" },
+  { href: "/hub/catalog", label: "Catalog (packages & add-ons)" },
+  { href: "/hub/promos", label: "Promo codes" },
+  { href: "/hub/staff", label: "Staff roster" },
+] as const;
 
 export default async function HubDashboardPage() {
   const access = await requireHubAccess({ managerOnly: true });
@@ -22,70 +33,40 @@ export default async function HubDashboardPage() {
     .is("deleted_at", null);
 
   return (
-    <div>
-      <h1 className="font-display text-5xl tracking-[0.04em] text-y">DASHBOARD</h1>
-      <p className="mt-2 font-mono text-xs tracking-[0.08em] text-text/40">
-        All cities · America/Chicago
-      </p>
+    <div className="flex flex-col gap-10">
+      <HubPageHeader
+        title="Dashboard"
+        description="All cities · America/Chicago"
+      >
+        <Button asChild>
+          <Link href="/hub/calendar">Open calendar</Link>
+        </Button>
+      </HubPageHeader>
 
-      <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard label="Pending bookings" value={String(pendingCount ?? 0)} />
-        <StatCard label="Jobs today (UTC date)" value={String(todayCount ?? 0)} />
-        <StatCard label="Your role" value={access.profile.role} />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <HubStatCard label="Pending bookings" value={pendingCount ?? 0} />
+        <HubStatCard label="Jobs today (UTC date)" value={todayCount ?? 0} />
+        <HubStatCard label="Your role" value={access.profile.role} />
       </div>
 
-      <div className="mt-12 rounded-md border border-y/15 bg-card p-6">
-        <h2 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-muted">
-          Quick links
-        </h2>
-        <ul className="mt-4 flex flex-col gap-2 font-mono text-sm text-y/80">
-          <li>
-            <Link href="/hub/calendar" className="hover:text-y">
-              → Team calendar
-            </Link>
-          </li>
-          <li>
-            <Link href="/hub/blocks" className="hover:text-y">
-              → Schedule blocks (PTO)
-            </Link>
-          </li>
-          <li>
-            <Link href="/hub/settings/rules" className="hover:text-y">
-              → Rules & blackouts
-            </Link>
-          </li>
-          <li>
-            <Link href="/hub/catalog" className="hover:text-y">
-              → Catalog (packages & add-ons)
-            </Link>
-          </li>
-          <li>
-            <Link href="/hub/promos" className="hover:text-y">
-              → Promo codes
-            </Link>
-          </li>
-          <li>
-            <Link href="/hub/staff" className="hover:text-y">
-              → Staff roster
-            </Link>
-          </li>
+      <HubSection title="Quick links">
+        <ul className="flex flex-col gap-2">
+          {quickLinks.map((item) => (
+            <li key={item.href}>
+              <Link
+                href={item.href}
+                className="font-mono text-sm text-primary hover:underline"
+              >
+                → {item.label}
+              </Link>
+            </li>
+          ))}
         </ul>
-        <p className="mt-6 font-mono text-[10px] leading-relaxed text-text/35">
+        <p className="mt-6 font-mono text-[10px] leading-relaxed text-muted-foreground">
           Full setup steps:{" "}
-          <code className="text-y/60">docs/MANAGERS_HUB_SETUP.md</code>
+          <code className="text-primary/80">docs/MANAGERS_HUB_SETUP.md</code>
         </p>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border border-white/10 bg-card px-5 py-4">
-      <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-muted">
-        {label}
-      </div>
-      <div className="mt-2 font-display text-4xl tracking-[0.04em]">{value}</div>
+      </HubSection>
     </div>
   );
 }

@@ -27,7 +27,7 @@ function DeleteWeeklyButton({ id }: { id: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="cursor-pointer font-mono text-[9px] text-text/35 hover:text-red-300 disabled:opacity-50"
+        className="cursor-pointer font-mono text-[9px] text-muted-foreground hover:text-destructive disabled:opacity-50"
         aria-label="Remove"
       >
         {pending ? "…" : "×"}
@@ -48,7 +48,7 @@ export function WeeklyBlocksList({
 }) {
   if (!blocks.length) {
     return (
-      <p className="text-sm text-text/40">
+      <p className="text-sm text-muted-foreground">
         {variant === "panel"
           ? "No weekly off-days match this filter."
           : "No weekly pattern yet. Choose Regular days off and check the weekdays they never work."}
@@ -66,7 +66,7 @@ export function WeeklyBlocksList({
 
   if (variant === "panel") {
     return (
-      <ul className="divide-y divide-white/5">
+      <ul className="divide-y divide-border/60">
         {[...byStaff.entries()].map(([name, staffBlocks]) => {
           const sorted = [...staffBlocks].sort((a, b) => a.day_of_week - b.day_of_week);
           const reason = sorted.find((b) => b.reason)?.reason;
@@ -78,11 +78,11 @@ export function WeeklyBlocksList({
               className="flex flex-wrap items-center justify-between gap-2 py-2"
             >
               <div className="min-w-0 flex-1">
-                <span className="font-mono text-xs text-y/85">{name}</span>
-                <span className="ml-2 text-[11px] text-text/50">
+                <span className="font-mono text-xs text-primary">{name}</span>
+                <span className="ml-2 text-[11px] text-muted-foreground">
                   Off: {days}
                   {reason ? (
-                    <span className="text-text/40"> · {reason}</span>
+                    <span className="text-muted-foreground/80"> · {reason}</span>
                   ) : null}
                 </span>
               </div>
@@ -90,7 +90,7 @@ export function WeeklyBlocksList({
                 {sorted.map((b) => (
                   <span
                     key={b.id}
-                    className="inline-flex items-center gap-0.5 rounded border border-white/10 px-1.5 py-0.5 font-mono text-[8px] text-text/55"
+                    className="inline-flex items-center gap-0.5 rounded-md border border-border px-1.5 py-0.5 font-mono text-[8px] text-muted-foreground"
                   >
                     {WEEKDAY_LABELS[b.day_of_week]}
                     <DeleteWeeklyButton id={b.id} />
@@ -115,14 +115,14 @@ export function WeeklyBlocksList({
             key={name}
             className="rounded-lg border border-amber-500/20 bg-amber-500/[0.04] px-4 py-3.5"
           >
-            <div className="font-mono text-sm text-y/85">{name}</div>
-            <p className="mt-1 text-sm text-text/50">
+            <div className="font-mono text-sm text-primary/85">{name}</div>
+            <p className="mt-1 text-sm text-muted-foreground">
               Off every week on{" "}
               {sorted.map((b) => WEEKDAY_LABELS[b.day_of_week]).join(", ")}
               {reason ? (
                 <>
                   {" "}
-                  · <span className="text-text/60">{reason}</span>
+                  · <span className="text-foreground/60">{reason}</span>
                 </>
               ) : null}
             </p>

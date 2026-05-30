@@ -5,10 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getProfile, isManagerRole, type Profile } from "@/lib/auth/profile";
 import { recordBookingAudit } from "@/lib/hub/booking-audit";
 import { syncLoyaltyPointsForBooking } from "@/lib/hub/loyalty-points";
-import {
-  bookingDurationHours,
-  dateInputToLabel,
-} from "@/lib/hub/schedule-labels";
+import { dateInputToLabel } from "@/lib/hub/schedule-labels";
 import { computeCheckoutPricing } from "@/lib/bookings/checkout-pricing";
 import {
   insertBooking,
@@ -35,6 +32,7 @@ import {
 import {
   fetchActiveCoverageRules,
   locationRequiresCoverageCheck,
+  validateBookingLocationCoverage,
 } from "@/lib/bookings/service-area-coverage";
 import {
   fetchDetailerServiceAreasMap,
@@ -131,7 +129,7 @@ export async function updateHubBooking(
 
   const { data: existing, error: loadError } = await supabase
     .from("bookings")
-    .select("*")
+    .select("*, promo_codes ( code )")
     .eq("id", bookingId)
     .maybeSingle();
 
@@ -141,6 +139,61 @@ export async function updateHubBooking(
   if (existing.deleted_at) {
     return { ok: false, message: "This booking was deleted." };
   }
+
+  if (existing.billed_at) {
+    return {
+      ok: false,
+      message:
+        "This booking is already billed. Unmark billed on the calendar before changing line items or sending an invoice.",
+    };
+  }
+
+  const { data: paidInvoice } = await supabase
+    .from("invoices")
+    .select("id")
+    .eq("booking_id", bookingId)
+    .eq("status", "paid")
+    .maybeSingle();
+
+  if (paidInvoice) {
+    return {
+      ok: false,
+      message: "This booking has a paid invoice and can no longer be edited here.",
+    };
+  }
+
+  const customerName = String(formData.get("customer_name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  if (!customerName || !email || !phone) {
+    return { ok: false, message: "Customer name, email, and phone are required." };
+  }
+
+  const packageKey = String(formData.get("package_key") ?? "") as PackageKey;
+  const vehicleKey = String(formData.get("vehicle_key") ?? "") as VehicleKey;
+  const pkg = PACKAGE_BY_KEY[packageKey];
+  const vehicle = VEHICLE_OPTIONS.find((v) => v.key === vehicleKey);
+  if (!pkg || !vehicle) {
+    return { ok: false, message: "Select a valid package and vehicle." };
+  }
+
+  const locationType = String(formData.get("location") ?? "");
+  const addressLine = String(formData.get("address") ?? "").trim();
+  const city = String(formData.get("city") ?? "").trim();
+  const zip = String(formData.get("zip") ?? "").trim();
+  if (
+    !BOOKING_LOCATION_TYPES.includes(
+      locationType as (typeof BOOKING_LOCATION_TYPES)[number],
+    )
+  ) {
+    return { ok: false, message: "Select a location type." };
+  }
+
+  const addonNames = formData.getAll("addons").map(String);
+  const vehicleInfo = String(formData.get("vehicle_info") ?? "").trim();
+  const customerNotes = String(formData.get("customer_notes") ?? "").trim();
+  const plasticShine = String(formData.get("plastic_shine") ?? "No") === "Yes";
+  const promoCodeRaw = String(formData.get("promo_code") ?? "").trim();
 
   const status = String(formData.get("status") ?? existing.status);
   const dateInput = String(formData.get("appointment_date") ?? "");
@@ -175,9 +228,21 @@ export async function updateHubBooking(
     fetchSchedulingRules(supabase),
     fetchActiveCoverageRules(supabase),
   ]);
+
+  const coverageResult = validateBookingLocationCoverage(
+    locationType,
+    zip,
+    city,
+    coverageRules,
+    { customerFacing: false },
+  );
+  if (!coverageResult.ok) {
+    return { ok: false, message: coverageResult.message };
+  }
+
   const serviceAreaSlugs = resolveServiceAreaSlugsForLocation(
-    existing.zip ?? "",
-    existing.city ?? "",
+    zip,
+    city,
     coverageRules,
   );
 
@@ -192,10 +257,7 @@ export async function updateHubBooking(
     return { ok: false, message: scheduleError };
   }
 
-  const durationHours = bookingDurationHours(
-    existing.starts_at,
-    existing.ends_at,
-  );
+  const durationHours = pkg.durationHours;
 
   let schedule;
   try {
@@ -218,7 +280,6 @@ export async function updateHubBooking(
       fetchBookableDetailerNames(supabase),
       fetchDetailerServiceAreasMap(supabase),
     ]);
-  const locationType = String(existing.location_type ?? "");
   let eligibleDetailers = detailerNames;
   if (
     locationRequiresCoverageCheck(locationType) &&
@@ -290,14 +351,39 @@ export async function updateHubBooking(
   }
 
   const priceOverrideCents = parseOverrideCents(priceOverrideRaw);
+  const promoForPricing = promoCodeRaw || undefined;
+
+  const pricing = await computeCheckoutPricing(supabase, {
+    packageKey,
+    vehicleKey,
+    addonNames,
+    promoCode: promoForPricing,
+    loyaltyRedemptionId:
+      (existing.loyalty_redemption_id as string | null) ?? undefined,
+  });
+
+  if (!pricing.ok) {
+    return { ok: false, message: pricing.message };
+  }
+
   const finalPriceCents =
-    priceOverrideCents ??
-    existing.final_price_cents ??
-    existing.price_override_cents ??
-    existing.price_cents ??
-    existing.estimated_price_cents;
+    priceOverrideCents ?? pricing.totalCents;
 
   const patch: Record<string, unknown> = {
+    customer_name: customerName,
+    email,
+    phone,
+    location_type: locationType,
+    address_line: addressLine,
+    city,
+    zip,
+    service_name: pkg.name,
+    service_key: packageKey,
+    vehicle_type: vehicle.label,
+    vehicle_info: vehicleInfo,
+    addons: addonNames,
+    plastic_shine: plasticShine,
+    customer_notes: customerNotes,
     status,
     appointment_date: schedule.appointmentDate,
     starts_at: schedule.startsAt,
@@ -305,12 +391,13 @@ export async function updateHubBooking(
     detailer_name: detailerName,
     detailer_auto_assigned: detailerAutoAssigned,
     manager_notes: managerNotes,
+    estimated_price_cents: pricing.subtotalCents,
+    discount_cents: pricing.discountCents,
+    promo_code_id: pricing.promoCodeId,
     price_override_cents: priceOverrideCents,
     final_price_cents: finalPriceCents,
-    price_display:
-      finalPriceCents != null
-        ? `$${(finalPriceCents / 100).toFixed(0)}`
-        : existing.price_display,
+    price_cents: finalPriceCents,
+    price_display: formatHubBookingPrice(finalPriceCents),
     billed_at: billedChecked
       ? (existing.billed_at as string | null) ?? new Date().toISOString()
       : null,
@@ -333,19 +420,21 @@ export async function updateHubBooking(
 
   await recordBookingAudit(supabase, bookingId, profile.id, "booking.updated", {
     before: {
+      customer_name: existing.customer_name,
+      service_name: existing.service_name,
       status: existing.status,
       starts_at: existing.starts_at,
       detailer_name: existing.detailer_name,
-      price_override_cents: existing.price_override_cents,
+      final_price_cents: existing.final_price_cents,
     },
     after: patch,
   });
 
   const smsAdmin = getSupabaseAdmin();
   const smsData: CustomerBookingSmsData = {
-    phone: existing.phone,
-    customerName: existing.customer_name,
-    service: existing.service_name,
+    phone,
+    customerName,
+    service: pkg.name,
     date: dateLabel,
     time: timeLabel,
     referenceId: existing.reference_id,
@@ -375,6 +464,7 @@ export async function updateHubBooking(
   revalidatePath("/hub/bookings");
   revalidatePath(`/hub/bookings/${bookingId}`);
   revalidatePath("/hub/calendar");
+  revalidatePath("/hub/customers");
 
   return { ok: true, message: "Booking saved." };
 }

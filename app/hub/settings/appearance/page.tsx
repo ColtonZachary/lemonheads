@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { HubPageHeader } from "@/components/hub/hub-page";
 import { HubAppearancePanel } from "@/components/hub/hub-appearance-panel";
 import { HubThemeMigrationNotice } from "@/components/hub/hub-theme-migration-notice";
 import { requireHubAccess } from "@/lib/auth/require-hub";
@@ -18,17 +19,17 @@ export default async function HubAppearancePage() {
     <div>
       <Link
         href={access.isManager ? "/hub/settings" : "/hub/calendar"}
-        className="font-mono text-[10px] uppercase tracking-[0.12em] text-text/40 hover:text-y"
+        className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground hover:text-primary"
       >
         ← {access.isManager ? "Settings" : "Schedule"}
       </Link>
 
-      <h1 className="mt-4 font-display text-5xl tracking-[0.04em] text-y">
-        HUB COLORS
-      </h1>
-      <p className="mt-2 text-sm text-text/45">
-        Personal theme for your hub view only — does not affect the public site or other users.
-      </p>
+      <div className="mt-4">
+        <HubPageHeader
+          title="Hub colors"
+          description="Personal theme for your hub view only — does not affect the public site or other users."
+        />
+      </div>
 
       <div className="mt-6 max-w-4xl">
         {!schemaReady ? <HubThemeMigrationNotice /> : null}

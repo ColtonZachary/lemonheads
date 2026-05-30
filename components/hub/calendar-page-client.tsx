@@ -1,13 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { BookingCreateForm } from "@/components/hub/booking-create-form";
 import { WeekCalendar } from "@/components/hub/week-calendar";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icons";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import type { HubBookingCreateDraft } from "@/lib/hub/booking-create-draft";
 import { UNASSIGNED_DETAILER } from "@/lib/hub/week-calendar";
 import type {
@@ -15,7 +22,6 @@ import type {
   WeekCalendarDetailer,
   WeekDayColumn,
 } from "@/lib/hub/week-calendar";
-import { cn } from "@/lib/utils";
 
 export function CalendarPageClient({
   weekMonday,
@@ -28,6 +34,7 @@ export function CalendarPageClient({
   canBook,
   detailerNames,
   initialBookOpen,
+  clearBookQueryParam,
 }: {
   weekMonday: string;
   weekLabel: string;
@@ -39,9 +46,10 @@ export function CalendarPageClient({
   canBook: boolean;
   detailerNames: string[];
   initialBookOpen?: boolean;
+  /** True when URL had ?book=1 so we can strip it on close without useSearchParams */
+  clearBookQueryParam?: boolean;
 }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [panelOpen, setPanelOpen] = useState(initialBookOpen ?? false);
   const [bookDraft, setBookDraft] = useState<Partial<HubBookingCreateDraft>>({});
   const [formSeed, setFormSeed] = useState(0);
@@ -54,13 +62,15 @@ export function CalendarPageClient({
 
   const closeBook = useCallback(() => {
     setPanelOpen(false);
-    if (searchParams.get("book") === "1") {
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("book");
-      const q = params.toString();
-      router.replace(q ? `/hub/calendar?${q}` : "/hub/calendar", { scroll: false });
+    if (clearBookQueryParam) {
+      queueMicrotask(() => {
+        const params = new URLSearchParams(window.location.search);
+        params.delete("book");
+        const q = params.toString();
+        router.replace(q ? `/hub/calendar?${q}` : "/hub/calendar", { scroll: false });
+      });
     }
-  }, [router, searchParams]);
+  }, [router, clearBookQueryParam]);
 
   useEffect(() => {
     if (!panelOpen) return;
@@ -91,88 +101,74 @@ export function CalendarPageClient({
   };
 
   return (
-    <div
-      className={cn(
-        "mt-10 flex flex-col gap-6 lg:flex-row lg:items-start",
-        panelOpen && canBook && "lg:gap-4",
-      )}
-    >
-      <div className="min-w-0 flex-1">
-        {createdBookingId && (
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-y/30 bg-y/10 px-4 py-3">
-            <p className="font-mono text-xs text-y">Booking created.</p>
-            <div className="flex gap-2">
-              <Link
-                href={`/hub/bookings/${createdBookingId}`}
-                className="font-mono text-[10px] uppercase tracking-[0.1em] text-y hover:underline"
-              >
-                Open booking
-              </Link>
-              <button
-                type="button"
-                onClick={() => setCreatedBookingId(null)}
-                className="font-mono text-[10px] uppercase tracking-[0.1em] text-text/40 hover:text-text"
-              >
-                Dismiss
-              </button>
-            </div>
+    <div className="mt-6 min-w-0">
+      {createdBookingId && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-primary/30 bg-primary/10 px-4 py-3">
+          <p className="font-mono text-xs text-primary">Booking created.</p>
+          <div className="flex gap-2">
+            <Link
+              href={`/hub/bookings/${createdBookingId}`}
+              className="font-mono text-[10px] uppercase tracking-[0.1em] text-primary hover:underline"
+            >
+              Open booking
+            </Link>
+            <button
+              type="button"
+              onClick={() => setCreatedBookingId(null)}
+              className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground"
+            >
+              Dismiss
+            </button>
           </div>
-        )}
+        </div>
+      )}
 
-        <WeekCalendar
-          weekMonday={weekMonday}
-          weekLabel={weekLabel}
-          days={days}
-          detailers={detailers}
-          bookings={bookings}
-          canManage={canManage}
-          canBook={canBook}
-          onOpenBook={() => openBook()}
-          onBookDay={(dateKey) => openBook({ appointment_date: dateKey })}
-          onBookSlot={handleBookSlot}
-        />
+      <WeekCalendar
+        weekMonday={weekMonday}
+        weekLabel={weekLabel}
+        days={days}
+        detailers={detailers}
+        bookings={bookings}
+        canManage={canManage}
+        canBook={canBook}
+        onOpenBook={() => openBook()}
+        onBookDay={(dateKey) => openBook({ appointment_date: dateKey })}
+        onBookSlot={handleBookSlot}
+      />
 
-        <p className="mt-6 font-mono text-[10px] text-text/30">
-          Showing {bookingCount} job{bookingCount === 1 ? "" : "s"} this week
-        </p>
-      </div>
+      <p className="mt-6 font-mono text-[10px] text-muted-foreground">
+        Showing {bookingCount} job{bookingCount === 1 ? "" : "s"} this week
+      </p>
+
+      {canBook && !panelOpen && (
+        <div className="mt-6 lg:hidden">
+          <Button type="button" className="w-full" onClick={() => openBook()}>
+            New booking <Icon name="arrowRight" className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
 
       {canBook && panelOpen && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 z-30 bg-black/40 lg:hidden"
-            aria-label="Close booking panel"
-            onClick={closeBook}
-          />
-
-          <aside
-            className={cn(
-              "fixed inset-y-0 right-0 z-40 flex w-full max-w-md flex-col border-l border-white/10 bg-dk shadow-[-12px_0_48px_rgba(0,0,0,0.45)]",
-              "lg:static lg:z-auto lg:max-h-[calc(100svh-5rem)] lg:w-[min(100%,420px)] lg:shrink-0 lg:shadow-none",
-              "lg:sticky lg:top-6",
-            )}
+        <Sheet
+          open
+          onOpenChange={(open) => {
+            if (!open) closeBook();
+          }}
+        >
+          <SheetContent
+            side="right"
+            className="flex w-full max-w-[100vw] flex-col gap-0 overflow-hidden border-border bg-card p-0 sm:max-w-[420px] focus:outline-none"
           >
-            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
-              <div>
-                <h2 className="font-display text-2xl tracking-[0.04em] text-y">
-                  NEW BOOKING
-                </h2>
-                <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">
-                  Calendar stays visible
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={closeBook}
-                className="flex h-9 w-9 items-center justify-center rounded border border-white/15 text-text/60 transition-colors hover:border-y/30 hover:text-y"
-                aria-label="Close"
-              >
-                <Icon name="x" className="h-4 w-4" />
-              </button>
-            </div>
+            <SheetHeader className="shrink-0 space-y-0.5 border-b border-border px-4 py-4 pr-12">
+              <SheetTitle className="font-display text-2xl font-normal tracking-[0.04em] text-primary">
+                NEW BOOKING
+              </SheetTitle>
+              <SheetDescription className="font-mono text-[9px] uppercase tracking-[0.1em]">
+                Step-by-step — calendar stays visible
+              </SheetDescription>
+            </SheetHeader>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 pt-2">
               <BookingCreateForm
                 detailerNames={detailerNames}
                 initialDraft={bookDraft}
@@ -182,16 +178,8 @@ export function CalendarPageClient({
                 compact
               />
             </div>
-          </aside>
-        </>
-      )}
-
-      {canBook && !panelOpen && (
-        <div className="lg:hidden">
-          <Button type="button" className="w-full" onClick={() => openBook()}>
-            New booking <Icon name="arrowRight" className="h-3.5 w-3.5" />
-          </Button>
-        </div>
+          </SheetContent>
+        </Sheet>
       )}
     </div>
   );

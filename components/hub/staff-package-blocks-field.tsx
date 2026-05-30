@@ -13,14 +13,18 @@ export function StaffPackageBlocksField({
   if (!packages.length) return null;
 
   return (
-    <details className={cn(compact ? "mt-2" : "mt-4 border-t border-white/10 pt-4")}>
-      <summary className="cursor-pointer list-none font-mono text-[9px] uppercase tracking-[0.12em] text-text/45 hover:text-y [&::-webkit-details-marker]:hidden">
+    <details
+      className={cn(
+        compact ? "mt-2" : "mt-4 border-t border-border pt-4",
+      )}
+    >
+      <summary className="cursor-pointer list-none font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground hover:text-primary [&::-webkit-details-marker]:hidden">
         Block packages (public booking)
         {blockedKeys.length > 0 ? (
-          <span className="ml-2 text-y/70">{blockedKeys.length} blocked</span>
+          <span className="ml-2 text-primary">{blockedKeys.length} blocked</span>
         ) : null}
       </summary>
-      <p className="mt-2 text-[10px] leading-snug text-text/35">
+      <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
         Customers cannot pick this detailer for checked services; hub booking is
         unaffected.
       </p>
@@ -33,7 +37,7 @@ export function StaffPackageBlocksField({
         {packages.map((pkg) => (
           <label
             key={pkg.key}
-            className="flex cursor-pointer items-center gap-2 rounded border border-white/10 px-2 py-1.5 text-xs hover:border-white/20"
+            className="flex cursor-pointer items-center gap-2 rounded-md border border-border px-2 py-1.5 text-xs hover:border-primary/25"
           >
             <input
               type="checkbox"

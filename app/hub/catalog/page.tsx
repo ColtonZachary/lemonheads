@@ -1,7 +1,14 @@
-import Link from "next/link";
-
+import {
+  HubPageHeader,
+  HubSettingsLinkCard,
+  HubStatCard,
+} from "@/components/hub/hub-page";
 import { requireHubAccess } from "@/lib/auth/require-hub";
-import { fetchCatalogAddons, fetchCatalogPackages, fetchBookingLocationTypes } from "@/lib/hub/catalog-db";
+import {
+  fetchCatalogAddons,
+  fetchCatalogPackages,
+  fetchBookingLocationTypes,
+} from "@/lib/hub/catalog-db";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const catalogLinks = [
@@ -38,47 +45,32 @@ export default async function HubCatalogPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="font-display text-5xl tracking-[0.04em] text-y">CATALOG</h1>
-      <p className="mt-2 text-sm text-text/45">
-        Packages, add-ons, and location types for the website and hub bookings.
-      </p>
+      <HubPageHeader
+        title="Catalog"
+        description="Packages, add-ons, and location types for the website and hub bookings."
+      />
 
-      <div className="mt-6 flex flex-wrap gap-3">
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">Packages</p>
-          <p className="font-display text-2xl text-y">{activePackages}</p>
-        </div>
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">Add-ons</p>
-          <p className="font-display text-2xl text-y">{activeAddons}</p>
-        </div>
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">Locations</p>
-          <p className="font-display text-2xl text-y">{activeLocations}</p>
-        </div>
+      <div className="mt-8 flex flex-wrap gap-3">
+        <HubStatCard label="Packages" value={activePackages} />
+        <HubStatCard label="Add-ons" value={activeAddons} />
+        <HubStatCard label="Locations" value={activeLocations} />
       </div>
 
       <ul className="mt-6 space-y-2">
         {catalogLinks.map((item) => (
           <li key={item.href}>
-            <Link
+            <HubSettingsLinkCard
               href={item.href}
-              className="flex items-center justify-between gap-3 rounded-lg border border-white/10 px-4 py-3 transition-colors hover:border-y/25 hover:bg-white/[0.02]"
-            >
-              <div>
-                <span className="font-mono text-sm text-y/90">{item.title}</span>
-                <p className="mt-0.5 text-xs text-text/45">{item.description}</p>
-              </div>
-              <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-y/50">
-                Open →
-              </span>
-            </Link>
+              title={item.title}
+              description={item.description}
+            />
           </li>
         ))}
       </ul>
 
-      <p className="mt-6 font-mono text-[10px] text-text/35">
-        Empty tables? Run <code className="text-y/60">npm run hub:seed</code> once.
+      <p className="mt-6 font-mono text-[10px] text-muted-foreground">
+        Empty tables? Run{" "}
+        <code className="text-primary">npm run hub:seed</code> once.
       </p>
     </div>
   );

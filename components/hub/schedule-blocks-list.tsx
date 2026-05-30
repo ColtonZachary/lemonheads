@@ -32,7 +32,7 @@ function DeleteBlockButton({ blockId, compact }: { blockId: string; compact?: bo
         <button
           type="submit"
           disabled={pending}
-          className="cursor-pointer font-mono text-[9px] text-text/40 hover:text-red-300 disabled:opacity-50"
+          className="cursor-pointer font-mono text-[9px] text-muted-foreground hover:text-destructive disabled:opacity-50"
         >
           {pending ? "…" : "Remove"}
         </button>
@@ -78,7 +78,7 @@ export function ScheduleBlocksList({
 }) {
   if (!groups.length) {
     return (
-      <p className="text-sm text-text/40">
+      <p className="text-sm text-muted-foreground">
         {variant === "panel"
           ? "No blocked dates match this filter."
           : "No blocked dates in the next few months. Use Time off to add PTO or vacation."}
@@ -91,25 +91,25 @@ export function ScheduleBlocksList({
       day.blocks.map((block) => ({ day, block })),
     );
     return (
-      <ul className="divide-y divide-white/5">
+      <ul className="divide-y divide-border/60">
         {flat.map(({ day, block }) => (
           <li
             key={block.id}
             className="flex flex-wrap items-center justify-between gap-2 py-2"
           >
-            <div className="min-w-0 flex-1 text-[11px] text-text/55">
-              <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-red-200/70">
+            <div className="min-w-0 flex-1 text-[11px] text-muted-foreground">
+              <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-destructive/80">
                 {day.dateLabel}
               </span>
-              <span className="mx-1.5 text-text/25">·</span>
-              <span className="font-mono text-xs text-y/85">
+              <span className="mx-1.5 text-muted-foreground/40">·</span>
+              <span className="font-mono text-xs text-primary">
                 {block.staff_members?.display_name ?? "—"}
               </span>
-              <span className="mx-1.5 text-text/25">·</span>
+              <span className="mx-1.5 text-muted-foreground/40">·</span>
               {formatBlockTimeRange(block)}
               {block.reason ? (
                 <>
-                  <span className="mx-1.5 text-text/25">·</span>
+                  <span className="mx-1.5 text-muted-foreground/40">·</span>
                   {block.reason}
                 </>
               ) : null}
@@ -135,21 +135,21 @@ export function ScheduleBlocksList({
           <h3 className="border-b border-red-500/10 bg-red-500/[0.06] px-4 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-red-200/80">
             {day.dateLabel}
           </h3>
-          <ul className="divide-y divide-white/5">
+          <ul className="divide-y divide-border/60">
             {day.blocks.map((block) => (
               <li
                 key={block.id}
                 className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
               >
                 <div>
-                  <div className="font-mono text-sm text-y/80">
+                  <div className="font-mono text-sm text-primary/80">
                     {block.staff_members?.display_name ?? "—"}
                   </div>
-                  <div className="mt-0.5 text-sm text-text/55">
+                  <div className="mt-0.5 text-sm text-muted-foreground">
                     {formatBlockTimeRange(block)}
                     {block.reason ? (
                       <>
-                        <span className="text-text/30"> · </span>
+                        <span className="text-muted-foreground/50"> · </span>
                         {block.reason}
                       </>
                     ) : null}

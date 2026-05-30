@@ -13,6 +13,12 @@ export type CustomerBookingPick = {
   email: string;
   phone: string;
   bookingCount: number;
+  /** From most recent booking, when available */
+  location: string;
+  address: string;
+  city: string;
+  zip: string;
+  vehicleInfo: string;
 };
 
 function escapeIlike(value: string): string {
@@ -84,6 +90,11 @@ async function searchCustomersTable(
     email: (row.email as string) ?? "",
     phone: (row.phone as string) ?? "",
     bookingCount: (row.booking_count as number) ?? 0,
+    location: "",
+    address: "",
+    city: "",
+    zip: "",
+    vehicleInfo: "",
   }));
 }
 
@@ -115,6 +126,11 @@ async function searchBookingsByName(
       email,
       phone,
       bookingCount: 0,
+      location: "",
+      address: "",
+      city: "",
+      zip: "",
+      vehicleInfo: "",
     });
   }
   return [...map.values()].slice(0, 12);
@@ -151,11 +167,69 @@ export async function searchCustomersForBooking(
         email: p.email,
         phone: p.phone,
         bookingCount: p.bookingCount,
+        location: "",
+        address: "",
+        city: "",
+        zip: "",
+        vehicleInfo: "",
       });
     }
   }
 
-  return [...map.values()]
+  const picks = [...map.values()]
     .sort((a, b) => b.bookingCount - a.bookingCount)
     .slice(0, 12);
+
+  return Promise.all(
+    picks.map((pick) => enrichPickWithLastBookingAddress(client, pick)),
+  );
+}
+
+/** Pull location from the customer's latest non-deleted booking. */
+async function enrichPickWithLastBookingAddress(
+  client: SupabaseClient,
+  pick: CustomerBookingPick,
+): Promise<CustomerBookingPick> {
+  let query = client
+    .from("bookings")
+    .select("location_type, address_line, city, zip, vehicle_info")
+    .is("deleted_at", null)
+    .order("starts_at", { ascending: false })
+    .limit(1);
+
+  if (pick.customerId) {
+    query = query.eq("customer_id", pick.customerId);
+  } else {
+    const email = pick.email.trim();
+    if (email) {
+      query = query.ilike("email", email);
+    } else {
+      const digits = normalizePhoneDigits(pick.phone);
+      const phonePat = phoneFlexibleIlikePattern(digits);
+      if (!phonePat) return pick;
+      query = query.ilike("phone", phonePat);
+    }
+  }
+
+  const { data, error } = await query.maybeSingle();
+  if (error || !data) return pick;
+
+  const location = String(data.location_type ?? "").trim();
+  const address = String(data.address_line ?? "").trim();
+  const city = String(data.city ?? "").trim();
+  const zip = String(data.zip ?? "").trim();
+  const vehicleInfo = String(data.vehicle_info ?? "").trim();
+
+  if (!location && !address && !city && !zip && !vehicleInfo) {
+    return pick;
+  }
+
+  return {
+    ...pick,
+    location,
+    address,
+    city,
+    zip,
+    vehicleInfo,
+  };
 }

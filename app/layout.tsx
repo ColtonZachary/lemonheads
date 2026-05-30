@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Bebas_Neue, JetBrains_Mono, Syne } from "next/font/google";
+import { Bebas_Neue, JetBrains_Mono, Syne, Geist } from "next/font/google";
 import "./globals.css";
 
 import { Grain } from "@/components/site/grain";
 import { AuthHashHandler } from "@/components/auth/auth-hash-handler";
-import { SiteFooter } from "@/components/site/site-footer";
-import { SiteNav } from "@/components/site/site-nav";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const syne = Syne({
   variable: "--font-syne",
@@ -77,14 +78,12 @@ export default function RootLayout({
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${syne.variable} ${bebas.variable} ${jetbrains.variable} h-full`}
+      className={cn("h-full", syne.variable, bebas.variable, jetbrains.variable, "font-sans", geist.variable)}
     >
       <body className="bg-bk text-text min-h-full flex flex-col antialiased">
         <Grain />
         <AuthHashHandler />
-        <SiteNav />
-        <main className="flex-1">{children}</main>
-        <SiteFooter />
+        {children}
       </body>
     </html>
   );

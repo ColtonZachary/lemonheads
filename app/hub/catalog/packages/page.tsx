@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { HubPageHeader } from "@/components/hub/hub-page";
 import { CatalogPackagesPanel } from "@/components/hub/catalog-packages-panel";
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import { fetchCatalogPackages } from "@/lib/hub/catalog-db";
@@ -14,16 +15,17 @@ export default async function HubCatalogPackagesPage() {
     <div>
       <Link
         href="/hub/catalog"
-        className="font-mono text-[10px] uppercase tracking-[0.12em] text-text/40 hover:text-y"
+        className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground hover:text-primary"
       >
         ← Catalog
       </Link>
 
-      <h1 className="mt-4 font-display text-5xl tracking-[0.04em] text-y">PACKAGES</h1>
-      <p className="mt-2 text-sm text-text/45">
-        Site and booking services — edit one package at a time; deactivate instead of delete
-        when bookings reference a package.
-      </p>
+      <div className="mt-4">
+        <HubPageHeader
+          title="Packages"
+          description="Site and booking services — edit one package at a time; deactivate instead of delete when bookings reference a package."
+        />
+      </div>
 
       <div className="mt-6 max-w-4xl">
         <CatalogPackagesPanel packages={packages} />

@@ -1,16 +1,37 @@
 import { DetailJobProgressBadge } from "@/components/hub/detail-job-progress-badge";
+import { HubSection } from "@/components/hub/hub-page";
+import { Badge } from "@/components/ui/badge";
 import { getManagerJobProgress } from "@/lib/hub/detail-job-progress";
 import { formatCentralDateTime } from "@/lib/hub/format";
+import { cn } from "@/lib/utils";
 
-const PHASE_STEPS: { key: string; label: string }[] = [
-  { key: "awaiting_start", label: "Not started" },
-  { key: "en_route", label: "On the way" },
-  { key: "arrived", label: "Arrived" },
-  { key: "awaiting_finish", label: "Before photos" },
-  { key: "awaiting_after_photos", label: "After photos" },
-  { key: "awaiting_checklist", label: "Checklist" },
-  { key: "complete", label: "Done" },
+const PHASE_STEPS: { key: string; label: string; short: string }[] = [
+  { key: "awaiting_start", label: "Not started", short: "Start" },
+  { key: "en_route", label: "On the way", short: "En route" },
+  { key: "arrived", label: "Arrived", short: "Arrived" },
+  { key: "awaiting_finish", label: "Before photos", short: "Before" },
+  { key: "awaiting_after_photos", label: "After photos", short: "After" },
+  { key: "awaiting_checklist", label: "Checklist", short: "List" },
+  { key: "complete", label: "Done", short: "Done" },
 ];
+
+function FieldProgressHeader({
+  status,
+  phase,
+}: {
+  status: string;
+  phase: string;
+}) {
+  const progress = getManagerJobProgress({ status, detail_phase: phase });
+  if (progress) {
+    return <DetailJobProgressBadge status={status} detailPhase={phase} size="sm" />;
+  }
+  return (
+    <Badge variant="outline" className="font-mono text-[9px] uppercase">
+      Not started
+    </Badge>
+  );
+}
 
 export function BookingDetailProgress({
   status,
@@ -28,47 +49,68 @@ export function BookingDetailProgress({
   detailChecklistCompletedAt?: string | null;
 }) {
   const phase = detailPhase ?? "awaiting_start";
-  const progress = getManagerJobProgress({ status, detail_phase: phase });
   const stepIndex = PHASE_STEPS.findIndex((s) => s.key === phase);
-  const currentStep = stepIndex >= 0 ? PHASE_STEPS[stepIndex] : null;
+  const showStepper =
+    phase !== "awaiting_start" ||
+    status === "in_progress" ||
+    status === "completed";
+
+  const timestamps = [
+    detailEnRouteAt && { label: "Started", at: detailEnRouteAt },
+    detailArrivedAt && { label: "Arrived", at: detailArrivedAt },
+    detailFinishedAt && { label: "Finished", at: detailFinishedAt },
+    detailChecklistCompletedAt && { label: "Completed", at: detailChecklistCompletedAt },
+  ].filter(Boolean) as { label: string; at: string }[];
 
   return (
-    <section className="rounded-md border border-white/10 bg-card2/40 p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
-          Field progress
-        </h2>
-        {progress ? (
-          <DetailJobProgressBadge status={status} detailPhase={phase} />
-        ) : (
-          <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-text/40">
-            Not started
-          </span>
-        )}
-      </div>
-      <p className="mt-2 text-sm text-text/55">
-        Updated from the employee app when the detailer starts and completes the job.
-      </p>
-      {currentStep && phase !== "awaiting_start" && (
-        <p className="mt-3 font-mono text-xs text-text/70">
-          Current step:{" "}
-          <span className="text-y/90">{currentStep.label}</span>
+    <HubSection
+      compact
+      title="Field progress"
+      description="Employee app · en route through checklist"
+      headerAction={<FieldProgressHeader status={status} phase={phase} />}
+    >
+      {showStepper ? (
+        <div
+          className="flex flex-wrap gap-1"
+          role="list"
+          aria-label="Detail workflow steps"
+        >
+          {PHASE_STEPS.map((s, i) => {
+            const done = stepIndex >= 0 && i < stepIndex;
+            const current = i === stepIndex;
+            return (
+              <span
+                key={s.key}
+                role="listitem"
+                className={cn(
+                  "rounded-md border px-2 py-0.5 font-mono text-[8px] uppercase tracking-wide",
+                  current
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : done
+                      ? "border-border bg-muted/60 text-muted-foreground"
+                      : "border-transparent text-muted-foreground/50",
+                )}
+              >
+                {s.short}
+              </span>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="font-mono text-xs text-muted-foreground">
+          Detailer has not started this job in the field app yet.
         </p>
       )}
-      <ul className="mt-4 space-y-1.5 font-mono text-[10px] text-text/45">
-        {detailEnRouteAt && (
-          <li>Started · {formatCentralDateTime(detailEnRouteAt)}</li>
-        )}
-        {detailArrivedAt && (
-          <li>Arrived · {formatCentralDateTime(detailArrivedAt)}</li>
-        )}
-        {detailFinishedAt && (
-          <li>Marked finished · {formatCentralDateTime(detailFinishedAt)}</li>
-        )}
-        {detailChecklistCompletedAt && (
-          <li>Completed · {formatCentralDateTime(detailChecklistCompletedAt)}</li>
-        )}
-      </ul>
-    </section>
+
+      {timestamps.length > 0 ? (
+        <ul className="mt-3 space-y-0.5 border-t border-border pt-2 font-mono text-[10px] text-muted-foreground">
+          {timestamps.map((t) => (
+            <li key={t.label}>
+              {t.label} · {formatCentralDateTime(t.at)}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </HubSection>
   );
 }

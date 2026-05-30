@@ -1,3 +1,4 @@
+import { HubPageHeader } from "@/components/hub/hub-page";
 import { ScheduleBlocksHub } from "@/components/hub/schedule-blocks-hub";
 import type { StaffDateOverride } from "@/lib/bookings/date-overrides";
 import type { StaffWeeklyBlock } from "@/lib/bookings/weekly-blocks";
@@ -91,13 +92,12 @@ export default async function HubBlocksPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="font-display text-5xl tracking-[0.04em] text-y">SCHEDULE</h1>
-      <p className="mt-2 text-sm text-text/45">
-        When each detailer can be booked — weekly off-days, PTO, and one-time
-        exceptions.
-      </p>
+      <HubPageHeader
+        title="Schedule"
+        description="When each detailer can be booked — weekly off-days, PTO, and one-time exceptions."
+      />
 
-      <div className="mt-6">
+      <div className="mt-8">
         <ScheduleBlocksHub
           staff={staff ?? []}
           weeklyRows={weeklyRows}

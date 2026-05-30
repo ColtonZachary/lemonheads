@@ -1,4 +1,8 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+/* ---break---*/
+@custom-variant dark (&:is(.dark *));
 
 /* ────────────────────────────────────────────────────────────
    LEMONHEADS BRAND TOKENS
@@ -76,8 +80,8 @@ body {
   color: #000;
 }
 
-/* Custom focus ring that matches the brand */
-:focus-visible {
+/* Keyboard focus for plain links (shadcn controls use their own ring utilities) */
+a:focus-visible {
   outline: 2px solid var(--color-y);
   outline-offset: 2px;
 }
@@ -145,4 +149,97 @@ input[type="number"] {
   );
   animation: var(--animate-scan);
   pointer-events: none;
+}
+/* ---break---*/
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: #888888;
+  --color-muted: #666666;
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: #edeae0;
+  --color-card: #111318;
+  --color-card2: #161820;
+  --color-bk: #080808;
+  --color-dk: #0e0e0e;
+  --color-text: #edeae0;
+  --color-y: #f0c93a;
+  --color-y2: #ffe066;
+  --color-border-faint: rgba(255, 255, 255, 0.07);
+  --color-foreground: #edeae0;
+  --color-background: #0e0e0e;
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+/* ---break---*/
+/* Lemonheads + shadcn semantic tokens (site + hub) */
+:root,
+.dark {
+  --background: #0e0e0e;
+  --foreground: #edeae0;
+  --card: #111318;
+  --card-foreground: #edeae0;
+  --popover: #111318;
+  --popover-foreground: #edeae0;
+  --primary: #f0c93a;
+  --primary-foreground: #080808;
+  --secondary: #161820;
+  --secondary-foreground: #edeae0;
+  --muted: #161820;
+  --muted-foreground: #888888;
+  --accent: #161820;
+  --accent-foreground: #edeae0;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #f0c93a;
+  --chart-1: #f0c93a;
+  --chart-2: #888888;
+  --chart-3: #666666;
+  --chart-4: #444444;
+  --chart-5: #333333;
+  --radius: 0.5rem;
+  --sidebar: #111318;
+  --sidebar-foreground: #edeae0;
+  --sidebar-primary: #f0c93a;
+  --sidebar-primary-foreground: #080808;
+  --sidebar-accent: #161820;
+  --sidebar-accent-foreground: #edeae0;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: #f0c93a;
+}
+/* ---break---*/
+@layer base {
+  .hub-theme-root {
+    @apply border-border text-foreground;
+  }
 }

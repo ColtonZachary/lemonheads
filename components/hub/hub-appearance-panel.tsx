@@ -8,7 +8,10 @@ import {
   saveHubTheme,
   type HubThemeActionState,
 } from "@/app/actions/hub-theme";
+import { HubActionAlert } from "@/components/hub/hub-page";
+import { HubFormField, HubInput } from "@/components/hub/hub-form";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   HUB_THEME_DEFAULTS,
   HUB_THEME_ITEMS,
@@ -17,14 +20,7 @@ import {
   type HubTheme,
   type HubThemeKey,
 } from "@/lib/hub/hub-theme";
-import { cn } from "@/lib/utils";
-
 const EMPTY: HubThemeActionState = { ok: false, message: "" };
-
-const labelClass =
-  "font-mono text-[9px] uppercase tracking-[0.12em] text-text/40";
-const fieldClass =
-  "mt-1 w-full rounded border border-white/15 bg-dk px-2 py-1.5 font-mono text-xs";
 
 const COLOR_GROUPS: { title: string; keys: HubThemeKey[] }[] = [
   { title: "Accent", keys: ["accent", "accentBright"] },
@@ -45,28 +41,28 @@ function ColorField({
   const pickerValue = value.startsWith("#") ? value : HUB_THEME_DEFAULTS[item.key];
 
   return (
-    <label className="block">
-      <span className={labelClass}>{item.label}</span>
-      <div className="mt-1 flex gap-1.5">
+    <HubFormField label={item.label} htmlFor={`theme-${item.key}`}>
+      <div className="flex gap-1.5">
         {showPicker ? (
           <input
             type="color"
             value={pickerValue}
             onChange={(e) => onChange(item.key, e.target.value)}
-            className="h-9 w-10 shrink-0 cursor-pointer rounded border border-white/15 bg-dk"
+            className="h-9 w-10 shrink-0 cursor-pointer rounded-md border border-input bg-muted/30"
             aria-label={`${item.label} picker`}
           />
         ) : null}
-        <input
+        <HubInput
+          id={`theme-${item.key}`}
           name={item.key}
           type="text"
           value={value}
           onChange={(e) => onChange(item.key, e.target.value)}
           placeholder={HUB_THEME_DEFAULTS[item.key]}
-          className={fieldClass}
+          className="flex-1"
         />
       </div>
-    </label>
+    </HubFormField>
   );
 }
 
@@ -76,28 +72,32 @@ function ThemePreview({ theme }: { theme: HubTheme }) {
 
   return (
     <div
-      className="overflow-hidden rounded-lg border border-border-faint"
+      className="overflow-hidden rounded-lg border border-border"
       style={style}
     >
       <div className="flex min-h-[100px]">
-        <div className="w-[88px] border-r border-border-faint bg-card p-2">
-          <div className="font-display text-xs tracking-[0.08em] text-y">HUB</div>
-          <div className="mt-2 rounded bg-y/15 px-1.5 py-0.5 font-mono text-[8px] text-y">
+        <div className="w-[88px] border-r border-border bg-card p-2">
+          <div className="font-display text-xs tracking-[0.08em] text-[var(--hub-accent,#f5e642)]">
+            HUB
+          </div>
+          <div className="mt-2 rounded bg-[var(--hub-accent,#f5e642)]/15 px-1.5 py-0.5 font-mono text-[8px] text-[var(--hub-accent,#f5e642)]">
             Nav
           </div>
         </div>
-        <div className="flex-1 bg-dk p-3">
-          <div className="font-display text-lg tracking-[0.04em] text-y">Preview</div>
-          <p className="mt-1 text-[10px] text-text/70">Body text</p>
+        <div className="flex-1 bg-[var(--hub-bg,#0a0a0a)] p-3">
+          <div className="font-display text-lg tracking-[0.04em] text-[var(--hub-accent,#f5e642)]">
+            Preview
+          </div>
+          <p className="mt-1 text-[10px] text-[var(--hub-text,#e8e8e8)]/70">Body text</p>
           <button
             type="button"
-            className="mt-2 rounded bg-y px-2 py-1 font-mono text-[9px] font-bold uppercase text-black"
+            className="mt-2 rounded bg-[var(--hub-accent,#f5e642)] px-2 py-1 font-mono text-[9px] font-bold uppercase text-black"
           >
             Button
           </button>
         </div>
       </div>
-      <div className="border-t border-border-faint bg-card/80 px-2 py-1 font-mono text-[8px] text-text/40">
+      <div className="border-t border-border bg-card/80 px-2 py-1 font-mono text-[8px] text-muted-foreground">
         {resolved.accent} · {resolved.card}
       </div>
     </div>
@@ -162,22 +162,20 @@ export function HubAppearancePanel({
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-text/45">
+      <p className="text-sm text-muted-foreground">
         Colors apply only to your hub login — other users keep their own theme.
       </p>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_220px]">
         <form action={saveAction} className="space-y-3">
           {COLOR_GROUPS.map((group) => (
-            <details
-              key={group.title}
-              className="rounded-lg border border-white/10 bg-card/30"
-              open={group.title === "Accent"}
-            >
-              <summary className="cursor-pointer list-none px-3 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-text/50 hover:text-y [&::-webkit-details-marker]:hidden">
-                {group.title}
-              </summary>
-              <div className="grid gap-3 border-t border-white/10 p-3 sm:grid-cols-2">
+            <Card key={group.title} className="border-border/80 bg-card/40">
+              <CardHeader className="py-3">
+                <CardTitle className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                  {group.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-3 border-t border-border pt-3 sm:grid-cols-2">
                 {group.keys.map((key) => {
                   const item = itemByKey.get(key)!;
                   return (
@@ -189,34 +187,21 @@ export function HubAppearancePanel({
                     />
                   );
                 })}
-              </div>
-            </details>
+              </CardContent>
+            </Card>
           ))}
 
-          {flash ? (
-            <p
-              className={cn(
-                "font-mono text-[10px]",
-                flashOk ? "text-y" : "text-red-200",
-              )}
-            >
-              {flash}
-            </p>
-          ) : null}
+          <HubActionAlert state={{ ok: flashOk, message: flash }} />
 
           <div className="flex flex-wrap gap-2">
-            <Button
-              type="submit"
-              className="h-auto min-h-0 px-4 py-2 text-xs"
-              disabled={savePending || !schemaReady}
-            >
+            <Button type="submit" size="sm" disabled={savePending || !schemaReady}>
               {savePending ? "Saving…" : "Save colors"}
             </Button>
             <Button
               type="submit"
               formAction={resetAction}
               variant="outline"
-              className="h-auto min-h-0 px-4 py-2 text-xs"
+              size="sm"
               disabled={resetPending || !schemaReady}
             >
               {resetPending ? "…" : "Reset defaults"}
@@ -225,7 +210,9 @@ export function HubAppearancePanel({
         </form>
 
         <div className="lg:sticky lg:top-6 lg:self-start">
-          <p className={labelClass}>Preview</p>
+          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+            Preview
+          </p>
           <div className="mt-2">
             <ThemePreview theme={mergedDraft} />
           </div>

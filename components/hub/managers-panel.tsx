@@ -9,7 +9,21 @@ import {
   updateHubProfile,
   type HubManagersActionState,
 } from "@/app/actions/hub-managers";
+import {
+  HubActionAlert,
+  HubDetailsSection,
+  HubEmptyState,
+  HubStatCard,
+} from "@/components/hub/hub-page";
+import {
+  HubFieldRow,
+  HubFormField,
+  HubInput,
+  HubNativeSelect,
+} from "@/components/hub/hub-form";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   canDeactivateHubUser,
   canDeleteHubUser,
@@ -19,11 +33,6 @@ import type { UserRole } from "@/lib/auth/types";
 import { cn } from "@/lib/utils";
 
 const EMPTY: HubManagersActionState = { ok: false, message: "" };
-
-const fieldClass =
-  "mt-1 w-full rounded border border-white/15 bg-dk px-2.5 py-1.5 text-sm";
-const labelClass =
-  "font-mono text-[9px] uppercase tracking-[0.12em] text-text/40";
 
 export type HubProfileRow = {
   id: string;
@@ -63,67 +72,59 @@ function ProfileEditForm({
   const busy = pending || removePending || deletePending;
 
   return (
-    <form
-      action={action}
-      className="border-t border-white/10 bg-white/[0.02] px-3 py-3 sm:px-4"
-    >
-      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-        <label className="block">
-          <span className={labelClass}>Full name</span>
-          <input
+    <form action={action} className="border-t border-border bg-muted/20 px-3 py-3 sm:px-4">
+      <HubFieldRow>
+        <HubFormField label="Full name" htmlFor={`name-${profile.id}`} required>
+          <HubInput
+            id={`name-${profile.id}`}
             name="full_name"
             required
             defaultValue={profile.full_name}
-            className={fieldClass}
           />
-        </label>
-        <label className="block">
-          <span className={labelClass}>Phone</span>
-          <input name="phone" defaultValue={profile.phone} className={fieldClass} />
-        </label>
-        {isAdminViewer ? (
-          <label className="block">
-            <span className={labelClass}>Role</span>
-            <select
-              name="role"
-              defaultValue={profile.role}
-              className={fieldClass}
-              disabled={isSelf}
-            >
-              <option value="admin">admin</option>
-              <option value="manager">manager</option>
-              <option value="detailer">detailer</option>
-            </select>
-          </label>
-        ) : (
-          <label className="block">
-            <span className={labelClass}>Role</span>
-            <select
-              name="role"
-              defaultValue={profile.role}
-              className={fieldClass}
-              disabled={isSelf}
-            >
-              <option value="manager">manager</option>
-              <option value="detailer">detailer</option>
-            </select>
-          </label>
-        )}
-        <label className="flex items-end gap-1.5 pb-0.5 text-xs sm:col-span-2">
+        </HubFormField>
+        <HubFormField label="Phone" htmlFor={`phone-${profile.id}`}>
+          <HubInput
+            id={`phone-${profile.id}`}
+            name="phone"
+            defaultValue={profile.phone}
+          />
+        </HubFormField>
+        <HubFormField label="Role" htmlFor={`role-${profile.id}`}>
+          <HubNativeSelect
+            id={`role-${profile.id}`}
+            name="role"
+            defaultValue={profile.role}
+            disabled={isSelf}
+          >
+            {isAdminViewer ? (
+              <>
+                <option value="admin">admin</option>
+                <option value="manager">manager</option>
+                <option value="detailer">detailer</option>
+              </>
+            ) : (
+              <>
+                <option value="manager">manager</option>
+                <option value="detailer">detailer</option>
+              </>
+            )}
+          </HubNativeSelect>
+        </HubFormField>
+        <label className="flex items-center gap-2 pb-1 text-sm sm:items-end">
           <input
             type="checkbox"
             name="active"
             defaultChecked={profile.active}
             disabled={isSelf || !mayRemove}
-            className="size-3.5"
+            className="size-4 accent-primary"
           />
           Active (can sign in)
         </label>
-      </div>
-      <p className="mt-2 font-mono text-[9px] text-text/40">{profile.email}</p>
+      </HubFieldRow>
+      <p className="mt-2 font-mono text-[9px] text-muted-foreground">{profile.email}</p>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <Button type="submit" disabled={busy} className="h-auto min-h-0 px-3 py-1.5 text-xs">
+        <Button type="submit" size="sm" disabled={busy}>
           {pending ? "Saving…" : "Save"}
         </Button>
         {mayRemove ? (
@@ -132,7 +133,7 @@ function ProfileEditForm({
             formAction={removeAction}
             disabled={busy}
             variant="outline"
-            className="h-auto min-h-0 border-red-500/30 px-3 py-1.5 text-xs text-red-200"
+            size="sm"
           >
             {removePending ? "…" : "Remove access"}
           </Button>
@@ -142,8 +143,8 @@ function ProfileEditForm({
             type="submit"
             formAction={deleteAction}
             disabled={busy}
-            variant="outline"
-            className="h-auto min-h-0 border-red-500/40 px-3 py-1.5 text-xs text-red-300"
+            variant="destructive"
+            size="sm"
             onClick={(e) => {
               if (
                 !confirm(
@@ -159,18 +160,14 @@ function ProfileEditForm({
         ) : null}
       </div>
 
-      {(state.message || removeState.message || deleteState.message) && (
-        <p
-          className={cn(
-            "mt-2 font-mono text-[10px]",
-            state.ok || removeState.ok || deleteState.ok
-              ? "text-y"
-              : "text-red-200",
-          )}
-        >
-          {deleteState.message || removeState.message || state.message}
-        </p>
-      )}
+      <HubActionAlert
+        state={{
+          ok: state.ok || removeState.ok || deleteState.ok,
+          message:
+            deleteState.message || removeState.message || state.message,
+        }}
+        className="mt-2"
+      />
     </form>
   );
 }
@@ -191,39 +188,38 @@ function ProfileListRow({
   isSelf?: boolean;
 }) {
   return (
-    <li
+    <Card
       className={cn(
-        "overflow-hidden rounded-lg border",
-        profile.active ? "border-white/10" : "border-white/5 opacity-75",
-        expanded && "border-y/25",
+        "overflow-hidden border-border/80",
+        !profile.active && "opacity-75",
+        expanded && "border-primary/30",
       )}
     >
       <div className="flex items-center gap-3 px-3 py-2 sm:px-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2">
-            <span className="font-mono text-sm text-y/90">{profile.full_name}</span>
+            <span className="font-mono text-sm">{profile.full_name}</span>
             {isSelf ? (
-              <span className="font-mono text-[8px] uppercase text-text/40">You</span>
+              <Badge variant="outline" className="font-mono text-[8px]">
+                You
+              </Badge>
             ) : null}
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-            <span className="rounded bg-y/10 px-1.5 py-0.5 font-mono text-[8px] uppercase text-y/70">
+            <Badge variant="secondary" className="font-mono text-[8px] uppercase">
               {profile.role}
+            </Badge>
+            <span className="truncate font-mono text-[9px] text-muted-foreground">
+              {profile.email}
             </span>
-            <span className="truncate font-mono text-[9px] text-text/45">{profile.email}</span>
             {!profile.active ? (
-              <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[8px] text-text/50">
+              <Badge variant="outline" className="font-mono text-[8px]">
                 Access removed
-              </span>
+              </Badge>
             ) : null}
           </div>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-auto min-h-0 shrink-0 px-2 py-1 text-[10px]"
-          onClick={onToggleEdit}
-        >
+        <Button type="button" variant="outline" size="sm" onClick={onToggleEdit}>
           {expanded ? "Close" : "Edit"}
         </Button>
       </div>
@@ -234,7 +230,7 @@ function ProfileListRow({
           viewerRole={viewerRole}
         />
       ) : null}
-    </li>
+    </Card>
   );
 }
 
@@ -270,137 +266,111 @@ export function ManagersPanel({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-3">
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">Active</p>
-          <p className="font-display text-2xl text-y">{active.length}</p>
-        </div>
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">Managers</p>
-          <p className="font-display text-2xl text-y">{managers}</p>
-        </div>
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">Detailers</p>
-          <p className="font-display text-2xl text-y">{detailers}</p>
-        </div>
+        <HubStatCard label="Active" value={active.length} />
+        <HubStatCard label="Managers" value={managers} />
+        <HubStatCard label="Detailers" value={detailers} />
       </div>
 
       {canInvite ? (
-        <details className="rounded-lg border border-white/10 bg-card/30">
-          <summary className="cursor-pointer list-none px-4 py-3 font-mono text-[10px] uppercase tracking-[0.12em] text-y [&::-webkit-details-marker]:hidden">
-            + Invite hub user
-          </summary>
-          <form action={inviteAction} className="border-t border-white/10 px-4 py-4">
-            <details className="mb-3 text-[10px] text-text/40">
-              <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-text/45">
-                Email setup notes
-              </summary>
-              <p className="mt-2 leading-relaxed">
-                Supabase → Authentication → URL configuration: Site URL = your app URL
-                (e.g. https://lemonheadsdetail.com). Add Redirect URLs:{" "}
-                <code className="text-text/55">…/auth/confirm**</code>,{" "}
-                <code className="text-text/55">…/auth/finish**</code>, and optionally{" "}
-                <code className="text-text/55">…/auth/callback**</code>. Hub invites use confirm;
-                rewards magic links use finish.
-              </p>
-            </details>
-            <div className="grid gap-2.5 sm:grid-cols-2">
-              <label className="block">
-                <span className={labelClass}>Email *</span>
-                <input name="email" type="email" required className={fieldClass} />
-              </label>
-              <label className="block">
-                <span className={labelClass}>Full name *</span>
-                <input name="full_name" required className={fieldClass} />
-              </label>
-              <label className="block">
-                <span className={labelClass}>Phone</span>
-                <input name="phone" type="tel" className={fieldClass} />
-              </label>
-              <label className="block">
-                <span className={labelClass}>Role *</span>
-                {isAdmin ? (
-                  <select name="role" className={fieldClass} defaultValue="manager">
-                    <option value="manager">manager</option>
-                    <option value="admin">admin</option>
-                    <option value="detailer">detailer</option>
-                  </select>
-                ) : (
-                  <select name="role" className={fieldClass} defaultValue="manager">
-                    <option value="manager">manager</option>
-                    <option value="detailer">detailer</option>
-                  </select>
-                )}
-              </label>
-            </div>
-            <Button
-              type="submit"
-              className="mt-4 h-auto min-h-0 px-4 py-2 text-xs"
-              disabled={invitePending}
-            >
+        <HubDetailsSection summary="+ Invite hub user">
+          <details className="mb-4 rounded-md border border-border/60 bg-muted/20 px-3 py-2">
+            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
+              Email setup notes
+            </summary>
+            <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+              Supabase → Authentication → URL configuration: Site URL = your app URL.
+              Add Redirect URLs: <code className="text-foreground">…/auth/confirm**</code>,{" "}
+              <code className="text-foreground">…/auth/finish**</code>, and optionally{" "}
+              <code className="text-foreground">…/auth/callback**</code>.
+            </p>
+          </details>
+          <form action={inviteAction} className="space-y-4">
+            <HubFieldRow>
+              <HubFormField label="Email" htmlFor="invite-email" required>
+                <HubInput id="invite-email" name="email" type="email" required />
+              </HubFormField>
+              <HubFormField label="Full name" htmlFor="invite-name" required>
+                <HubInput id="invite-name" name="full_name" required />
+              </HubFormField>
+              <HubFormField label="Phone" htmlFor="invite-phone">
+                <HubInput id="invite-phone" name="phone" type="tel" />
+              </HubFormField>
+              <HubFormField label="Role" htmlFor="invite-role" required>
+                <HubNativeSelect
+                  id="invite-role"
+                  name="role"
+                  defaultValue="manager"
+                >
+                  {isAdmin ? (
+                    <>
+                      <option value="manager">manager</option>
+                      <option value="admin">admin</option>
+                      <option value="detailer">detailer</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="manager">manager</option>
+                      <option value="detailer">detailer</option>
+                    </>
+                  )}
+                </HubNativeSelect>
+              </HubFormField>
+            </HubFieldRow>
+            <Button type="submit" disabled={invitePending}>
               {invitePending ? "Sending…" : "Send invite"}
             </Button>
-            {inviteState.message ? (
-              <p
-                className={cn(
-                  "mt-3 rounded border px-3 py-2 font-mono text-[10px]",
-                  inviteState.ok
-                    ? "border-y/30 bg-y/10 text-y"
-                    : "border-red-500/30 bg-red-500/10 text-red-200",
-                )}
-              >
-                {inviteState.message}
-              </p>
-            ) : null}
+            <HubActionAlert state={inviteState} />
           </form>
-        </details>
+        </HubDetailsSection>
       ) : null}
 
       <section>
         <div className="mb-2 flex items-center justify-between gap-2">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
             Accounts
           </h2>
-          <span className="font-mono text-[9px] text-text/35">Tap Edit to change role or access</span>
+          <span className="font-mono text-[9px] text-muted-foreground">
+            Tap Edit to change role or access
+          </span>
         </div>
         {!active.length && !inactive.length ? (
-          <p className="rounded-lg border border-white/10 px-4 py-6 text-sm text-text/40">
-            No hub users yet. Expand &ldquo;Invite hub user&rdquo; above.
-          </p>
+          <HubEmptyState>No hub users yet. Invite someone above.</HubEmptyState>
         ) : (
           <ul className="space-y-2">
             {active.map((profile) => (
-              <ProfileListRow
-                key={profile.id}
-                profile={profile}
-                expanded={expandedId === profile.id}
-                onToggleEdit={() => toggleEdit(profile.id)}
-                currentUserId={currentUserId}
-                viewerRole={viewerRole}
-                isSelf={profile.id === currentUserId}
-              />
+              <li key={profile.id}>
+                <ProfileListRow
+                  profile={profile}
+                  expanded={expandedId === profile.id}
+                  onToggleEdit={() => toggleEdit(profile.id)}
+                  currentUserId={currentUserId}
+                  viewerRole={viewerRole}
+                  isSelf={profile.id === currentUserId}
+                />
+              </li>
             ))}
           </ul>
         )}
       </section>
 
       {inactive.length > 0 ? (
-        <details className="rounded-lg border border-white/5">
-          <summary className="cursor-pointer list-none px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-text/45 [&::-webkit-details-marker]:hidden">
-            Access removed ({inactive.length}) — delete to re-use email
-          </summary>
-          <ul className="space-y-2 border-t border-white/5 px-3 py-3">
+        <HubDetailsSection
+          summary={`Access removed (${inactive.length}) — delete to re-use email`}
+        >
+          <ul className="space-y-2">
             {inactive.map((profile) => (
-              <ProfileListRow
-                key={profile.id}
-                profile={profile}
-                expanded={expandedId === profile.id}
-                onToggleEdit={() => toggleEdit(profile.id)}
-                currentUserId={currentUserId}
-                viewerRole={viewerRole}
-              />
+              <li key={profile.id}>
+                <ProfileListRow
+                  profile={profile}
+                  expanded={expandedId === profile.id}
+                  onToggleEdit={() => toggleEdit(profile.id)}
+                  currentUserId={currentUserId}
+                  viewerRole={viewerRole}
+                />
+              </li>
             ))}
           </ul>
-        </details>
+        </HubDetailsSection>
       ) : null}
     </div>
   );

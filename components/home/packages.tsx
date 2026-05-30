@@ -93,7 +93,7 @@ export function Packages({ packages }: { packages: SitePackage[] }) {
           <article
             key={pkg.key}
             className={cn(
-              "relative overflow-hidden border border-border-faint bg-bk p-8 transition-colors hover:bg-card",
+              "relative overflow-hidden border border-border-faint bg-bk p-8 transition-colors hover:bg-card2",
               pkg.featured && "border-transparent bg-card",
             )}
           >

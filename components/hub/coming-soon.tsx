@@ -1,3 +1,5 @@
+import { HubPageHeader } from "@/components/hub/hub-page";
+
 export function HubComingSoon({
   title,
   items,
@@ -7,11 +9,11 @@ export function HubComingSoon({
 }) {
   return (
     <div>
-      <h1 className="font-display text-5xl tracking-[0.04em] text-y">{title}</h1>
-      <p className="mt-2 font-mono text-xs tracking-[0.08em] text-text/40">
-        Schema ready — UI in the next build phase
-      </p>
-      <ul className="mt-8 list-inside list-disc space-y-2 font-mono text-sm text-text/55">
+      <HubPageHeader
+        title={title}
+        description="Schema ready — UI in the next build phase"
+      />
+      <ul className="mt-8 list-inside list-disc space-y-2 font-mono text-sm text-muted-foreground">
         {items.map((item) => (
           <li key={item}>{item}</li>
         ))}

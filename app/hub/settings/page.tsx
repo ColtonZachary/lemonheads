@@ -1,5 +1,8 @@
-import Link from "next/link";
-
+import {
+  HubPageHeader,
+  HubSettingsLinkCard,
+  HubStatCard,
+} from "@/components/hub/hub-page";
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -53,45 +56,22 @@ export default async function HubSettingsPage() {
   ]);
 
   return (
-    <div className="max-w-4xl">
-      <h1 className="font-display text-5xl tracking-[0.04em] text-y">SETTINGS</h1>
-      <p className="mt-2 text-sm text-text/45">
-        Scheduling rules, coverage, detailer pay, loyalty rewards, and your hub appearance.
-      </p>
+    <div className="mx-auto flex max-w-4xl flex-col gap-8">
+      <HubPageHeader
+        title="Settings"
+        description="Scheduling rules, coverage, detailer pay, loyalty rewards, and your hub appearance."
+      />
 
-      <div className="mt-6 flex flex-wrap gap-3">
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">
-            Upcoming blackouts
-          </p>
-          <p className="font-display text-2xl text-y">{blackoutCount ?? 0}</p>
-        </div>
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">
-            Coverage rules
-          </p>
-          <p className="font-display text-2xl text-y">{coverageCount ?? 0}</p>
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <HubStatCard label="Upcoming blackouts" value={blackoutCount ?? 0} />
+        <HubStatCard label="Coverage rules" value={coverageCount ?? 0} />
       </div>
 
-      <ul className="mt-6 space-y-2">
+      <div className="flex flex-col gap-2">
         {settingsLinks.map((item) => (
-          <li key={item.href}>
-            <Link
-              href={item.href}
-              className="flex items-center justify-between gap-3 rounded-lg border border-white/10 px-4 py-3 transition-colors hover:border-y/25 hover:bg-white/[0.02]"
-            >
-              <div>
-                <span className="font-mono text-sm text-y/90">{item.title}</span>
-                <p className="mt-0.5 text-xs text-text/45">{item.description}</p>
-              </div>
-              <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-y/50">
-                Open →
-              </span>
-            </Link>
-          </li>
+          <HubSettingsLinkCard key={item.href} {...item} />
         ))}
-      </ul>
+      </div>
     </div>
   );
 }

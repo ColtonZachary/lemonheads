@@ -11,7 +11,7 @@ export function Reviews() {
         {REVIEWS.map((review) => (
           <article
             key={review.name}
-            className="bg-bk p-9 transition-colors hover:bg-card"
+            className="bg-bk p-9 transition-colors hover:bg-card2"
           >
             <div className="mb-5 flex gap-0.5 text-[13px] tracking-[3px] text-y">
               {"★★★★★"}
