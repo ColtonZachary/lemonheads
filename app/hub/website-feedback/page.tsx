@@ -1,3 +1,4 @@
+import { HubPageHeader } from "@/components/hub/hub-page";
 import { WebsiteFeedbackPanel } from "@/components/hub/website-feedback-panel";
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import { fetchWebsiteFeedbackForHub } from "@/lib/feedback/website-feedback";
@@ -12,15 +13,12 @@ export default async function HubWebsiteFeedbackPage() {
 
   return (
     <div>
-      <h1 className="font-display text-5xl tracking-[0.04em] text-y">
-        WEBSITE FEEDBACK
-      </h1>
-      <p className="mt-2 max-w-2xl text-sm text-text/45">
-        Comments from visitors about this website — navigation, booking flow,
-        clarity, and bugs. Not service reviews or detail appointments.
-      </p>
+      <HubPageHeader
+        title="Website feedback"
+        description="Comments from visitors about this website — navigation, booking flow, clarity, and bugs. Not service reviews or detail appointments."
+      />
       {pendingCount > 0 && (
-        <p className="mt-3 font-mono text-xs text-y/80">
+        <p className="mt-3 font-mono text-xs text-primary">
           {pendingCount} new submission{pendingCount === 1 ? "" : "s"}
         </p>
       )}

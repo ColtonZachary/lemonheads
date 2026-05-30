@@ -1,3 +1,4 @@
+import { HubPageHeader } from "@/components/hub/hub-page";
 import { StaffPanel } from "@/components/hub/staff-panel";
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import { fetchStaffMembers } from "@/lib/bookings/bookable-detailers";
@@ -44,11 +45,10 @@ export default async function HubStaffPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="font-display text-5xl tracking-[0.04em] text-y">STAFF</h1>
-      <p className="mt-2 text-sm text-text/45">
-        Website team page and booking roster — edit one person at a time; deactivate or
-        delete from the row actions.
-      </p>
+      <HubPageHeader
+        title="Staff"
+        description="Website team page and booking roster — edit one person at a time; deactivate or delete from the row actions."
+      />
 
       <div className="mt-6">
         <StaffPanel

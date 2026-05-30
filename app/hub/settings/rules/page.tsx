@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { HubPageHeader } from "@/components/hub/hub-page";
 import { BlackoutDatesPanel, type BlackoutRow } from "@/components/hub/blackout-dates-panel";
 import {
   LeadTimeRuleForm,
@@ -44,15 +45,17 @@ export default async function HubSettingsRulesPage() {
     <div>
       <Link
         href="/hub/settings"
-        className="font-mono text-[10px] uppercase tracking-[0.12em] text-text/40 hover:text-y"
+        className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground hover:text-primary"
       >
         ← Settings
       </Link>
 
-      <h1 className="mt-4 font-display text-5xl tracking-[0.04em] text-y">RULES</h1>
-      <p className="mt-2 text-sm text-text/45">
-        Same-day cutoff and dates the shop is closed.
-      </p>
+      <div className="mt-4">
+        <HubPageHeader
+          title="Rules"
+          description="Same-day cutoff and dates the shop is closed."
+        />
+      </div>
 
       <div className="mt-6 max-w-4xl space-y-6">
         {sameDayRule ? (

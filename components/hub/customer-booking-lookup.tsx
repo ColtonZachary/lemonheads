@@ -3,13 +3,9 @@
 import { useEffect, useId, useRef, useState } from "react";
 
 import { searchHubCustomersForBooking } from "@/app/actions/hub-customer-lookup";
+import { HubFormField, HubInput } from "@/components/hub/hub-form";
 import type { CustomerBookingPick } from "@/lib/hub/customer-lookup-for-booking";
 import { cn } from "@/lib/utils";
-
-const labelClass =
-  "font-mono text-[9px] uppercase tracking-[0.12em] text-text/40";
-const fieldClass =
-  "mt-1 w-full rounded border border-white/15 bg-dk px-3 py-2 font-mono text-sm";
 
 export function CustomerBookingLookup({
   onSelect,
@@ -91,10 +87,10 @@ export function CustomerBookingLookup({
   }
 
   return (
-    <div ref={rootRef} className={compact ? "mb-5" : "mb-6"}>
-      <label className="block">
-        <span className={labelClass}>Find existing customer</span>
-        <input
+    <div ref={rootRef} className={compact ? "mb-2" : "mb-4"}>
+      <HubFormField label="Find existing customer" htmlFor="customer-lookup">
+        <HubInput
+          id="customer-lookup"
           type="search"
           value={query}
           onChange={(e) => {
@@ -105,7 +101,6 @@ export function CustomerBookingLookup({
             if (results.length) setOpen(true);
           }}
           onKeyDown={onKeyDown}
-          className={fieldClass}
           placeholder="Name, email, or phone"
           autoComplete="off"
           role="combobox"
@@ -113,21 +108,22 @@ export function CustomerBookingLookup({
           aria-controls={listId}
           aria-autocomplete="list"
         />
-      </label>
-      <p className="mt-1.5 font-mono text-[9px] text-text/35">
-        Type at least 2 characters, then pick a customer to fill the fields below.
+      </HubFormField>
+      <p className="font-mono text-[9px] text-muted-foreground">
+        Type at least 2 characters, then pick a customer to fill contact and address
+        from their last booking.
       </p>
       {searchError ? (
-        <p className="mt-2 font-mono text-xs text-red-300/80">{searchError}</p>
+        <p className="mt-2 font-mono text-xs text-destructive">{searchError}</p>
       ) : null}
       {loading && query.trim().length >= 2 ? (
-        <p className="mt-2 font-mono text-[9px] text-text/35">Searching…</p>
+        <p className="mt-2 font-mono text-[9px] text-muted-foreground">Searching…</p>
       ) : null}
       {open && results.length > 0 ? (
         <ul
           id={listId}
           role="listbox"
-          className="mt-2 max-h-56 overflow-y-auto rounded-md border border-white/15 bg-card2 shadow-lg"
+          className="mt-2 max-h-56 overflow-y-auto rounded-md border border-border bg-popover shadow-md"
         >
           {results.map((pick, index) => (
             <li key={`${pick.customerId ?? "b"}-${pick.email}-${pick.phone}`} role="option">
@@ -137,19 +133,24 @@ export function CustomerBookingLookup({
                 className={cn(
                   "w-full px-3 py-2.5 text-left transition-colors",
                   index === activeIndex
-                    ? "bg-y/15 text-text/95"
-                    : "hover:bg-white/[0.04] text-text/85",
+                    ? "bg-primary/15 text-foreground"
+                    : "text-foreground/90 hover:bg-muted/50",
                 )}
                 onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => choose(pick)}
               >
                 <span className="block font-mono text-sm">{pick.displayName}</span>
-                <span className="mt-0.5 block font-mono text-[10px] text-text/45">
+                <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground">
                   {[pick.email, pick.phone].filter(Boolean).join(" · ")}
                   {pick.bookingCount > 0
                     ? ` · ${pick.bookingCount} booking${pick.bookingCount === 1 ? "" : "s"}`
                     : null}
                 </span>
+                {pick.address || pick.city ? (
+                  <span className="mt-0.5 block truncate font-mono text-[9px] text-muted-foreground">
+                    {[pick.address, pick.city, pick.zip].filter(Boolean).join(", ")}
+                  </span>
+                ) : null}
               </button>
             </li>
           ))}
@@ -159,7 +160,9 @@ export function CustomerBookingLookup({
       query.trim().length >= 2 &&
       !searchError &&
       results.length === 0 ? (
-        <p className="mt-2 font-mono text-[9px] text-text/35">No matching customers.</p>
+        <p className="mt-2 font-mono text-[9px] text-muted-foreground">
+          No matching customers.
+        </p>
       ) : null}
     </div>
   );

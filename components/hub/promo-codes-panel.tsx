@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import {
   createPromoCode,
@@ -8,7 +8,21 @@ import {
   updatePromoCode,
   type HubPromoActionState,
 } from "@/app/actions/hub-promos";
+import {
+  HubActionAlert,
+  HubDetailsSection,
+  HubEmptyState,
+} from "@/components/hub/hub-page";
+import {
+  HubFieldRow,
+  HubFormField,
+  HubFormSection,
+  HubInput,
+  HubNativeSelect,
+} from "@/components/hub/hub-form";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { BUSINESS_TIME_ZONE } from "@/lib/bookings/parse-schedule";
 import {
   formatPromoDiscount,
@@ -18,11 +32,6 @@ import {
 import { cn } from "@/lib/utils";
 
 const EMPTY: HubPromoActionState = { ok: false, message: "" };
-
-const fieldClass =
-  "mt-1 w-full rounded border border-white/15 bg-dk px-3 py-2 font-mono text-sm";
-const labelClass =
-  "font-mono text-[9px] uppercase tracking-[0.12em] text-text/40";
 
 function dateInputValue(iso: string | null): string {
   if (!iso) return "";
@@ -41,26 +50,30 @@ function PackageScopeFields({
   packageOptions,
   defaultScope,
   defaultPackageKey,
+  idPrefix = "",
 }: {
   packageOptions: PromoPackageOption[];
   defaultScope: "all" | "single";
   defaultPackageKey?: string;
+  idPrefix?: string;
 }) {
   return (
     <>
-      <label className="block sm:col-span-2">
-        <span className={labelClass}>Applies to *</span>
-        <select name="package_scope" defaultValue={defaultScope} className={fieldClass}>
+      <HubFormField label="Applies to" htmlFor={`${idPrefix}package_scope`} required>
+        <HubNativeSelect
+          id={`${idPrefix}package_scope`}
+          name="package_scope"
+          defaultValue={defaultScope}
+        >
           <option value="all">All packages</option>
           <option value="single">Single package only</option>
-        </select>
-      </label>
-      <label className="block sm:col-span-2">
-        <span className={labelClass}>Package (when single)</span>
-        <select
+        </HubNativeSelect>
+      </HubFormField>
+      <HubFormField label="Package (when single)" htmlFor={`${idPrefix}package_key`}>
+        <HubNativeSelect
+          id={`${idPrefix}package_key`}
           name="package_key"
           defaultValue={defaultPackageKey ?? ""}
-          className={fieldClass}
         >
           <option value="">Select package…</option>
           {packageOptions.map((p) => (
@@ -68,27 +81,158 @@ function PackageScopeFields({
               {p.name}
             </option>
           ))}
-        </select>
-      </label>
+        </HubNativeSelect>
+      </HubFormField>
     </>
   );
 }
 
-function promoStatus(promo: PromoCodeRow): { label: string; className: string } | null {
+function promoStatus(promo: PromoCodeRow): {
+  label: string;
+  variant: "default" | "secondary" | "destructive" | "outline";
+} | null {
   const now = Date.now();
   if (!promo.active) {
-    return { label: "Inactive", className: "bg-white/10 text-text/50" };
+    return { label: "Inactive", variant: "outline" };
   }
   if (promo.valid_from && new Date(promo.valid_from).getTime() > now) {
-    return { label: "Scheduled", className: "bg-y/10 text-y/70" };
+    return { label: "Scheduled", variant: "secondary" };
   }
   if (promo.valid_until && new Date(promo.valid_until).getTime() < now) {
-    return { label: "Expired", className: "bg-red-500/10 text-red-200" };
+    return { label: "Expired", variant: "destructive" };
   }
   if (promo.max_uses !== null && promo.uses_count >= promo.max_uses) {
-    return { label: "Max uses reached", className: "bg-red-500/10 text-red-200" };
+    return { label: "Max uses reached", variant: "destructive" };
   }
-  return { label: "Active", className: "bg-y/10 text-y/70" };
+  return { label: "Active", variant: "default" };
+}
+
+function PromoStatusBadge({ promo }: { promo: PromoCodeRow }) {
+  const status = promoStatus(promo);
+  if (!status) return null;
+  return (
+    <Badge variant={status.variant} className="font-mono text-[8px] uppercase">
+      {status.label}
+    </Badge>
+  );
+}
+
+function PromoFormFields({
+  promo,
+  packageOptions,
+  idPrefix,
+}: {
+  promo?: PromoCodeRow;
+  packageOptions: PromoPackageOption[];
+  idPrefix: string;
+}) {
+  return (
+    <HubFieldRow>
+      <HubFormField label="Code" htmlFor={`${idPrefix}code`} required>
+        <HubInput
+          id={`${idPrefix}code`}
+          name="code"
+          required
+          defaultValue={promo?.code}
+          placeholder={promo ? undefined : "SUMMER25"}
+        />
+      </HubFormField>
+      <HubFormField label="Label (internal)" htmlFor={`${idPrefix}label`}>
+        <HubInput
+          id={`${idPrefix}label`}
+          name="label"
+          defaultValue={promo?.label ?? ""}
+          placeholder={promo ? undefined : "Summer campaign"}
+        />
+      </HubFormField>
+      <HubFormField label="Discount type" htmlFor={`${idPrefix}discount_type`} required>
+        <HubNativeSelect
+          id={`${idPrefix}discount_type`}
+          name="discount_type"
+          defaultValue={promo?.discount_type ?? "percent"}
+        >
+          <option value="percent">Percent off</option>
+          <option value="fixed_cents">Fixed amount off ($)</option>
+        </HubNativeSelect>
+      </HubFormField>
+      <HubFormField label="Percent off (if percent type)" htmlFor={`${idPrefix}discount_percent`}>
+        <HubInput
+          id={`${idPrefix}discount_percent`}
+          name="discount_percent"
+          inputMode="decimal"
+          defaultValue={
+            promo?.discount_type === "percent" ? String(promo.discount_value) : ""
+          }
+          placeholder={promo ? undefined : "10"}
+        />
+      </HubFormField>
+      <HubFormField label="Amount off $ (if fixed type)" htmlFor={`${idPrefix}discount_amount`}>
+        <HubInput
+          id={`${idPrefix}discount_amount`}
+          name="discount_amount"
+          inputMode="decimal"
+          defaultValue={
+            promo?.discount_type === "fixed_cents"
+              ? fixedDollars(promo.discount_value)
+              : ""
+          }
+          placeholder={promo ? undefined : "25"}
+        />
+      </HubFormField>
+      <HubFormField label="Max uses (blank = unlimited)" htmlFor={`${idPrefix}max_uses`}>
+        <HubInput
+          id={`${idPrefix}max_uses`}
+          name="max_uses"
+          type="number"
+          min="1"
+          defaultValue={promo?.max_uses ?? ""}
+        />
+      </HubFormField>
+      {promo ? (
+        <HubFormField label="Times used" htmlFor={`${idPrefix}uses_count`}>
+          <HubInput
+            id={`${idPrefix}uses_count`}
+            readOnly
+            value={String(promo.uses_count)}
+            className="opacity-60"
+          />
+        </HubFormField>
+      ) : null}
+      <HubFormField label="Valid from (optional)" htmlFor={`${idPrefix}valid_from`}>
+        <HubInput
+          id={`${idPrefix}valid_from`}
+          name="valid_from"
+          type="date"
+          defaultValue={promo ? dateInputValue(promo.valid_from) : ""}
+          className="hub-date-input"
+        />
+      </HubFormField>
+      <HubFormField label="Valid until (optional)" htmlFor={`${idPrefix}valid_until`}>
+        <HubInput
+          id={`${idPrefix}valid_until`}
+          name="valid_until"
+          type="date"
+          defaultValue={promo ? dateInputValue(promo.valid_until) : ""}
+          className="hub-date-input"
+        />
+      </HubFormField>
+      <label className="flex items-center gap-2 pb-1 text-sm sm:col-span-2">
+        <input
+          type="checkbox"
+          name="active"
+          defaultChecked={promo ? promo.active : true}
+          className="size-4 rounded border-input"
+        />
+        Active
+      </label>
+      <PackageScopeFields
+        idPrefix={idPrefix}
+        packageOptions={packageOptions}
+        defaultScope={promo?.package_key ? "single" : "all"}
+        defaultPackageKey={promo?.package_key ?? undefined}
+      />
+    </HubFieldRow>
+  );
 }
 
 function PromoEditForm({
@@ -107,118 +251,26 @@ function PromoEditForm({
     EMPTY,
   );
   const busy = pending || deletePending;
-  const feedback = deleteState.message || state.message;
-  const feedbackOk = deleteState.message ? deleteState.ok : state.ok;
-  const status = promoStatus(promo);
 
   return (
-    <form action={action} className="mt-4 space-y-4 border-t border-white/10 pt-4">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block">
-          <span className={labelClass}>Code *</span>
-          <input
-            name="code"
-            required
-            defaultValue={promo.code}
-            className={fieldClass}
-          />
-        </label>
-        <label className="block">
-          <span className={labelClass}>Label (internal)</span>
-          <input name="label" defaultValue={promo.label} className={fieldClass} />
-        </label>
-        <label className="block">
-          <span className={labelClass}>Discount type *</span>
-          <select
-            name="discount_type"
-            defaultValue={promo.discount_type}
-            className={fieldClass}
-          >
-            <option value="percent">Percent off</option>
-            <option value="fixed_cents">Fixed amount off ($)</option>
-          </select>
-        </label>
-        <label className="block">
-          <span className={labelClass}>Percent off (if percent type)</span>
-          <input
-            name="discount_percent"
-            inputMode="decimal"
-            defaultValue={
-              promo.discount_type === "percent" ? String(promo.discount_value) : ""
-            }
-            className={fieldClass}
-          />
-        </label>
-        <label className="block">
-          <span className={labelClass}>Amount off $ (if fixed type)</span>
-          <input
-            name="discount_amount"
-            inputMode="decimal"
-            defaultValue={
-              promo.discount_type === "fixed_cents"
-                ? fixedDollars(promo.discount_value)
-                : ""
-            }
-            className={fieldClass}
-          />
-        </label>
-        <label className="block">
-          <span className={labelClass}>Max uses (blank = unlimited)</span>
-          <input
-            name="max_uses"
-            type="number"
-            min="1"
-            defaultValue={promo.max_uses ?? ""}
-            className={fieldClass}
-          />
-        </label>
-        <label className="block">
-          <span className={labelClass}>Times used</span>
-          <input
-            readOnly
-            value={String(promo.uses_count)}
-            className={cn(fieldClass, "opacity-60")}
-          />
-        </label>
-        <label className="block">
-          <span className={labelClass}>Valid from (optional)</span>
-          <input
-            name="valid_from"
-            type="date"
-            defaultValue={dateInputValue(promo.valid_from)}
-            className={cn(fieldClass, "hub-date-input")}
-          />
-        </label>
-        <label className="block">
-          <span className={labelClass}>Valid until (optional)</span>
-          <input
-            name="valid_until"
-            type="date"
-            defaultValue={dateInputValue(promo.valid_until)}
-            className={cn(fieldClass, "hub-date-input")}
-          />
-        </label>
-        <label className="flex items-end gap-2 pb-2 text-sm sm:col-span-2">
-          <input type="checkbox" name="active" defaultChecked={promo.active} className="size-4" />
-          Active
-        </label>
-        <PackageScopeFields
-          packageOptions={packageOptions}
-          defaultScope={promo.package_key ? "single" : "all"}
-          defaultPackageKey={promo.package_key ?? undefined}
-        />
-      </div>
+    <form action={action} className="border-t border-border bg-muted/20 px-3 py-4 sm:px-4">
+      <PromoFormFields
+        promo={promo}
+        packageOptions={packageOptions}
+        idPrefix={`edit-${promo.id}-`}
+      />
 
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={busy} className="h-auto min-h-0 px-3 py-1.5 text-xs">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <Button type="submit" size="sm" disabled={busy}>
           {pending ? "Saving…" : "Save promo"}
         </Button>
         <Button
           type="submit"
           formAction={deleteAction}
           variant="outline"
+          size="sm"
           disabled={busy}
-          className="h-auto min-h-0 border-red-500/30 px-3 py-1.5 text-xs text-red-200"
+          className="border-destructive/40 text-destructive hover:bg-destructive/10"
           onClick={(e) => {
             if (!confirm(`Delete promo “${promo.code}”?`)) {
               e.preventDefault();
@@ -227,24 +279,69 @@ function PromoEditForm({
         >
           {deletePending ? "Deleting…" : "Delete"}
         </Button>
-        {status && (
-          <span
-            className={cn(
-              "self-center rounded px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]",
-              status.className,
-            )}
-          >
-            {status.label}
-          </span>
-        )}
+        <PromoStatusBadge promo={promo} />
       </div>
 
-      {feedback && (
-        <p className={cn("font-mono text-xs", feedbackOk ? "text-y" : "text-red-200")}>
-          {feedback}
-        </p>
-      )}
+      <HubActionAlert
+        state={{
+          ok: deleteState.message ? deleteState.ok : state.ok,
+          message: deleteState.message || state.message,
+        }}
+        className="mt-3"
+      />
     </form>
+  );
+}
+
+function PromoListRow({
+  promo,
+  packageOptions,
+  packageNames,
+  expanded,
+  onToggleEdit,
+}: {
+  promo: PromoCodeRow;
+  packageOptions: PromoPackageOption[];
+  packageNames: Record<string, string>;
+  expanded: boolean;
+  onToggleEdit: () => void;
+}) {
+  return (
+    <Card
+      className={cn(
+        "overflow-hidden border-border/80",
+        !promo.active && "opacity-75",
+        expanded && "border-primary/30",
+      )}
+    >
+      <div className="flex items-start gap-3 px-3 py-3 sm:px-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-sm text-primary">{promo.code}</span>
+            <PromoStatusBadge promo={promo} />
+          </div>
+          <p className="mt-1 font-mono text-[9px] text-muted-foreground">
+            {formatPromoDiscount(promo)}
+            {promo.label ? ` · ${promo.label}` : ""}
+            {" · "}
+            {formatPromoPackageScope(promo.package_key, packageNames)}
+          </p>
+          <p className="mt-0.5 font-mono text-[9px] text-muted-foreground/80">
+            Uses: {promo.uses_count}
+            {promo.max_uses !== null ? ` / ${promo.max_uses}` : " (unlimited)"}
+            {promo.valid_from || promo.valid_until
+              ? ` · ${promo.valid_from ? dateInputValue(promo.valid_from) : "…"} → ${promo.valid_until ? dateInputValue(promo.valid_until) : "…"}`
+              : ""}
+          </p>
+        </div>
+        <Button type="button" variant="outline" size="sm" onClick={onToggleEdit}>
+          {expanded ? "Close" : "Edit"}
+        </Button>
+      </div>
+      {expanded ? (
+        <PromoEditForm promo={promo} packageOptions={packageOptions} />
+      ) : null}
+    </Card>
   );
 }
 
@@ -262,149 +359,45 @@ export function PromoCodesPanel({
     createPromoCode,
     EMPTY,
   );
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   return (
-    <div className="space-y-10">
-      <form action={createAction} className="rounded-md border border-white/10 p-6">
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-y">
-          Add promo code
-        </h2>
-        <p className="mt-1 font-mono text-[9px] text-text/35">
-          Codes are uppercased automatically. Customers enter them on the booking page after
-          choosing a package.
+    <div className="space-y-8">
+      <HubDetailsSection summary="+ Add promo code">
+        <p className="mb-4 text-xs text-muted-foreground">
+          Codes are uppercased automatically. Customers enter them on the booking page
+          after choosing a package.
         </p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <label className="block">
-            <span className={labelClass}>Code *</span>
-            <input
-              name="code"
-              required
-              placeholder="SUMMER25"
-              className={fieldClass}
-            />
-          </label>
-          <label className="block">
-            <span className={labelClass}>Label (internal)</span>
-            <input name="label" placeholder="Summer campaign" className={fieldClass} />
-          </label>
-          <label className="block">
-            <span className={labelClass}>Discount type *</span>
-            <select name="discount_type" defaultValue="percent" className={fieldClass}>
-              <option value="percent">Percent off</option>
-              <option value="fixed_cents">Fixed amount off ($)</option>
-            </select>
-          </label>
-          <label className="block">
-            <span className={labelClass}>Percent off (if percent type)</span>
-            <input
-              name="discount_percent"
-              inputMode="decimal"
-              placeholder="10"
-              className={fieldClass}
-            />
-          </label>
-          <label className="block">
-            <span className={labelClass}>Amount off $ (if fixed type)</span>
-            <input
-              name="discount_amount"
-              inputMode="decimal"
-              placeholder="25"
-              className={fieldClass}
-            />
-          </label>
-          <label className="block">
-            <span className={labelClass}>Max uses (blank = unlimited)</span>
-            <input name="max_uses" type="number" min="1" className={fieldClass} />
-          </label>
-          <label className="flex items-end gap-2 pb-2 text-sm">
-            <input type="checkbox" name="active" defaultChecked className="size-4" />
-            Active
-          </label>
-          <label className="block">
-            <span className={labelClass}>Valid from (optional)</span>
-            <input
-              name="valid_from"
-              type="date"
-              className={cn(fieldClass, "hub-date-input")}
-            />
-          </label>
-          <label className="block">
-            <span className={labelClass}>Valid until (optional)</span>
-            <input
-              name="valid_until"
-              type="date"
-              className={cn(fieldClass, "hub-date-input")}
-            />
-          </label>
-          <PackageScopeFields packageOptions={packageOptions} defaultScope="all" />
-        </div>
-        <Button type="submit" className="mt-6" disabled={createPending}>
-          {createPending ? "Adding…" : "Add promo"}
-        </Button>
-        {createState.message && (
-          <p
-            className={`mt-4 rounded-md border px-4 py-3 font-mono text-xs ${
-              createState.ok
-                ? "border-y/30 bg-y/10 text-y"
-                : "border-red-500/30 bg-red-500/10 text-red-200"
-            }`}
-          >
-            {createState.message}
-          </p>
-        )}
-      </form>
+        <form action={createAction}>
+          <PromoFormFields packageOptions={packageOptions} idPrefix="create-" />
+          <Button type="submit" className="mt-4" disabled={createPending}>
+            {createPending ? "Adding…" : "Add promo"}
+          </Button>
+          <HubActionAlert state={createState} className="mt-4" />
+        </form>
+      </HubDetailsSection>
 
-      <section>
-        <h3 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
-          Promo codes ({promos.length})
-        </h3>
+      <HubFormSection title={`Promo codes (${promos.length})`}>
         {!promos.length ? (
-          <p className="mt-4 text-sm text-text/40">No promo codes yet. Add one above.</p>
+          <HubEmptyState>No promo codes yet. Add one above.</HubEmptyState>
         ) : (
-          <ul className="mt-4 space-y-4">
-            {promos.map((promo) => {
-              const status = promoStatus(promo);
-              return (
-                <li
-                  key={promo.id}
-                  className={cn(
-                    "rounded-md border px-4 py-4",
-                    promo.active ? "border-white/10" : "border-white/5 opacity-70",
-                  )}
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-sm text-y/85">{promo.code}</span>
-                    <span className="font-mono text-[9px] text-text/45">
-                      {formatPromoDiscount(promo)}
-                      {promo.label ? ` · ${promo.label}` : ""}
-                      {" · "}
-                      {formatPromoPackageScope(promo.package_key, packageNames)}
-                    </span>
-                    {status && (
-                      <span
-                        className={cn(
-                          "rounded px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]",
-                          status.className,
-                        )}
-                      >
-                        {status.label}
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 font-mono text-[9px] text-text/35">
-                    Uses: {promo.uses_count}
-                    {promo.max_uses !== null ? ` / ${promo.max_uses}` : " (unlimited)"}
-                    {promo.valid_from || promo.valid_until
-                      ? ` · ${promo.valid_from ? dateInputValue(promo.valid_from) : "…"} → ${promo.valid_until ? dateInputValue(promo.valid_until) : "…"}`
-                      : ""}
-                  </p>
-                  <PromoEditForm promo={promo} packageOptions={packageOptions} />
-                </li>
-              );
-            })}
+          <ul className="space-y-3">
+            {promos.map((promo) => (
+              <li key={promo.id}>
+                <PromoListRow
+                  promo={promo}
+                  packageOptions={packageOptions}
+                  packageNames={packageNames}
+                  expanded={expandedId === promo.id}
+                  onToggleEdit={() =>
+                    setExpandedId((cur) => (cur === promo.id ? null : promo.id))
+                  }
+                />
+              </li>
+            ))}
           </ul>
         )}
-      </section>
+      </HubFormSection>
     </div>
   );
 }

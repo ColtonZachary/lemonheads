@@ -27,7 +27,7 @@ export function Logo({ className, href = "/" }: LogoProps) {
         <div className="font-display text-[20px] tracking-[0.08em] text-y">
           {SITE.shortName}
         </div>
-        <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.2em] text-muted">
+        <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.2em] text-text/50">
           {SITE.tagline}
         </div>
       </div>

@@ -11,7 +11,7 @@ export function HubThemeShell({
 }) {
   return (
     <div
-      className="hub-theme-root flex min-h-[100svh] w-full bg-dk text-text"
+      className="hub-theme-root dark flex min-h-svh w-full flex-1 flex-col bg-background text-foreground"
       style={hubThemeStyle(theme)}
     >
       {children}

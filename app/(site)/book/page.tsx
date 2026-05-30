@@ -46,7 +46,7 @@ export default async function BookPage() {
           BOOK A <span className="text-y">DETAIL</span>
         </h1>
         <p className="mt-3.5 font-mono text-[13px] tracking-[0.08em] text-text/40">
-          Takes less than 2 minutes. No account needed.
+          Six quick steps — one screen at a time. No account needed.
         </p>
       </header>
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { HubPageHeader } from "@/components/hub/hub-page";
 import { DetailerPayRatesPanel } from "@/components/hub/detailer-pay-rates-panel";
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import { fetchPayRatesForEditor } from "@/lib/hub/detailer-pay-rates";
@@ -14,17 +15,16 @@ export default async function HubSettingsPayRatesPage() {
     <div>
       <Link
         href="/hub/settings"
-        className="font-mono text-[10px] uppercase tracking-[0.12em] text-text/40 hover:text-y"
+        className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground hover:text-primary"
       >
         ← Settings
       </Link>
-      <h1 className="mt-4 font-display text-5xl tracking-[0.04em] text-y">
-        PAY RATES
-      </h1>
-      <p className="mt-2 text-sm text-text/45">
-        Detailer pay per package and add-on (Regular vs Senior). Used in Reports
-        and My pay — not customer prices.
-      </p>
+      <div className="mt-4">
+        <HubPageHeader
+          title="Pay rates"
+          description="Detailer pay per package and add-on (Regular vs Senior). Used in Reports and My pay — not customer prices."
+        />
+      </div>
 
       <div className="mt-6 max-w-4xl">
         <DetailerPayRatesPanel packages={packages} addons={addons} />

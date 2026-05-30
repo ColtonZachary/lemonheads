@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import { CalendarPageClient } from "@/components/hub/calendar-page-client";
+import { HubPageHeader } from "@/components/hub/hub-page";
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import { parseWeekSearchParam } from "@/lib/hub/week-calendar";
 import {
@@ -12,7 +13,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function CalendarFallback() {
   return (
-    <p className="mt-10 font-mono text-xs text-text/40">Loading calendar…</p>
+    <p className="mt-10 font-mono text-xs text-muted-foreground">Loading calendar…</p>
   );
 }
 
@@ -42,12 +43,14 @@ async function CalendarContent({
 
   return (
     <div>
-      <h1 className="font-display text-5xl tracking-[0.04em] text-y">CALENDAR</h1>
-      <p className="mt-2 max-w-2xl text-sm text-text/45">
-        {access.isManager
-          ? "Week at a glance by detailer. Open New booking to add a job without leaving the calendar."
-          : "Your schedule for the week. Billed jobs show in green."}
-      </p>
+      <HubPageHeader
+        title="Calendar"
+        description={
+          access.isManager
+            ? "Week at a glance by detailer. Open New booking to add a job without leaving the calendar."
+            : "Your schedule for the week. Billed jobs show in green."
+        }
+      />
 
       <CalendarPageClient
         weekMonday={data.weekMonday}
@@ -60,6 +63,7 @@ async function CalendarContent({
         canBook={canBook}
         detailerNames={detailerNames}
         initialBookOpen={params.book === "1"}
+        clearBookQueryParam={params.book === "1"}
       />
     </div>
   );

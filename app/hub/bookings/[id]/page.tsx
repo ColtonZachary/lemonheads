@@ -1,16 +1,28 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { BookingDetailAudit } from "@/components/hub/booking-detail-audit";
 import { BookingDetailForm } from "@/components/hub/booking-detail-form";
 import { BookingDetailProgress } from "@/components/hub/booking-detail-progress";
+import { BookingJobPhotosSection } from "@/components/hub/booking-job-photos-section";
 import { DetailJobProgressBadge } from "@/components/hub/detail-job-progress-badge";
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import { fetchBookableDetailerNames } from "@/lib/bookings/bookable-detailers";
-import { BookingJobPhotosSection } from "@/components/hub/booking-job-photos-section";
 import { listBookingJobPhotos } from "@/lib/hub/booking-job-photos";
 import { fetchHubBookingDetail } from "@/lib/hub/fetch-booking-detail";
 import { formatCentralDateTime } from "@/lib/hub/format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
+function bookingStatusBadgeVariant(
+  status: string,
+): "default" | "secondary" | "destructive" | "outline" {
+  if (status === "completed") return "default";
+  if (status === "cancelled") return "destructive";
+  if (status === "in_progress" || status === "confirmed") return "secondary";
+  return "outline";
+}
 
 export default async function HubBookingDetailPage({
   params,
@@ -24,10 +36,18 @@ export default async function HubBookingDetailPage({
   const booking = await fetchHubBookingDetail(supabase!, id);
   if (!booking) notFound();
 
-  const [detailerNames, jobPhotos] = await Promise.all([
+  const [detailerNames, jobPhotos, paidInvoice] = await Promise.all([
     fetchBookableDetailerNames(supabase!),
     listBookingJobPhotos(supabase!, id),
+    supabase!
+      .from("invoices")
+      .select("id")
+      .eq("booking_id", id)
+      .eq("status", "paid")
+      .maybeSingle(),
   ]);
+
+  const lineItemsLocked = Boolean(booking.billed_at) || Boolean(paidInvoice.data);
 
   const { data: audit } = await supabase!
     .from("booking_audit_log")
@@ -36,87 +56,87 @@ export default async function HubBookingDetailPage({
     .order("created_at", { ascending: false })
     .limit(50);
 
+  const subtitle = `${formatCentralDateTime(booking.starts_at)} Central`;
+  const phase = booking.detail_phase as string | undefined;
+
+  const auditRows = (audit ?? []).map((row) => ({
+    id: row.id,
+    action: row.action,
+    created_at: row.created_at,
+    profiles: row.profiles as {
+      full_name?: string | null;
+      email?: string | null;
+    } | null,
+  }));
+
   return (
-    <div>
-      <Link
-        href="/hub/calendar"
-        className="font-mono text-[10px] uppercase tracking-[0.12em] text-text/40 hover:text-y"
-      >
-        ← Calendar
-      </Link>
+    <div className="pb-8">
+      <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-background/95 px-4 pb-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:-mx-8 md:px-8">
+        <Link
+          href="/hub/calendar"
+          className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground hover:text-primary"
+        >
+          ← Calendar
+        </Link>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <h1 className="font-display text-5xl tracking-[0.04em] text-y">
-          {booking.reference_id}
-        </h1>
-        <DetailJobProgressBadge
-          status={booking.status}
-          detailPhase={booking.detail_phase as string | undefined}
-        />
+        <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="truncate font-display text-3xl tracking-[0.04em] text-primary md:text-4xl">
+              {booking.reference_id}
+            </h1>
+            <p
+              className={cn(
+                "mt-1 font-mono text-xs text-muted-foreground",
+                booking.deleted_at && "text-destructive",
+              )}
+            >
+              {subtitle}
+              {booking.deleted_at ? " · deleted" : ""}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Badge
+              variant={bookingStatusBadgeVariant(booking.status)}
+              className="font-mono text-[10px] uppercase"
+            >
+              {booking.status}
+            </Badge>
+            <DetailJobProgressBadge
+              status={booking.status}
+              detailPhase={phase}
+            />
+            {booking.billed_at ? (
+              <Badge variant="outline" className="font-mono text-[10px] uppercase">
+                Billed
+              </Badge>
+            ) : null}
+          </div>
+        </div>
       </div>
-      <p className="mt-2 font-mono text-xs tracking-[0.08em] text-text/40">
-        {formatCentralDateTime(booking.starts_at)} Central
-        {booking.deleted_at ? " · deleted" : ""}
-      </p>
 
-      <div className="mt-8 space-y-8">
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <BookingDetailProgress
           status={booking.status}
-          detailPhase={booking.detail_phase as string | undefined}
+          detailPhase={phase}
           detailEnRouteAt={booking.detail_en_route_at}
           detailArrivedAt={booking.detail_arrived_at}
           detailFinishedAt={booking.detail_finished_at}
           detailChecklistCompletedAt={booking.detail_checklist_completed_at}
         />
-        <BookingJobPhotosSection
-          photos={jobPhotos}
-          detailPhase={booking.detail_phase as string | undefined}
-          status={booking.status}
-        />
-        <BookingDetailForm booking={booking} detailerNames={detailerNames} />
+        <BookingJobPhotosSection photos={jobPhotos} />
       </div>
 
-      <section className="mt-12">
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
-          Audit log
-        </h2>
-        <div className="mt-4 overflow-x-auto rounded-md border border-white/10">
-          <table className="w-full min-w-[520px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-white/10 bg-card2 font-mono text-[9px] uppercase tracking-[0.15em] text-muted">
-                <th className="px-4 py-3">When</th>
-                <th className="px-4 py-3">Action</th>
-                <th className="px-4 py-3">By</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(audit ?? []).map((row) => {
-                const actor = row.profiles as
-                  | { full_name?: string | null; email?: string | null }
-                  | null;
-                return (
-                  <tr key={row.id} className="border-b border-white/5">
-                    <td className="px-4 py-3 font-mono text-xs text-text/50">
-                      {formatCentralDateTime(row.created_at)}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-[10px] uppercase text-y/70">
-                      {row.action}
-                    </td>
-                    <td className="px-4 py-3 text-text/60">
-                      {actor?.full_name || actor?.email || "—"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {!audit?.length && (
-            <p className="p-6 text-center font-mono text-xs text-text/35">
-              No audit entries yet.
-            </p>
-          )}
-        </div>
-      </section>
+      <div className="mt-4">
+        <BookingDetailForm
+          booking={booking}
+          detailerNames={detailerNames}
+          lineItemsLocked={lineItemsLocked}
+        />
+      </div>
+
+      <div className="mt-6">
+        <BookingDetailAudit rows={auditRows} />
+      </div>
     </div>
   );
 }

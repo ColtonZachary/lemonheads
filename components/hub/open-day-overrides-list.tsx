@@ -84,7 +84,7 @@ export function OpenDayOverridesList({
 }) {
   if (!overrides.length) {
     return (
-      <p className="text-sm text-text/40">
+      <p className="text-sm text-muted-foreground">
         {variant === "panel"
           ? "No extra work days match this filter."
           : "No exceptions yet. Use Working an off day when they pick up a shift on a normal off-day."}
@@ -98,23 +98,23 @@ export function OpenDayOverridesList({
 
   if (variant === "panel") {
     return (
-      <ul className="divide-y divide-white/5">
+      <ul className="divide-y divide-border/60">
         {sorted.map((o) => (
           <li
             key={o.id}
             className="flex flex-wrap items-center justify-between gap-2 py-2"
           >
-            <div className="min-w-0 text-[11px] text-text/55">
-              <span className="font-mono text-xs text-y/85">
+            <div className="min-w-0 text-[11px] text-muted-foreground">
+              <span className="font-mono text-xs text-primary">
                 {o.staff_members?.display_name ?? "—"}
               </span>
-              <span className="mx-1.5 text-text/25">·</span>
+              <span className="mx-1.5 text-muted-foreground/40">·</span>
               <span className="text-emerald-200/80">
                 {dateInputToLabel(o.override_date)}
               </span>
               {o.reason ? (
                 <>
-                  <span className="mx-1.5 text-text/25">·</span>
+                  <span className="mx-1.5 text-muted-foreground/40">·</span>
                   {o.reason}
                 </>
               ) : null}

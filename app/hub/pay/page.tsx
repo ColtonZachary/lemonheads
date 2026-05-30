@@ -1,3 +1,4 @@
+import { HubPageHeader } from "@/components/hub/hub-page";
 import { ReportsDetailerPaySection } from "@/components/hub/reports-detailer-pay";
 import { WeekNavLinks } from "@/components/hub/week-nav-links";
 import { requireHubAccess } from "@/lib/auth/require-hub";
@@ -38,7 +39,7 @@ export default async function HubPayPage({
   if (!access.isManager && !detailerName) {
     return (
       <div className="max-w-2xl">
-        <h1 className="font-display text-5xl tracking-[0.04em] text-y">MY PAY</h1>
+        <HubPageHeader title="My pay" />
         <p className="mt-6 rounded-lg border border-amber-500/25 bg-amber-500/10 px-4 py-4 text-sm text-amber-100/90">
           Your login is not linked to a staff profile yet. Ask a manager to connect
           your hub account under{" "}
@@ -62,16 +63,16 @@ export default async function HubPayPage({
 
   return (
     <div className="max-w-4xl">
-      <h1 className="font-display text-5xl tracking-[0.04em] text-y">
-        {access.isManager ? "DETAILER PAY" : "MY PAY"}
-      </h1>
-      <p className="mt-2 text-sm text-text/45">
-        {access.isManager
-          ? "Preview detailer earnings by calendar week. Full team breakdown also lives under Reports."
-          : mySummary
-            ? `${mySummary.tierLabel} detailer · ${mySummary.jobCount} job${mySummary.jobCount === 1 ? "" : "s"} this week`
-            : "Earnings from completed jobs in the selected week."}
-      </p>
+      <HubPageHeader
+        title={access.isManager ? "Detailer pay" : "My pay"}
+        description={
+          access.isManager
+            ? "Preview detailer earnings by calendar week. Full team breakdown also lives under Reports."
+            : mySummary
+              ? `${mySummary.tierLabel} detailer · ${mySummary.jobCount} job${mySummary.jobCount === 1 ? "" : "s"} this week`
+              : "Earnings from completed jobs in the selected week."
+        }
+      />
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
         <WeekNavLinks

@@ -69,7 +69,7 @@ export function SiteNav() {
           <li className="group relative flex items-center">
             <button
               type="button"
-              className="flex cursor-pointer items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-white transition-colors group-hover:text-y"
+              className="flex cursor-pointer items-center gap-1.5 rounded-[4px] font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-white outline-none transition-colors group-hover:text-y focus-visible:text-y"
             >
               <div className="flex flex-col gap-1">
                 <span className="block h-px w-4 bg-white transition-colors group-hover:bg-y" />
@@ -108,7 +108,7 @@ export function SiteNav() {
           aria-label="Toggle menu"
           aria-expanded={isOpen}
           onClick={toggle}
-          className="flex cursor-pointer flex-col gap-1.5 p-1 lg:hidden"
+          className="flex cursor-pointer flex-col gap-1.5 rounded-[4px] p-1 outline-none lg:hidden focus-visible:opacity-80"
         >
           <span
             className={cn(

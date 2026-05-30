@@ -7,7 +7,7 @@ import {
   signInForCheckout,
 } from "@/app/actions/loyalty-checkout";
 import { Button } from "@/components/ui/button";
-import { Input, Label } from "@/components/ui/field";
+import { Input, Label } from "@/components/ui/site-field";
 import { cn } from "@/lib/utils";
 
 export function CheckoutRewardsSignIn({

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { DetailChecklistSettingsPanel } from "@/components/hub/detail-checklist-settings-panel";
+import { HubPageHeader } from "@/components/hub/hub-page";
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import { fetchDetailChecklistItems } from "@/lib/hub/detail-checklist-db";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -14,14 +15,15 @@ export default async function HubChecklistSettingsPage() {
     <div>
       <Link
         href="/hub/settings"
-        className="font-mono text-[10px] uppercase tracking-[0.12em] text-text/40 hover:text-y"
+        className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground hover:text-primary"
       >
         ← Settings
       </Link>
-      <h1 className="mt-4 font-display text-5xl tracking-[0.04em] text-y">CHECKLIST</h1>
-      <p className="mt-2 text-sm text-text/45">
-        Items detailers confirm after each job in the mobile app.
-      </p>
+      <HubPageHeader
+        className="mt-4"
+        title="Checklist"
+        description="Items detailers confirm after each job in the mobile app."
+      />
       <div className="mt-6 max-w-2xl">
         <DetailChecklistSettingsPanel items={items} />
       </div>

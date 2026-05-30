@@ -15,17 +15,27 @@ import {
   type ServiceAreaOption,
 } from "@/components/hub/staff-service-areas-field";
 import { StaffPhotoField } from "@/components/hub/staff-photo-field";
+import {
+  HubActionAlert,
+  HubDetailsSection,
+  HubEmptyState,
+  HubStatCard,
+} from "@/components/hub/hub-page";
+import {
+  HubFieldRow,
+  HubFormField,
+  HubFormSection,
+  HubInput,
+  HubTextarea,
+} from "@/components/hub/hub-form";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import type { StaffMemberRow } from "@/lib/bookings/bookable-detailers";
 import type { SitePackage } from "@/lib/catalog/public-catalog";
 import { cn } from "@/lib/utils";
 
 const EMPTY: HubStaffActionState = { ok: false, message: "" };
-
-const fieldClass =
-  "mt-1 w-full rounded border border-white/15 bg-dk px-2.5 py-1.5 text-sm";
-const labelClass =
-  "font-mono text-[9px] uppercase tracking-[0.12em] text-text/40";
 
 function StaffBadgesWithBlocks({
   member,
@@ -39,32 +49,32 @@ function StaffBadgesWithBlocks({
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {member.is_detailer ? (
-        <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.08em] text-text/55">
+        <Badge variant="secondary" className="font-mono text-[8px] uppercase">
           Detailer
-        </span>
+        </Badge>
       ) : null}
       {member.is_detailer && member.is_senior_detailer ? (
-        <span className="rounded bg-y/10 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.08em] text-y/75">
+        <Badge variant="default" className="font-mono text-[8px] uppercase">
           Senior
-        </span>
+        </Badge>
       ) : null}
       {member.is_bookable ? (
-        <span className="rounded bg-y/10 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.08em] text-y/70">
+        <Badge variant="outline" className="font-mono text-[8px] uppercase">
           Bookable
-        </span>
+        </Badge>
       ) : null}
       {member.is_detailer && blockedCount > 0 ? (
-        <span className="rounded bg-red-500/10 px-1.5 py-0.5 font-mono text-[8px] text-red-200/80">
+        <Badge variant="destructive" className="font-mono text-[8px]">
           {blockedCount} pkg blocked
-        </span>
+        </Badge>
       ) : null}
       {member.is_detailer && allowedAreasCount > 0 ? (
-        <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[8px] text-text/55">
+        <Badge variant="outline" className="font-mono text-[8px]">
           {allowedAreasCount} area{allowedAreasCount === 1 ? "" : "s"}
-        </span>
+        </Badge>
       ) : null}
       {member.profile_id ? (
-        <span className="max-w-[10rem] truncate font-mono text-[8px] text-text/40">
+        <span className="max-w-[10rem] truncate font-mono text-[8px] text-muted-foreground">
           {member.profiles?.email}
         </span>
       ) : null}
@@ -79,14 +89,121 @@ function StaffAvatar({ member }: { member: StaffMemberRow }) {
       <img
         src={member.photo_url}
         alt=""
-        className="size-10 shrink-0 rounded-full border border-white/15 object-cover object-top"
+        className="size-10 shrink-0 rounded-full border border-border object-cover object-top"
       />
     );
   }
   return (
-    <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 font-mono text-[9px] text-text/30">
+    <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-muted/40 font-mono text-[9px] text-muted-foreground">
       ?
     </div>
+  );
+}
+
+function StaffMemberFormFields({
+  member,
+  idPrefix,
+}: {
+  member?: StaffMemberRow;
+  idPrefix: string;
+}) {
+  return (
+    <>
+      <HubFieldRow>
+        <HubFormField label="Name" htmlFor={`${idPrefix}display_name`} required>
+          <HubInput
+            id={`${idPrefix}display_name`}
+            name="display_name"
+            required
+            defaultValue={member?.display_name}
+            placeholder={member ? undefined : "Alex"}
+          />
+        </HubFormField>
+        <HubFormField label="Role" htmlFor={`${idPrefix}role_label`}>
+          <HubInput
+            id={`${idPrefix}role_label`}
+            name="role_label"
+            defaultValue={member?.role_label ?? ""}
+            placeholder={member ? undefined : "Detailer"}
+          />
+        </HubFormField>
+        <HubFormField label="Sort" htmlFor={`${idPrefix}sort_order`}>
+          <HubInput
+            id={`${idPrefix}sort_order`}
+            name="sort_order"
+            type="number"
+            defaultValue={member ? String(member.sort_order) : "0"}
+          />
+        </HubFormField>
+        <HubFormField
+          label="Bio"
+          htmlFor={`${idPrefix}bio`}
+          className="sm:col-span-2 lg:col-span-3"
+        >
+          {member ? (
+            <HubTextarea
+              id={`${idPrefix}bio`}
+              name="bio"
+              rows={1}
+              defaultValue={member.bio}
+              className="min-h-[2.25rem] resize-y"
+            />
+          ) : (
+            <HubInput
+              id={`${idPrefix}bio`}
+              name="bio"
+              placeholder="Optional short bio"
+            />
+          )}
+        </HubFormField>
+        <div className="sm:col-span-2 lg:col-span-3">
+          <StaffPhotoField currentUrl={member?.photo_url} optional={!member} />
+        </div>
+      </HubFieldRow>
+
+      <div className="mt-2.5 flex flex-wrap gap-3 text-xs">
+        <label className="flex items-center gap-1.5">
+          <input
+            type="checkbox"
+            name="is_detailer"
+            defaultChecked={member ? member.is_detailer : true}
+            className="size-3.5 rounded border-input"
+          />
+          Detailer
+        </label>
+        <label className="flex items-center gap-1.5">
+          <input
+            type="checkbox"
+            name="is_bookable"
+            defaultChecked={member ? member.is_bookable : true}
+            className="size-3.5 rounded border-input"
+          />
+          Bookable
+        </label>
+        {member?.is_detailer ? (
+          <label className="flex items-center gap-1.5">
+            <input
+              type="checkbox"
+              name="is_senior_detailer"
+              defaultChecked={member.is_senior_detailer}
+              className="size-3.5 rounded border-input"
+            />
+            Senior detailer (higher package pay)
+          </label>
+        ) : null}
+        {member ? (
+          <label className="flex items-center gap-1.5">
+            <input
+              type="checkbox"
+              name="active"
+              defaultChecked={member.active}
+              className="size-3.5 rounded border-input"
+            />
+            Active
+          </label>
+        ) : null}
+      </div>
+    </>
   );
 }
 
@@ -109,91 +226,8 @@ function StaffEditForm({
   );
 
   return (
-    <form
-      action={action}
-      className="border-t border-white/10 bg-white/[0.02] px-3 py-3 sm:px-4"
-    >
-      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-        <label className="block">
-          <span className={labelClass}>Name</span>
-          <input
-            name="display_name"
-            required
-            defaultValue={member.display_name}
-            className={fieldClass}
-          />
-        </label>
-        <label className="block">
-          <span className={labelClass}>Role</span>
-          <input
-            name="role_label"
-            defaultValue={member.role_label}
-            className={fieldClass}
-          />
-        </label>
-        <label className="block">
-          <span className={labelClass}>Sort</span>
-          <input
-            name="sort_order"
-            type="number"
-            defaultValue={String(member.sort_order)}
-            className={fieldClass}
-          />
-        </label>
-        <label className="block sm:col-span-2 lg:col-span-3">
-          <span className={labelClass}>Bio</span>
-          <textarea
-            name="bio"
-            rows={1}
-            defaultValue={member.bio}
-            className={cn(fieldClass, "min-h-[2.25rem] resize-y")}
-          />
-        </label>
-        <div className="sm:col-span-2 lg:col-span-3">
-          <StaffPhotoField currentUrl={member.photo_url} />
-        </div>
-      </div>
-
-      <div className="mt-2.5 flex flex-wrap gap-3 text-xs">
-        <label className="flex items-center gap-1.5">
-          <input
-            type="checkbox"
-            name="is_detailer"
-            defaultChecked={member.is_detailer}
-            className="size-3.5"
-          />
-          Detailer
-        </label>
-        <label className="flex items-center gap-1.5">
-          <input
-            type="checkbox"
-            name="is_bookable"
-            defaultChecked={member.is_bookable}
-            className="size-3.5"
-          />
-          Bookable
-        </label>
-        {member.is_detailer ? (
-          <label className="flex items-center gap-1.5">
-            <input
-              type="checkbox"
-              name="is_senior_detailer"
-              defaultChecked={member.is_senior_detailer}
-              className="size-3.5"
-            />
-            Senior detailer (higher package pay)
-          </label>
-        ) : null}
-        <label className="flex items-center gap-1.5">
-          <input
-            type="checkbox"
-            name="active"
-            defaultChecked={member.active}
-            className="size-3.5"
-          />
-          Active
-        </label>
-      </div>
+    <form action={action} className="border-t border-border bg-muted/20 px-3 py-3 sm:px-4">
+      <StaffMemberFormFields member={member} idPrefix={`edit-${member.id}-`} />
 
       {member.is_detailer ? (
         <StaffPackageBlocksField
@@ -210,20 +244,11 @@ function StaffEditForm({
         />
       ) : null}
 
-      <div className="mt-3 flex items-center gap-3">
-        <Button type="submit" disabled={pending} className="h-auto min-h-0 px-3 py-1.5 text-xs">
+      <div className="mt-3">
+        <Button type="submit" size="sm" disabled={pending}>
           {pending ? "Saving…" : "Save"}
         </Button>
-        {state.message ? (
-          <p
-            className={cn(
-              "font-mono text-[10px]",
-              state.ok ? "text-y" : "text-red-200",
-            )}
-          >
-            {state.message}
-          </p>
-        ) : null}
+        <HubActionAlert state={state} className="mt-2" />
       </div>
     </form>
   );
@@ -233,12 +258,10 @@ function StaffActionButtons({
   id,
   name,
   active,
-  compact,
 }: {
   id: string;
   name: string;
   active: boolean;
-  compact?: boolean;
 }) {
   const [toggleState, toggleAction, togglePending] = useActionState(
     toggleStaffMemberActive.bind(null, id),
@@ -249,23 +272,19 @@ function StaffActionButtons({
     EMPTY,
   );
 
-  const btnClass = "h-auto min-h-0 px-2 py-1 text-[10px]";
-
   return (
-    <div className={cn("flex shrink-0 flex-wrap gap-1.5", compact && "justify-end")}>
+    <div className="flex shrink-0 flex-wrap gap-1.5">
       <form
         action={toggleAction}
         onSubmit={(e) => {
-          const msg = active
-            ? `Deactivate ${name}?`
-            : `Reactivate ${name}?`;
+          const msg = active ? `Deactivate ${name}?` : `Reactivate ${name}?`;
           if (!confirm(msg)) e.preventDefault();
         }}
       >
         <Button
           type="submit"
           variant="outline"
-          className={btnClass}
+          size="sm"
           disabled={togglePending || deletePending}
         >
           {togglePending ? "…" : active ? "Off" : "On"}
@@ -275,7 +294,9 @@ function StaffActionButtons({
         action={deleteAction}
         onSubmit={(e) => {
           if (
-            !confirm(`Permanently remove ${name}? Schedule rules and photo are deleted.`)
+            !confirm(
+              `Permanently remove ${name}? Schedule rules and photo are deleted.`,
+            )
           ) {
             e.preventDefault();
           }
@@ -284,17 +305,18 @@ function StaffActionButtons({
         <Button
           type="submit"
           variant="outline"
-          className={cn(btnClass, "border-red-500/30 text-red-200/90")}
+          size="sm"
           disabled={togglePending || deletePending}
+          className="border-destructive/40 text-destructive hover:bg-destructive/10"
         >
           {deletePending ? "…" : "Delete"}
         </Button>
       </form>
-      {(toggleState.message || deleteState.message) && !compact ? (
+      {toggleState.message || deleteState.message ? (
         <span
           className={cn(
             "w-full font-mono text-[9px]",
-            toggleState.ok || deleteState.ok ? "text-y" : "text-red-300",
+            toggleState.ok || deleteState.ok ? "text-primary" : "text-destructive",
           )}
         >
           {deleteState.message || toggleState.message}
@@ -322,19 +344,19 @@ function StaffListRow({
   allowedAreaSlugs: string[];
 }) {
   return (
-    <li
+    <Card
       className={cn(
-        "overflow-hidden rounded-lg border transition-colors",
-        member.active ? "border-white/10" : "border-white/5 opacity-75",
-        expanded && "border-y/25",
+        "overflow-hidden border-border/80",
+        !member.active && "opacity-75",
+        expanded && "border-primary/30",
       )}
     >
       <div className="flex items-center gap-3 px-3 py-2 sm:px-4">
         <StaffAvatar member={member} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <span className="font-mono text-sm text-y/90">{member.display_name}</span>
-            <span className="truncate text-xs text-text/45">{member.role_label}</span>
+            <span className="font-mono text-sm text-primary">{member.display_name}</span>
+            <span className="truncate text-xs text-muted-foreground">{member.role_label}</span>
           </div>
           <StaffBadgesWithBlocks
             member={member}
@@ -343,19 +365,13 @@ function StaffListRow({
           />
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-auto min-h-0 px-2 py-1 text-[10px]"
-            onClick={onToggleEdit}
-          >
+          <Button type="button" variant="outline" size="sm" onClick={onToggleEdit}>
             {expanded ? "Close" : "Edit"}
           </Button>
           <StaffActionButtons
             id={member.id}
             name={member.display_name}
             active={member.active}
-            compact
           />
         </div>
       </div>
@@ -368,7 +384,7 @@ function StaffListRow({
           allowedAreaSlugs={allowedAreaSlugs}
         />
       ) : null}
-    </li>
+    </Card>
   );
 }
 
@@ -402,140 +418,72 @@ export function StaffPanel({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-3">
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">
-            Active
-          </p>
-          <p className="font-display text-2xl text-y">{active.length}</p>
-        </div>
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">
-            Bookable detailers
-          </p>
-          <p className="font-display text-2xl text-y">
-            {staff.filter((s) => s.active && s.is_bookable).length}
-          </p>
-        </div>
+        <HubStatCard label="Active" value={active.length} />
+        <HubStatCard
+          label="Bookable detailers"
+          value={staff.filter((s) => s.active && s.is_bookable).length}
+        />
         {inactive.length > 0 ? (
-          <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5">
-            <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">
-              Inactive
-            </p>
-            <p className="font-display text-2xl text-text/50">{inactive.length}</p>
-          </div>
+          <HubStatCard label="Inactive" value={inactive.length} />
         ) : null}
       </div>
 
-      <details className="group rounded-lg border border-white/10 bg-card/30">
-        <summary className="cursor-pointer list-none px-4 py-3 font-mono text-[10px] uppercase tracking-[0.12em] text-y hover:text-y/90 [&::-webkit-details-marker]:hidden">
-          <span className="inline-flex items-center gap-2">
-            <span className="text-text/40 group-open:hidden">+</span>
-            <span className="hidden text-text/40 group-open:inline">−</span>
-            Add team member
-          </span>
-        </summary>
-        <form action={createAction} className="border-t border-white/10 px-4 py-4">
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-            <label className="block">
-              <span className={labelClass}>Name *</span>
-              <input name="display_name" required className={fieldClass} placeholder="Alex" />
-            </label>
-            <label className="block">
-              <span className={labelClass}>Role</span>
-              <input name="role_label" className={fieldClass} placeholder="Detailer" />
-            </label>
-            <label className="block">
-              <span className={labelClass}>Sort</span>
-              <input name="sort_order" type="number" defaultValue="0" className={fieldClass} />
-            </label>
-            <div className="flex flex-wrap items-end gap-3 pb-0.5 sm:col-span-2 lg:col-span-1">
-              <label className="flex items-center gap-1.5 text-xs">
-                <input type="checkbox" name="is_detailer" defaultChecked className="size-3.5" />
-                Detailer
-              </label>
-              <label className="flex items-center gap-1.5 text-xs">
-                <input type="checkbox" name="is_bookable" defaultChecked className="size-3.5" />
-                Bookable
-              </label>
-            </div>
-            <label className="block sm:col-span-2 lg:col-span-4">
-              <span className={labelClass}>Bio</span>
-              <input name="bio" className={fieldClass} placeholder="Optional short bio" />
-            </label>
-            <div className="sm:col-span-2 lg:col-span-4">
-              <StaffPhotoField optional />
-            </div>
-          </div>
-          <Button type="submit" className="mt-4 h-auto min-h-0 px-4 py-2 text-xs" disabled={createPending}>
+      <HubDetailsSection summary="+ Add team member">
+        <form action={createAction}>
+          <StaffMemberFormFields idPrefix="create-" />
+          <Button type="submit" className="mt-4" disabled={createPending}>
             {createPending ? "Adding…" : "Add member"}
           </Button>
-          {createState.message ? (
-            <p
-              className={cn(
-                "mt-3 rounded border px-3 py-2 font-mono text-[10px]",
-                createState.ok
-                  ? "border-y/30 bg-y/10 text-y"
-                  : "border-red-500/30 bg-red-500/10 text-red-200",
-              )}
-            >
-              {createState.message}
-            </p>
-          ) : null}
+          <HubActionAlert state={createState} className="mt-3" />
         </form>
-      </details>
+      </HubDetailsSection>
 
-      <section>
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted">
-            Team roster
-          </h2>
-          <span className="font-mono text-[9px] text-text/35">
-            {detailerCount} detailer{detailerCount === 1 ? "" : "s"} · tap Edit to change
-          </span>
-        </div>
+      <HubFormSection
+        title="Team roster"
+        description={`${detailerCount} detailer${detailerCount === 1 ? "" : "s"} · tap Edit to change`}
+      >
         {!active.length ? (
-          <p className="rounded-lg border border-white/10 px-4 py-6 text-sm text-text/40">
+          <HubEmptyState>
             No active staff. Expand &ldquo;Add team member&rdquo; above or run{" "}
-            <code className="text-y/70">npm run hub:seed</code>.
-          </p>
+            <code className="text-primary">npm run hub:seed</code>.
+          </HubEmptyState>
         ) : (
           <ul className="space-y-2">
             {active.map((member) => (
-              <StaffListRow
-                key={member.id}
-                member={member}
-                expanded={expandedId === member.id}
-                onToggleEdit={() => toggleEdit(member.id)}
-                packages={packages}
-                serviceAreas={serviceAreas}
-                blockedPackageKeys={blockedByStaffId[member.id] ?? []}
-                allowedAreaSlugs={allowedAreasByStaffId[member.id] ?? []}
-              />
+              <li key={member.id}>
+                <StaffListRow
+                  member={member}
+                  expanded={expandedId === member.id}
+                  onToggleEdit={() => toggleEdit(member.id)}
+                  packages={packages}
+                  serviceAreas={serviceAreas}
+                  blockedPackageKeys={blockedByStaffId[member.id] ?? []}
+                  allowedAreaSlugs={allowedAreasByStaffId[member.id] ?? []}
+                />
+              </li>
             ))}
           </ul>
         )}
-      </section>
+      </HubFormSection>
 
       {inactive.length > 0 ? (
-        <details className="rounded-lg border border-white/5">
-          <summary className="cursor-pointer list-none px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-text/45 [&::-webkit-details-marker]:hidden">
-            Inactive ({inactive.length})
-          </summary>
-          <ul className="space-y-2 border-t border-white/5 px-3 py-3">
+        <HubDetailsSection summary={`Inactive (${inactive.length})`}>
+          <ul className="space-y-2">
             {inactive.map((member) => (
-              <StaffListRow
-                key={member.id}
-                member={member}
-                expanded={expandedId === member.id}
-                onToggleEdit={() => toggleEdit(member.id)}
-                packages={packages}
-                serviceAreas={serviceAreas}
-                blockedPackageKeys={blockedByStaffId[member.id] ?? []}
-                allowedAreaSlugs={allowedAreasByStaffId[member.id] ?? []}
-              />
+              <li key={member.id}>
+                <StaffListRow
+                  member={member}
+                  expanded={expandedId === member.id}
+                  onToggleEdit={() => toggleEdit(member.id)}
+                  packages={packages}
+                  serviceAreas={serviceAreas}
+                  blockedPackageKeys={blockedByStaffId[member.id] ?? []}
+                  allowedAreaSlugs={allowedAreasByStaffId[member.id] ?? []}
+                />
+              </li>
             ))}
           </ul>
-        </details>
+        </HubDetailsSection>
       ) : null}
     </div>
   );

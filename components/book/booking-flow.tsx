@@ -61,7 +61,7 @@ import {
   Label,
   Select,
   Textarea,
-} from "@/components/ui/field";
+} from "@/components/ui/site-field";
 import { Icon, type IconName } from "@/components/ui/icons";
 import { assetPath } from "@/lib/asset-path";
 import type { DetailerCardInfo } from "@/lib/bookings/bookable-detailers";
@@ -86,7 +86,16 @@ import { cn, formatCurrency } from "@/lib/utils";
    TYPES + STATE
 ─────────────────────────────────────────────────────────────────────*/
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3 | 4 | 5 | 6;
+
+const BOOKING_STEPS: { num: Step; label: string }[] = [
+  { num: 1, label: "Service" },
+  { num: 2, label: "Add-ons" },
+  { num: 3, label: "Location" },
+  { num: 4, label: "Schedule" },
+  { num: 5, label: "Your info" },
+  { num: 6, label: "Confirm" },
+];
 
 interface BookingState {
   packageKey: string;
@@ -518,13 +527,13 @@ export function BookingFlow({
 
   const tryAdvance = (target: Step) => {
     setError(null);
-    if (target === 2) {
+    if (target >= 2) {
       if (!state.packageKey)
         return setError("Please select a service before continuing.");
       if (!state.vehicleKey)
         return setError("Please select a vehicle type before continuing.");
     }
-    if (target === 3) {
+    if (target >= 4) {
       if (!state.locationType) {
         return setError("Please pick where we'll detail your vehicle.");
       }
@@ -536,13 +545,8 @@ export function BookingFlow({
           return setError("Please enter your city and ZIP code.");
         }
       }
-      if (!state.firstName || !state.lastName) {
-        return setError("Please enter your name.");
-      }
-      if (!state.phone) return setError("Please enter a phone number.");
-      if (!state.email) return setError("Please enter an email address.");
     }
-    if (target === 4) {
+    if (target >= 5) {
       if (!state.date || !state.time) {
         return setError("Please pick a date and time before continuing.");
       }
@@ -594,6 +598,13 @@ export function BookingFlow({
           `${state.detailer} is not available at that time. Pick another time or detailer.`,
         );
       }
+    }
+    if (target >= 6) {
+      if (!state.firstName || !state.lastName) {
+        return setError("Please enter your name.");
+      }
+      if (!state.phone) return setError("Please enter a phone number.");
+      if (!state.email) return setError("Please enter an email address.");
     }
     setStep(target);
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
@@ -680,23 +691,30 @@ export function BookingFlow({
     <div
       className={cn(
         "flex flex-col gap-4",
-        step === 4 && "gap-6 sm:gap-8",
+        step === 6 && "gap-6 sm:gap-8",
       )}
     >
-      <Stepper step={step} />
+      <BookingStepper step={step} />
 
       {step === 1 && (
-        <Step1
+        <Step1Service
           state={state}
           update={update}
-          toggleAddon={toggleAddon}
           packages={packages}
-          addons={addons}
         />
       )}
 
       {step === 2 && (
-        <Step2Location
+        <Step2Addons
+          state={state}
+          update={update}
+          toggleAddon={toggleAddon}
+          addons={addons}
+        />
+      )}
+
+      {step === 3 && (
+        <Step3Location
           state={state}
           update={update}
           locationTypes={locationTypes}
@@ -704,8 +722,8 @@ export function BookingFlow({
         />
       )}
 
-      {step === 3 && (
-        <Step3Schedule
+      {step === 4 && (
+        <Step4Schedule
           state={state}
           update={update}
           schedulingRules={schedulingRules}
@@ -735,8 +753,12 @@ export function BookingFlow({
         />
       )}
 
-      {step === 4 && (
-        <Step4
+      {step === 5 && (
+        <Step5YourInfo state={state} update={update} />
+      )}
+
+      {step === 6 && (
+        <Step6Confirm
           state={state}
           update={update}
           setState={setState}
@@ -776,71 +798,59 @@ export function BookingFlow({
    STEPPER
 ─────────────────────────────────────────────────────────────────────*/
 
-function Stepper({ step }: { step: Step }) {
-  const steps: { num: Step; label: string }[] = [
-    { num: 1, label: "Service" },
-    { num: 2, label: "Details" },
-    { num: 3, label: "Schedule" },
-    { num: 4, label: "Confirm" },
-  ];
+function BookingStepper({ step }: { step: Step }) {
+  const pct = (step / BOOKING_STEPS.length) * 100;
+  const current = BOOKING_STEPS.find((s) => s.num === step);
+
   return (
-    <div className="mb-12 flex flex-wrap items-center justify-center gap-2">
-      {steps.map((s, idx) => {
-        const active = s.num === step;
-        const done = s.num < step;
-        return (
-          <div key={s.num} className="flex items-center gap-2">
-            <div
-              className={cn(
-                "flex items-center gap-2 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] transition-colors",
-                active && "text-y",
-                done && "text-y/60",
-                !active && !done && "text-muted/60",
-              )}
-            >
-              <span
-                className={cn(
-                  "flex h-6 w-6 items-center justify-center rounded-full border font-mono text-[10px] font-bold transition-all",
-                  active && "border-y bg-y text-black",
-                  done && "border-y/50 bg-y/10 text-y",
-                  !active && !done && "border-muted/30",
-                )}
-              >
-                {s.num}
-              </span>
-              <span>{s.label}</span>
-            </div>
-            {idx < steps.length - 1 && (
-              <span
-                className={cn(
-                  "mx-1 h-px w-7 transition-colors",
-                  s.num < step ? "bg-y/30" : "bg-white/10",
-                )}
-              />
+    <div className="mb-8 space-y-3 rounded-lg border border-border-faint bg-card/40 px-4 py-4 sm:mb-10 sm:px-5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+          Step {step} of {BOOKING_STEPS.length}
+        </p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-y">
+          {current?.label}
+        </p>
+      </div>
+      <div className="h-1 overflow-hidden rounded-full bg-white/10">
+        <div
+          className="h-full rounded-full bg-y transition-[width] duration-200"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {BOOKING_STEPS.map((s) => (
+          <span
+            key={s.num}
+            className={cn(
+              "rounded px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.1em]",
+              s.num === step
+                ? "bg-y/15 text-y"
+                : s.num < step
+                  ? "text-muted"
+                  : "text-muted/40",
             )}
-          </div>
-        );
-      })}
+          >
+            {s.label}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────
-   STEP 1 — Service + Vehicle + Add-Ons + Prefs
+   STEP 1 — Service + vehicle
 ─────────────────────────────────────────────────────────────────────*/
 
-function Step1({
+function Step1Service({
   state,
   update,
-  toggleAddon,
   packages,
-  addons,
 }: {
   state: BookingState;
   update: <K extends keyof BookingState>(k: K, v: BookingState[K]) => void;
-  toggleAddon: (name: string) => void;
   packages: SitePackage[];
-  addons: PublicCatalog["addons"];
 }) {
   const [suvOpen, setSuvOpen] = useState(
     state.vehicleKey === "suv2" || state.vehicleKey === "suv3",
@@ -969,7 +979,23 @@ function Step1({
           </div>
         )}
       </FormSection>
+    </>
+  );
+}
 
+function Step2Addons({
+  state,
+  update,
+  toggleAddon,
+  addons,
+}: {
+  state: BookingState;
+  update: <K extends keyof BookingState>(k: K, v: BookingState[K]) => void;
+  toggleAddon: (name: string) => void;
+  addons: PublicCatalog["addons"];
+}) {
+  return (
+    <>
       <FormSection
         title={
           <>
@@ -1098,10 +1124,10 @@ function PrefQuestion({
 }
 
 /* ─────────────────────────────────────────────────────────────────────
-   STEP 2 — Service location (full address)
+   STEP 3 — Service location
 ─────────────────────────────────────────────────────────────────────*/
 
-function Step2Location({
+function Step3Location({
   state,
   update,
   locationTypes,
@@ -1121,8 +1147,8 @@ function Step2Location({
     <>
       <FormSection title="Service Location">
         <p className="mb-4 font-mono text-[10px] leading-relaxed tracking-[0.06em] text-text/40">
-          Where we&rsquo;ll detail your vehicle. Next you&rsquo;ll pick a date,
-          time, and detailer.
+          Where we&rsquo;ll detail your vehicle. Next you&rsquo;ll choose your
+          date, time, and detailer.
         </p>
       <FormRow cols={1} className="mb-3.5">
         <FieldGroup>
@@ -1188,8 +1214,27 @@ function Step2Location({
         </p>
       ) : null}
       </FormSection>
+    </>
+  );
+}
 
+/* ─────────────────────────────────────────────────────────────────────
+   STEP 5 — Your information
+─────────────────────────────────────────────────────────────────────*/
+
+function Step5YourInfo({
+  state,
+  update,
+}: {
+  state: BookingState;
+  update: <K extends keyof BookingState>(k: K, v: BookingState[K]) => void;
+}) {
+  return (
+    <>
       <FormSection title="Your Information">
+        <p className="mb-4 font-mono text-[10px] leading-relaxed tracking-[0.06em] text-text/40">
+          We&rsquo;ll send your confirmation and updates here.
+        </p>
         <FormRow className="mb-3.5">
           <FieldGroup>
             <Label htmlFor="fn">First Name</Label>
@@ -1245,10 +1290,10 @@ function Step2Location({
         </FormRow>
         <FormRow cols={1}>
           <FieldGroup>
-            <Label htmlFor="nt">Special Requests</Label>
+            <Label htmlFor="nt">Special Requests (optional)</Label>
             <Textarea
               id="nt"
-              placeholder="Any specific areas to focus on, access instructions, etc."
+              placeholder="Areas to focus on, gate codes, pets, etc."
               value={state.notes}
               onChange={(e) => update("notes", e.target.value)}
             />
@@ -1260,7 +1305,7 @@ function Step2Location({
 }
 
 /* ─────────────────────────────────────────────────────────────────────
-   STEP 3 — Calendar + Time + Detailer
+   STEP 4 — Calendar + Time + Detailer
 ─────────────────────────────────────────────────────────────────────*/
 
 function formatCutoffHour(hour: number): string {
@@ -1270,7 +1315,7 @@ function formatCutoffHour(hour: number): string {
   return `${hour - 12}:00 PM`;
 }
 
-function Step3Schedule({
+function Step4Schedule({
   state,
   update,
   schedulingRules,
@@ -1630,7 +1675,7 @@ function DetailerCard({
    STEP 4 — Summary + Payment notice
 ─────────────────────────────────────────────────────────────────────*/
 
-function Step4({
+function Step6Confirm({
   state,
   update,
   setState,
@@ -2493,12 +2538,12 @@ function FormNav({
       <span
         className={cn(
           "font-mono uppercase tracking-[0.15em] text-muted",
-          step === 4 ? "text-xs sm:text-sm" : "text-[9px]",
+          step === 6 ? "text-xs sm:text-sm" : "text-[9px]",
         )}
       >
-        Step {step} of 4
+        Step {step} of {BOOKING_STEPS.length}
       </span>
-      {step < 4 ? (
+      {step < 6 ? (
         <Button type="button" onClick={onNext}>
           Next <Icon name="arrowRight" className="h-3.5 w-3.5" />
         </Button>

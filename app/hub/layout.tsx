@@ -1,4 +1,4 @@
-import { HubNav } from "@/components/hub/hub-nav";
+import { HubShell } from "@/components/hub/hub-shell";
 import { HubThemeShell } from "@/components/hub/hub-theme-shell";
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import { fetchHubThemeForProfile } from "@/lib/hub/hub-theme-db";
@@ -19,8 +19,7 @@ export default async function HubLayout({
 
   return (
     <HubThemeShell theme={theme}>
-      <HubNav access={access} />
-      <main className="flex-1 overflow-x-auto p-6 md:p-10">{children}</main>
+      <HubShell access={access}>{children}</HubShell>
     </HubThemeShell>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useActionState, useMemo } from "react";
 
 import {
@@ -135,7 +134,6 @@ export function WeekCalendar({
   onBookDay?: (dateKey: string) => void;
   onBookSlot?: (dateKey: string, detailerName: string) => void;
 }) {
-  const router = useRouter();
   const grid = useMemo(
     () => groupBookingsByDetailerAndDay(bookings, detailers),
     [bookings, detailers],
@@ -148,28 +146,18 @@ export function WeekCalendar({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              router.push(`/hub/calendar?week=${prevWeek}`, { scroll: false })
-            }
-          >
-            ← Prev
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/hub/calendar?week=${prevWeek}`} scroll={false}>
+              ← Prev
+            </Link>
           </Button>
           <span className="font-display text-2xl tracking-[0.04em] text-y">
             {weekLabel}
           </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              router.push(`/hub/calendar?week=${nextWeek}`, { scroll: false })
-            }
-          >
-            Next →
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/hub/calendar?week=${nextWeek}`} scroll={false}>
+              Next →
+            </Link>
           </Button>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -200,17 +188,17 @@ export function WeekCalendar({
         </span>
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-white/10">
-        <table className="w-full min-w-[900px] border-collapse text-sm">
+      <div className="max-w-full overflow-x-auto rounded-md border border-border">
+        <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-white/10 bg-card2">
-              <th className="sticky left-0 z-10 w-[140px] border-r border-white/10 bg-card2 px-3 py-2 text-left font-mono text-[9px] uppercase tracking-[0.12em] text-muted">
+              <th className="sticky left-0 z-10 w-[120px] border-r border-border bg-card2 px-3 py-2 text-left font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
                 Detailer
               </th>
               {days.map((day) => (
                 <th
                   key={day.dateKey}
-                  className="min-w-[120px] border-r border-white/5 px-2 py-2 text-center font-mono text-[9px] uppercase tracking-[0.1em] text-muted last:border-r-0"
+                  className="min-w-[100px] border-r border-border/50 px-2 py-2 text-center font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground last:border-r-0"
                 >
                   <div className="text-y/80">{day.weekday}</div>
                   <div className="text-text/50">{day.label}</div>
@@ -235,7 +223,7 @@ export function WeekCalendar({
                   key={detailer.name}
                   className="border-b border-white/5 align-top"
                 >
-                  <td className="sticky left-0 z-10 border-r border-white/10 bg-dk px-3 py-2">
+                  <td className="sticky left-0 z-10 border-r border-border bg-card px-3 py-2">
                     <div className="flex items-center gap-2">
                       <span
                         className="h-3 w-3 shrink-0 rounded-full"
@@ -252,7 +240,7 @@ export function WeekCalendar({
                     return (
                       <td
                         key={day.dateKey}
-                        className="min-w-[120px] border-r border-white/[0.04] p-1.5 align-top last:border-r-0"
+                        className="min-w-[100px] border-r border-border/30 p-1.5 align-top last:border-r-0"
                       >
                         <div className="flex min-h-[72px] flex-col gap-1.5">
                           {dayBookings.length === 0 ? (

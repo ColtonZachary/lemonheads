@@ -1,4 +1,4 @@
-import { ReportsHubPanel, ReportsPeriodForm } from "@/components/hub/reports-hub-panel";
+import { ReportsDashboard } from "@/components/hub/reports-hub-panel";
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import { fetchDetailerPayReport } from "@/lib/hub/detailer-pay-report";
 import {
@@ -12,6 +12,9 @@ import {
 } from "@/lib/hub/week-calendar";
 import { addDaysToDateInput } from "@/lib/bookings/scheduling-limits";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+/** Align server cache with client auto-refresh interval (5 min). */
+export const revalidate = 300;
 
 export default async function HubReportsPage({
   searchParams,
@@ -46,25 +49,15 @@ export default async function HubReportsPage({
   ]);
 
   return (
-    <div>
-      <h1 className="font-display text-5xl tracking-[0.04em] text-y">REPORTS</h1>
-      <p className="mt-2 font-mono text-xs tracking-[0.08em] text-text/40">
-        Revenue, detailer hours, packages, add-ons, and cities · Central dates
-      </p>
-
-      <ReportsPeriodForm
-        from={from}
-        to={to}
-        preset={sp.preset}
-      />
-
-      <ReportsHubPanel
-        report={report}
-        detailerPay={detailerPay}
-        payWeekLabel={payWeekLabel}
-        payWeekPrevHref={payWeekPrevHref}
-        payWeekNextHref={payWeekNextHref}
-      />
-    </div>
+    <ReportsDashboard
+      from={from}
+      to={to}
+      preset={sp.preset}
+      report={report}
+      detailerPay={detailerPay}
+      payWeekLabel={payWeekLabel}
+      payWeekPrevHref={payWeekPrevHref}
+      payWeekNextHref={payWeekNextHref}
+    />
   );
 }

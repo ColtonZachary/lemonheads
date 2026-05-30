@@ -12,7 +12,7 @@ import {
   Label,
   Select,
   Textarea,
-} from "@/components/ui/field";
+} from "@/components/ui/site-field";
 import { Icon } from "@/components/ui/icons";
 
 const INITIAL: ContactState = { status: "idle" };

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { HubPageHeader } from "@/components/hub/hub-page";
 import {
   ServiceAreaCoveragePanel,
   type CoverageRuleRow,
@@ -36,17 +37,17 @@ export default async function HubSettingsCoveragePage() {
     <div>
       <Link
         href="/hub/settings"
-        className="font-mono text-[10px] uppercase tracking-[0.12em] text-text/40 hover:text-y"
+        className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground hover:text-primary"
       >
         ← Settings
       </Link>
 
-      <h1 className="mt-4 font-display text-5xl tracking-[0.04em] text-y">
-        SERVICE AREAS
-      </h1>
-      <p className="mt-2 text-sm text-text/45">
-        ZIP and city rules for mobile detailing — separate from team schedule limits.
-      </p>
+      <div className="mt-4">
+        <HubPageHeader
+          title="Service areas"
+          description="ZIP and city rules for mobile detailing — separate from team schedule limits."
+        />
+      </div>
 
       <div className="mt-6 max-w-4xl">
         <ServiceAreaCoveragePanel

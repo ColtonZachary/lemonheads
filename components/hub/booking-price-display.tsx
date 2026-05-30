@@ -18,7 +18,7 @@ export function BookingPriceDisplay({
 
   if (!original) {
     return (
-      <span className={cn("font-mono text-sm text-text/80", className)}>{final}</span>
+      <span className={cn("font-mono text-sm text-foreground", className)}>{final}</span>
     );
   }
 
@@ -29,10 +29,10 @@ export function BookingPriceDisplay({
         className,
       )}
     >
-      <span className="font-mono text-xs text-text/40 line-through">{original}</span>
-      <span className="font-mono text-sm text-y">{final}</span>
+      <span className="font-mono text-xs text-muted-foreground line-through">{original}</span>
+      <span className="font-mono text-sm text-primary">{final}</span>
       {discountLabel && (
-        <span className="font-mono text-[9px] text-text/35">−{discountLabel} promo</span>
+        <span className="font-mono text-[9px] text-muted-foreground">−{discountLabel} promo</span>
       )}
     </div>
   );

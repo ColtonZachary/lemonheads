@@ -32,7 +32,7 @@ export function HowItWorks() {
         {STEPS.map((step) => (
           <article
             key={step.num}
-            className="group relative overflow-hidden bg-bk p-9 transition-colors hover:bg-card before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:origin-left before:scale-x-0 before:bg-gradient-to-r before:from-y before:to-transparent before:transition-transform before:duration-500 hover:before:scale-x-100"
+            className="group relative overflow-hidden bg-bk p-9 transition-colors hover:bg-card2 before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:origin-left before:scale-x-0 before:bg-gradient-to-r before:from-y before:to-transparent before:transition-transform before:duration-500 hover:before:scale-x-100"
           >
             <span
               aria-hidden

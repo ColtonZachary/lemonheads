@@ -1,4 +1,15 @@
+import { HubEmptyState, HubSection, HubStatCard } from "@/components/hub/hub-page";
 import { WeekNavLinks } from "@/components/hub/week-nav-links";
+import { Badge } from "@/components/ui/badge";
+import { CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   formatPayCents,
   type DetailerPayReport,
@@ -16,97 +27,103 @@ function DetailerPayCard({
   return (
     <details
       open={defaultOpen}
-      className="overflow-hidden rounded-lg border border-white/10 bg-card/30"
+      className="group overflow-hidden rounded-lg border border-border/80 bg-card/40"
     >
       <summary className="cursor-pointer list-none px-4 py-3 [&::-webkit-details-marker]:hidden">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-sm text-y/90">{detailer.detailerName}</span>
-            <span
-              className={cn(
-                "rounded px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.1em]",
-                detailer.isSenior
-                  ? "bg-y/15 text-y"
-                  : "bg-white/10 text-text/55",
-              )}
+            <span className="font-mono text-sm text-primary">{detailer.detailerName}</span>
+            <Badge
+              variant={detailer.isSenior ? "default" : "secondary"}
+              className="font-mono text-[8px] uppercase"
             >
               {detailer.tierLabel}
-            </span>
-            <span className="font-mono text-[9px] text-text/40">
+            </Badge>
+            <span className="font-mono text-[9px] text-muted-foreground">
               {detailer.jobCount} job{detailer.jobCount === 1 ? "" : "s"}
             </span>
           </div>
-          <span className="font-mono text-sm text-y">
+          <span className="font-mono text-sm text-primary">
             {formatPayCents(detailer.totalPayCents)}
           </span>
         </div>
       </summary>
 
-      <div className="space-y-4 border-t border-white/10 px-4 py-3">
+      <CardContent className="space-y-4 border-t border-border/60 px-4 py-3">
         {detailer.weeks.map((week) => (
           <div key={week.weekStart}>
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h4 className="font-mono text-[10px] uppercase tracking-[0.12em] text-text/55">
+              <h4 className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
                 {week.weekLabel}
               </h4>
-              <span className="font-mono text-xs text-y/80">
+              <span className="font-mono text-xs text-primary">
                 {formatPayCents(week.totalPayCents)}
-                <span className="ml-2 text-[9px] text-text/40">
+                <span className="ml-2 text-[9px] text-muted-foreground">
                   pkg {formatPayCents(week.packagePayCents)} · add-ons{" "}
                   {formatPayCents(week.addonPayCents)}
                 </span>
               </span>
             </div>
 
-            <div className="mt-2 overflow-x-auto">
-              <table className="w-full min-w-[520px] text-left text-xs">
-                <thead>
-                  <tr className="border-b border-white/10 font-mono text-[9px] uppercase tracking-[0.1em] text-text/40">
-                    <th className="py-2 pr-3">Date</th>
-                    <th className="py-2 pr-3">Service</th>
-                    <th className="py-2 pr-3 text-right">Package</th>
-                    <th className="py-2 pr-3">Add-ons</th>
-                    <th className="py-2 text-right">Pay</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {week.jobs.map((job, idx) => (
-                    <tr
-                      key={`${job.appointmentDate}-${job.serviceName}-${idx}`}
-                      className="border-b border-white/5 font-mono text-[11px] text-text/65"
-                    >
-                      <td className="py-2 pr-3 text-text/50">{job.appointmentDate}</td>
-                      <td className="py-2 pr-3 text-text/80">{job.serviceName}</td>
-                      <td className="py-2 pr-3 text-right text-text/55">
-                        {formatPayCents(job.packagePayCents)}
-                      </td>
-                      <td className="py-2 pr-3 text-text/45">
-                        {job.addonLines.length ? (
-                          <ul className="space-y-0.5">
-                            {job.addonLines.map((a) => (
-                              <li key={a.name}>
-                                {a.name}{" "}
-                                <span className="text-text/35">
-                                  {formatPayCents(a.payCents)}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td className="py-2 text-right text-y/85">
-                        {formatPayCents(job.totalPayCents)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table className="mt-2">
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="font-mono text-[9px] uppercase text-muted-foreground">
+                    Date
+                  </TableHead>
+                  <TableHead className="font-mono text-[9px] uppercase text-muted-foreground">
+                    Service
+                  </TableHead>
+                  <TableHead className="text-right font-mono text-[9px] uppercase text-muted-foreground">
+                    Package
+                  </TableHead>
+                  <TableHead className="font-mono text-[9px] uppercase text-muted-foreground">
+                    Add-ons
+                  </TableHead>
+                  <TableHead className="text-right font-mono text-[9px] uppercase text-muted-foreground">
+                    Pay
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {week.jobs.map((job, idx) => (
+                  <TableRow
+                    key={`${job.appointmentDate}-${job.serviceName}-${idx}`}
+                    className="font-mono text-[11px]"
+                  >
+                    <TableCell className="text-muted-foreground">
+                      {job.appointmentDate}
+                    </TableCell>
+                    <TableCell>{job.serviceName}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {formatPayCents(job.packagePayCents)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {job.addonLines.length ? (
+                        <ul className="space-y-0.5">
+                          {job.addonLines.map((a) => (
+                            <li key={a.name}>
+                              {a.name}{" "}
+                              <span className="text-muted-foreground/70">
+                                {formatPayCents(a.payCents)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right text-primary">
+                      {formatPayCents(job.totalPayCents)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         ))}
-      </div>
+      </CardContent>
     </details>
   );
 }
@@ -117,13 +134,15 @@ export function ReportsDetailerPaySection({
   payWeekLabel,
   payWeekPrevHref,
   payWeekNextHref,
+  embedded = false,
 }: {
   pay: DetailerPayReport;
-  /** Detailers viewing their own pay — hide duplicate section header. */
   singleDetailer?: boolean;
   payWeekLabel?: string;
   payWeekPrevHref?: string;
   payWeekNextHref?: string;
+  /** Compact block inside reports dashboard collapsible */
+  embedded?: boolean;
 }) {
   const weekNav =
     payWeekLabel && payWeekPrevHref && payWeekNextHref ? (
@@ -133,68 +152,77 @@ export function ReportsDetailerPaySection({
         nextHref={payWeekNextHref}
       />
     ) : null;
+
+  const detailerList = pay.detailers.length ? (
+    <div className={cn("space-y-2", !embedded && "space-y-3")}>
+      {pay.detailers.map((d) => (
+        <DetailerPayCard
+          key={d.detailerName}
+          detailer={d}
+          defaultOpen={embedded ? false : singleDetailer}
+        />
+      ))}
+    </div>
+  ) : (
+    <HubEmptyState className={embedded ? "py-4 text-[10px]" : undefined}>
+      No detailer jobs in this date range.
+    </HubEmptyState>
+  );
+
+  if (embedded) {
+    return (
+      <div className="space-y-2">
+        {weekNav ? (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <WeekNavLinks
+              weekLabel={payWeekLabel!}
+              prevHref={payWeekPrevHref!}
+              nextHref={payWeekNextHref!}
+              compact
+            />
+          </div>
+        ) : null}
+        {detailerList}
+      </div>
+    );
+  }
+
   return (
-    <section
-      className={cn(
-        singleDetailer ? "mt-8" : "mt-12 border-t border-white/10 pt-10",
-      )}
+    <HubSection
+      compact={!singleDetailer}
+      className={cn(singleDetailer ? "mt-8" : undefined)}
+      title={singleDetailer ? undefined : "Detailer pay"}
+      description={
+        singleDetailer
+          ? undefined
+          : "Flat pay per package and add-on by tier (Regular vs Senior). Excludes cancelled and deleted jobs · one calendar week at a time."
+      }
+      headerAction={
+        !singleDetailer ? (
+          <HubStatCard
+            label={weekNav ? "Week total" : "Total in range"}
+            value={formatPayCents(pay.grandTotalCents)}
+            className="min-w-[8rem]"
+          />
+        ) : null
+      }
     >
       {weekNav ? (
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           {weekNav}
-          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-text/40">
+          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
             Central Time · Mon–Sun
-          </p>
+          </span>
         </div>
       ) : null}
 
-      {!singleDetailer ? (
-        <div
-          className={cn(
-            "flex flex-wrap items-end justify-between gap-3",
-            weekNav && "mt-4",
-          )}
-        >
-          <div>
-            <h2 className="font-display text-3xl tracking-[0.03em] text-y">
-              DETAILER PAY
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm text-text/45">
-              Flat pay per package and add-on by tier (Regular vs Senior). Excludes
-              cancelled and deleted jobs · one calendar week at a time.
-            </p>
-          </div>
-          <div className="rounded-lg border border-y/20 bg-y/5 px-4 py-2.5 text-right">
-            <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-text/45">
-              {weekNav ? "Week total" : "Total in range"}
-            </p>
-            <p className="font-display text-2xl text-y">
-              {formatPayCents(pay.grandTotalCents)}
-            </p>
-          </div>
-        </div>
-      ) : !weekNav ? (
-        <p className="font-mono text-[9px] text-text/35">
-          {pay.from} → {pay.to} · Central appointment dates · grouped by week
-          (Mon–Sun)
+      {!singleDetailer && !weekNav ? null : singleDetailer && !weekNav ? (
+        <p className="mb-4 font-mono text-[9px] text-muted-foreground">
+          {pay.from} → {pay.to} · Central appointment dates · grouped by week (Mon–Sun)
         </p>
       ) : null}
 
-      {pay.detailers.length ? (
-        <div className={cn("space-y-3", singleDetailer ? "mt-4" : "mt-6")}>
-          {pay.detailers.map((d) => (
-            <DetailerPayCard
-              key={d.detailerName}
-              detailer={d}
-              defaultOpen={singleDetailer}
-            />
-          ))}
-        </div>
-      ) : (
-        <p className="mt-6 rounded-lg border border-white/10 px-4 py-8 text-center text-sm text-text/40">
-          No detailer jobs in this date range.
-        </p>
-      )}
-    </section>
+      {detailerList}
+    </HubSection>
   );
 }

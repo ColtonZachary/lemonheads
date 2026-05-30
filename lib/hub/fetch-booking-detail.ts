@@ -6,7 +6,7 @@ import { isSupabaseMissingColumn } from "@/lib/supabase/schema-errors";
 const BOOKING_DETAIL_SELECT = `
   id, reference_id, customer_name, email, phone,
   location_type, address_line, city, zip,
-  service_name, vehicle_type, vehicle_info,
+  service_name, service_key, vehicle_type, vehicle_info,
   addons, plastic_shine, customer_notes,
   status, starts_at, ends_at,
   detailer_name, detailer_auto_assigned,
