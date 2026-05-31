@@ -9,6 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.lemonheads.employee",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
@@ -16,6 +17,7 @@
       }
     },
     "android": {
+      "package": "com.lemonheads.employee",
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -32,6 +34,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-dev-client",
       [
         "expo-splash-screen",
         {
@@ -45,6 +48,13 @@
         {
           "photosPermission": "Allow Lemonheads to attach before/after job photos.",
           "cameraPermission": "Allow Lemonheads to take before/after job photos."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#E8D44D"
         }
       ]
     ],

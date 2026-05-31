@@ -1,15 +1,27 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+
+import { PushRegistrationBanner } from "@/components/PushRegistrationBanner";
 
 import { useAuth } from "@/lib/auth-context";
+import { unregisterPushToken } from "@/lib/push-notifications";
 import { colors } from "@/lib/theme";
 
 export default function EmployeeTabLayout() {
-  const { signOut, employee } = useAuth();
+  const { signOut, employee, session } = useAuth();
+
+  const handleSignOut = async () => {
+    if (session?.access_token) {
+      await unregisterPushToken(session.access_token);
+    }
+    await signOut();
+  };
 
   return (
-    <Tabs
+    <View style={styles.root}>
+      <PushRegistrationBanner />
+      <Tabs
       screenOptions={{
         tabBarStyle: styles.tabBar,
         tabBarActiveTintColor: colors.yellow,
@@ -17,7 +29,7 @@ export default function EmployeeTabLayout() {
         headerStyle: { backgroundColor: colors.card },
         headerTintColor: colors.text,
         headerRight: () => (
-          <Pressable onPress={() => signOut()} style={styles.signOut}>
+          <Pressable onPress={() => void handleSignOut()} style={styles.signOut}>
             <Text style={styles.signOutText}>Sign out</Text>
           </Pressable>
         ),
@@ -43,10 +55,18 @@ export default function EmployeeTabLayout() {
         }}
       />
     </Tabs>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: colors.bg,
+  },
+  tabs: {
+    flex: 1,
+  },
   tabBar: {
     backgroundColor: colors.card,
     borderTopColor: colors.border,

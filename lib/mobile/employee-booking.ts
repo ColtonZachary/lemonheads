@@ -1,7 +1,7 @@
 import { getBookingPriceDisplay } from "@/lib/hub/booking-price-display";
 
 export const EMPLOYEE_JOB_LIST_SELECT =
-  "id, reference_id, customer_name, phone, service_name, vehicle_type, detailer_name, appointment_date, starts_at, ends_at, status, city, address_line, location_type, zip, addons, price_display, estimated_price_cents, discount_cents, final_price_cents, price_override_cents, price_cents";
+  "id, reference_id, customer_name, phone, service_name, vehicle_type, detailer_name, appointment_date, starts_at, ends_at, status, city, address_line, location_type, zip, addons, price_display, estimated_price_cents, discount_cents, final_price_cents, price_override_cents, price_cents, detail_phase";
 
 export const EMPLOYEE_JOB_DETAIL_SELECT = `
   id, reference_id, customer_name, email, phone,
@@ -40,6 +40,7 @@ export type EmployeeBookingRow = {
   final_price_cents?: number | null;
   price_override_cents?: number | null;
   price_cents?: number | null;
+  detail_phase?: string | null;
 };
 
 export type EmployeeBookingDetailRow = EmployeeBookingRow & {
@@ -91,6 +92,7 @@ export function serializeEmployeeJobList(row: EmployeeBookingRow) {
     priceDisplay: price.display,
     priceOriginal: price.original,
     priceDiscount: price.discountLabel,
+    detailPhase: row.detail_phase ?? "awaiting_start",
   };
 }
 

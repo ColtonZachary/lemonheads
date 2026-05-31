@@ -1,6 +1,8 @@
 import { Redirect, Stack } from "expo-router";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
+import { PushNotificationListeners } from "@/components/PushNotificationListeners";
+import { PushRegistrationProvider } from "@/lib/push-registration-context";
 import { useAuth } from "@/lib/auth-context";
 import { colors } from "@/lib/theme";
 
@@ -20,7 +22,9 @@ export default function EmployeeLayout() {
   }
 
   return (
-    <Stack
+    <PushRegistrationProvider>
+      <PushNotificationListeners />
+      <Stack
       screenOptions={{
         headerStyle: { backgroundColor: colors.card },
         headerTintColor: colors.text,
@@ -37,6 +41,7 @@ export default function EmployeeLayout() {
         }}
       />
     </Stack>
+    </PushRegistrationProvider>
   );
 }
 

@@ -6,6 +6,10 @@
   "scripts": {
     "start": "expo start",
     "mobile": "expo start",
+    "ios:device": "expo run:ios --device",
+    "android:device": "expo run:android --device",
+    "build:dev:ios": "eas build --profile development --platform ios",
+    "build:dev:android": "eas build --profile development --platform android",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web"
@@ -15,8 +19,11 @@
     "@supabase/supabase-js": "^2.106.2",
     "expo": "~54.0.0",
     "expo-constants": "~18.0.13",
+    "expo-dev-client": "~6.0.21",
+    "expo-device": "~8.0.10",
     "expo-image-picker": "~17.0.11",
     "expo-linking": "~8.0.12",
+    "expo-notifications": "~0.32.17",
     "expo-router": "~6.0.24",
     "expo-secure-store": "~15.0.8",
     "expo-splash-screen": "~31.0.13",

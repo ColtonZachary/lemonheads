@@ -63,6 +63,7 @@ import {
   notifyCustomerBookingRescheduled,
   type CustomerBookingSmsData,
 } from "@/lib/notifications/customer-sms";
+import { notifyDetailerJobAssigned } from "@/lib/notifications/employee-push";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -461,6 +462,22 @@ export async function updateHubBooking(
     });
   }
 
+  const detailerChanged =
+    detailerName &&
+    status !== "cancelled" &&
+    existing.detailer_name !== detailerName;
+  if (detailerChanged) {
+    queueDetailerJobAssignedPush({
+      detailerName,
+      bookingId,
+      referenceId: existing.reference_id as string,
+      customerName,
+      service: pkg.name,
+      date: dateLabel,
+      time: timeLabel,
+    });
+  }
+
   revalidatePath("/hub/bookings");
   revalidatePath(`/hub/bookings/${bookingId}`);
   revalidatePath("/hub/calendar");
@@ -714,6 +731,18 @@ export async function createHubBooking(
     if (!r.ok) console.warn("[hub-booking] create SMS:", r.error);
   });
 
+  if (status !== "cancelled") {
+    queueDetailerJobAssignedPush({
+      detailerName: saved.detailerName,
+      bookingId: saved.bookingId,
+      referenceId,
+      customerName: parsed.data.customerName,
+      service: parsed.data.service,
+      date: parsed.data.date,
+      time: parsed.data.time,
+    });
+  }
+
   revalidatePath("/hub/bookings");
   revalidatePath("/hub/calendar");
   revalidatePath(`/hub/bookings/${saved.bookingId}`);
@@ -727,6 +756,20 @@ export async function createHubBooking(
 
 function formatHubBookingPrice(cents: number): string {
   return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
+}
+
+function queueDetailerJobAssignedPush(args: {
+  detailerName: string;
+  bookingId: string;
+  referenceId: string;
+  customerName: string;
+  service: string;
+  date: string;
+  time: string;
+}): void {
+  void notifyDetailerJobAssigned(getSupabaseAdmin(), args).then((r) => {
+    if (!r.ok) console.warn("[hub-booking] detailer push:", r.error);
+  });
 }
 
 export async function removeBookingLoyaltyReward(
