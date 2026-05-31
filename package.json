@@ -11,7 +11,8 @@
     "supabase:configure": "node scripts/supabase-configure.mjs",
     "supabase:upload": "node scripts/upload-site-media.mjs",
     "hub:seed": "npx tsx scripts/seed-hub-catalog.ts",
-    "mobile": "npm run start --prefix apps/mobile"
+    "mobile": "npm run start --prefix apps/mobile",
+    "customer": "npm run start --prefix apps/customer"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
