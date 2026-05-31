@@ -30,6 +30,7 @@ export type EmployeeJob = {
   priceDisplay: string;
   priceOriginal: string | null;
   priceDiscount: string | null;
+  detailPhase: string;
 };
 
 export type EmployeeJobsResponse = {

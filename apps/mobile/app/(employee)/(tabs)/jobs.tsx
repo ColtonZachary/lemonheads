@@ -15,6 +15,8 @@ import { apiGet } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import {
   centralTodayDateKey,
+  detailPhaseLabel,
+  detailPhaseTone,
   formatDuration,
   formatMonthDay,
   formatTimeRange,
@@ -81,6 +83,15 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+function WorkflowBadge({ phase }: { phase: string }) {
+  const tone = detailPhaseTone(phase);
+  return (
+    <View style={[styles.badge, styles[`badge_${tone}` as keyof typeof styles]]}>
+      <Text style={styles.badgeText}>{detailPhaseLabel(phase)}</Text>
+    </View>
+  );
+}
+
 function JobCard({
   job,
   onPress,
@@ -90,6 +101,10 @@ function JobCard({
 }) {
   const duration = formatDuration(job.starts_at, job.ends_at);
   const address = formatJobAddress(job);
+  const showWorkflow =
+    job.status !== "cancelled" &&
+    job.status !== "completed" &&
+    job.detailPhase !== "awaiting_start";
 
   return (
     <Pressable onPress={onPress} style={styles.card}>
@@ -97,7 +112,10 @@ function JobCard({
       <View style={styles.cardBody}>
         <View style={styles.cardHeader}>
           <Text style={styles.ref}>{job.reference_id}</Text>
-          <StatusBadge status={job.status} />
+          <View style={styles.badgeRow}>
+            {showWorkflow ? <WorkflowBadge phase={job.detailPhase} /> : null}
+            <StatusBadge status={job.status} />
+          </View>
         </View>
         <Text style={styles.time}>{formatTimeRange(job.starts_at, job.ends_at)}</Text>
         <Text style={styles.meta}>
@@ -382,6 +400,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexShrink: 1,
+    justifyContent: "flex-end",
   },
   ref: {
     color: colors.yellow,

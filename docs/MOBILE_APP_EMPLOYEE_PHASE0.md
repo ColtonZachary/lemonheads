@@ -231,10 +231,99 @@ If you still see this error:
 ## Phase 1 (later — not built yet)
 
 - Customer login and full booking flow in the app
-- Push notifications for new assignments
+- ~~Push notifications for new assignments~~ **Done** — see [Push notifications](#push-notifications) below
 - App Store / Play Store build with EAS
 - Tighter RLS so detailers only read their own bookings in SQL (today the API filters by name)
 - Custom SMS copy per workflow step
+
+---
+
+## Push notifications (detailers)
+
+When a booking is assigned or reassigned to a detailer, the app can send a push alert if:
+
+1. The detailer uses a **development build** of the app (not Expo Go — remote push was removed from Expo Go in SDK 53+).
+2. They signed in on a **physical device** (not iOS Simulator).
+3. They allowed notifications when prompted.
+4. Their hub profile is linked to a `staff_members` row with `profile_id` set.
+
+### Expo Go vs development build
+
+| | Expo Go | Development build |
+|---|---------|-------------------|
+| Jobs, pay, workflow | Yes | Yes |
+| Push notifications | **No** (SDK 53+) | **Yes** |
+| How to run | `npm run mobile` → scan QR | One-time install, then `npm run mobile` |
+
+Everything except push works in Expo Go. For job alerts you need a dev build once.
+
+### One-time: install the dev app on your iPhone
+
+**Prerequisites:** Xcode (Mac App Store), iPhone on same Wi‑Fi as your Mac, Apple ID (free tier is fine for personal testing).
+
+```bash
+cd apps/mobile
+npx eas login          # create/login at expo.dev
+npx eas init           # links project; writes projectId into app.json
+npm run ios:device     # builds & installs "Lemonheads Employee" on your phone
+```
+
+First run takes several minutes (Xcode compile). When done, open **Lemonheads Employee** on your phone (not Expo Go).
+
+Day-to-day after that:
+
+```bash
+# Terminal 1 — website API
+npm run dev
+
+# Terminal 2 — Metro for the dev app
+npm run mobile
+```
+
+Open the **Lemonheads Employee** app on your phone (it connects to Metro automatically on the same Wi‑Fi). Set `EXPO_PUBLIC_API_URL` to your Mac’s LAN IP.
+
+**Cloud build alternative** (no Xcode compile on your Mac):
+
+```bash
+cd apps/mobile
+npm run build:dev:ios
+```
+
+Install from the link EAS prints when the build finishes.
+
+### Database migration (required once)
+
+Apply in Supabase SQL editor (or CLI):
+
+`supabase/migrations/20260609000000_employee_push_tokens.sql`
+
+Then reload PostgREST schema if needed:
+
+```sql
+NOTIFY pgrst, 'reload schema';
+```
+
+### How it works
+
+| Step | What happens |
+|------|----------------|
+| Sign in | App requests notification permission and registers an Expo push token |
+| Token saved | `POST /api/mobile/employee/push-token` stores the token for that profile |
+| New booking | Website calls Expo push API when a job is assigned (online booking or hub create/update) |
+| Tap alert | App opens the job detail screen |
+
+Push events are logged in `notification_events` with channel `push` (same table as SMS).
+
+### Testing push
+
+1. Complete [One-time: install the dev app](#one-time-install-the-dev-app-on-your-iphone) above.
+2. Run `npm run dev` and `npm run mobile`.
+3. Sign in on your phone in **Lemonheads Employee** (not Expo Go). Allow notifications.
+4. From the hub, create a booking assigned to that detailer — alert within a few seconds.
+
+If no alert: confirm the migration ran, the detailer’s staff row has `profile_id` linked, and check hub/server logs for `[push]` or `[hub-booking] detailer push:` warnings. In Supabase, `employee_push_tokens` should have at least one row after sign-in.
+
+Optional: set `EXPO_ACCESS_TOKEN` on the website for higher Expo push rate limits in production ([Expo access tokens](https://docs.expo.dev/push-notifications/sending-notifications/#additional-security)).
 
 ---
 

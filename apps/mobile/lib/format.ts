@@ -70,3 +70,24 @@ export function statusTone(
   if (status === "cancelled") return "cancelled";
   return "pending";
 }
+
+export function detailPhaseLabel(phase: string): string {
+  const labels: Record<string, string> = {
+    awaiting_start: "Not started",
+    en_route: "On the way",
+    arrived: "Arrived",
+    awaiting_finish: "Before photos",
+    awaiting_after_photos: "After photos",
+    awaiting_checklist: "Checklist",
+    complete: "Complete",
+  };
+  return labels[phase] ?? phase.replace(/_/g, " ");
+}
+
+export function detailPhaseTone(
+  phase: string,
+): "done" | "active" | "pending" {
+  if (phase === "complete") return "done";
+  if (phase === "awaiting_start") return "pending";
+  return "active";
+}

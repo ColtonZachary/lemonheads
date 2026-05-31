@@ -14,6 +14,7 @@ import {
 } from "@/lib/email-templates";
 import { insertBooking } from "@/lib/bookings/insert-booking";
 import { notifyCustomerBookingCreated } from "@/lib/notifications/customer-sms";
+import { notifyDetailerJobAssigned } from "@/lib/notifications/employee-push";
 import { FROM_EMAIL, TO_EMAIL, getResend } from "@/lib/resend";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -95,6 +96,19 @@ export async function submitBooking(
       }).then((sms) => {
         if (!sms.ok) console.warn("[booking] customer SMS:", sms.error);
       });
+      if (savedBookingId) {
+        void notifyDetailerJobAssigned(supabase, {
+          detailerName: assignedDetailer,
+          bookingId: savedBookingId,
+          referenceId: bookingId,
+          customerName: data.customerName,
+          service: data.service,
+          date: data.date,
+          time: data.time,
+        }).then((push) => {
+          if (!push.ok) console.warn("[booking] detailer push:", push.error);
+        });
+      }
       return {
         status: "success",
         bookingId,
@@ -131,6 +145,19 @@ export async function submitBooking(
     }).then((sms) => {
       if (!sms.ok) console.warn("[booking] customer SMS:", sms.error);
     });
+    if (savedBookingId) {
+      void notifyDetailerJobAssigned(supabase, {
+        detailerName: assignedDetailer,
+        bookingId: savedBookingId,
+        referenceId: bookingId,
+        customerName: data.customerName,
+        service: data.service,
+        date: data.date,
+        time: data.time,
+      }).then((push) => {
+        if (!push.ok) console.warn("[booking] detailer push:", push.error);
+      });
+    }
 
     return {
       status: "success",
