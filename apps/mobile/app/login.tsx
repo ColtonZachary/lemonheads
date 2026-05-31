@@ -1,18 +1,10 @@
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, View } from "react-native";
+
+import { Button, Input, Label, Text } from "@lemonheads/mobile-ui";
 
 import { useAuth } from "@/lib/auth-context";
-import { colors } from "@/lib/theme";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -44,121 +36,57 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      className="flex-1 justify-center bg-background px-6"
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <Text style={styles.brand}>Lemonhead's</Text>
-      <Text style={styles.subtitle}>Employee app</Text>
-      <Text style={styles.hint}>
+      <Text variant="title">Lemonhead's</Text>
+      <Text variant="subtitle">Employee app</Text>
+      <Text variant="muted" className="mb-6 mt-4 leading-5">
         Use the same email and password as hub login. Detailers only.
       </Text>
 
-      <TextInput
-        style={styles.input}
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="email-address"
-        placeholder="Email"
-        placeholderTextColor={colors.muted}
-        value={email}
-        onChangeText={setEmail}
-        editable={!busy}
-      />
-      <TextInput
-        style={styles.input}
-        secureTextEntry
-        placeholder="Password"
-        placeholderTextColor={colors.muted}
-        value={password}
-        onChangeText={setPassword}
-        editable={!busy}
-      />
+      <View className="flex flex-col gap-3">
+        <View>
+          <Label nativeID="email">Email</Label>
+          <Input
+            accessibilityLabelledBy="email"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            editable={!busy}
+          />
+        </View>
+        <View>
+          <Label nativeID="password">Password</Label>
+          <Input
+            accessibilityLabelledBy="password"
+            secureTextEntry
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            editable={!busy}
+          />
+        </View>
+      </View>
 
-      {(error || authError) && (
-        <Text style={styles.error}>{error ?? authError}</Text>
-      )}
+      {(error || authError) ? (
+        <Text variant="error" className="mt-4">
+          {error ?? authError}
+        </Text>
+      ) : null}
 
-      <Pressable
-        style={[styles.button, busy && styles.buttonDisabled]}
-        onPress={onSubmit}
-        disabled={busy}
-      >
-        {busy ? (
-          <ActivityIndicator color={colors.bg} />
-        ) : (
-          <Text style={styles.buttonText}>Sign in</Text>
-        )}
-      </Pressable>
+      <Button className="mt-6" loading={busy} disabled={busy} onPress={onSubmit}>
+        Sign in
+      </Button>
 
       {busy && !error && !authError ? (
-        <Text style={styles.status}>Signing in…</Text>
+        <Text variant="muted" className="mt-3 text-center">
+          Signing in…
+        </Text>
       ) : null}
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-    padding: 24,
-    justifyContent: "center",
-  },
-  brand: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: colors.yellow,
-    letterSpacing: 1,
-  },
-  subtitle: {
-    marginTop: 4,
-    fontSize: 14,
-    color: colors.muted,
-    textTransform: "uppercase",
-    letterSpacing: 2,
-  },
-  hint: {
-    marginTop: 16,
-    marginBottom: 24,
-    fontSize: 13,
-    color: colors.muted,
-    lineHeight: 20,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    backgroundColor: colors.card,
-    color: colors.text,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 12,
-    fontSize: 16,
-  },
-  button: {
-    marginTop: 8,
-    backgroundColor: colors.yellow,
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: colors.bg,
-    fontWeight: "700",
-    fontSize: 16,
-  },
-  error: {
-    color: colors.red,
-    marginBottom: 12,
-    fontSize: 13,
-  },
-  status: {
-    marginTop: 12,
-    textAlign: "center",
-    color: colors.muted,
-    fontSize: 13,
-  },
-});

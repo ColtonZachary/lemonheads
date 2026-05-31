@@ -5,6 +5,8 @@ import { StatusBar } from "expo-status-bar";
 import { AuthProvider } from "@/lib/auth-context";
 import { colors } from "@/lib/theme";
 
+import "../../../packages/mobile-ui/global.css";
+
 export { ErrorBoundary } from "expo-router";
 
 const navTheme = {

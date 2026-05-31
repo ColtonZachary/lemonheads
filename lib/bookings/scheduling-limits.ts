@@ -373,3 +373,26 @@ export function listTimeSlotStates(
 }
 
 export type { BookingTimeSlot };
+
+export function listBookableDateLabels(
+  rules: SchedulingRulesSnapshot,
+  serviceAreaSlugs: string[] = [],
+  locationContext?: LocationSchedulingContext | null,
+  maxCount = 45,
+  maxScan = 120,
+): { dateInput: string; label: string }[] {
+  const results: { dateInput: string; label: string }[] = [];
+  let dateInput = getCentralTodayDateInput();
+  let scanned = 0;
+
+  while (results.length < maxCount && scanned < maxScan) {
+    const label = dateInputToLabel(dateInput);
+    if (isDateLabelSelectable(label, rules, serviceAreaSlugs, locationContext)) {
+      results.push({ dateInput, label });
+    }
+    dateInput = addDaysToDateInput(dateInput, 1);
+    scanned += 1;
+  }
+
+  return results;
+}

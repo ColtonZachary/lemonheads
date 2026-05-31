@@ -245,6 +245,8 @@ export function BookingFlow({
     }),
   );
   const [step, setStep] = useState<Step>(1);
+  const flowTopRef = useRef<HTMLDivElement>(null);
+  const skipStepScrollRef = useRef(true);
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<{
     bookingId: string;
@@ -607,7 +609,6 @@ export function BookingFlow({
       if (!state.email) return setError("Please enter an email address.");
     }
     setStep(target);
-    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const submit = () => {
@@ -667,6 +668,14 @@ export function BookingFlow({
     });
   };
 
+  useEffect(() => {
+    if (skipStepScrollRef.current) {
+      skipStepScrollRef.current = false;
+      return;
+    }
+    flowTopRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
+  }, [step]);
+
   // Strip query params after first read so refresh isn't sticky
   useEffect(() => {
     if (presetPkg || presetVeh) {
@@ -689,8 +698,9 @@ export function BookingFlow({
 
   return (
     <div
+      ref={flowTopRef}
       className={cn(
-        "flex flex-col gap-4",
+        "flex scroll-mt-24 flex-col gap-4",
         step === 6 && "gap-6 sm:gap-8",
       )}
     >

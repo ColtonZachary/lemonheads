@@ -35,6 +35,7 @@
     "app/_actions_server",
     "**/*.server.ts",
     "scripts",
-    "apps/mobile"
+    "apps/mobile",
+    "apps/customer"
   ]
 }
