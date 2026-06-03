@@ -23,6 +23,7 @@ export type CatalogResponse = {
     packages: CatalogPackage[];
     addons: { name: string; price: number; description: string }[];
     locationTypes: string[];
+    packageAddonBlocks: Record<string, string[]>;
   };
 };
 

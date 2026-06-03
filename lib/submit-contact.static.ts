@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  emailFieldSchema,
+  optionalPhoneFieldSchema,
+} from "@/lib/validation/contact-fields";
+
 export type ContactState =
   | { status: "idle" }
   | { status: "error"; message: string; fieldErrors?: Record<string, string[]> }
@@ -7,8 +12,8 @@ export type ContactState =
 
 const ContactSchema = z.object({
   name: z.string().min(2),
-  email: z.string().email(),
-  phone: z.string().optional().default(""),
+  email: emailFieldSchema,
+  phone: optionalPhoneFieldSchema,
   topic: z.string().min(1),
   message: z.string().min(10),
   website: z.string().max(0).optional().default(""),

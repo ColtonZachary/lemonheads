@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { CalendarPageClient } from "@/components/hub/calendar-page-client";
 import { HubPageHeader } from "@/components/hub/hub-page";
 import { requireHubAccess } from "@/lib/auth/require-hub";
+import { fetchPublicCatalog } from "@/lib/catalog/public-catalog";
 import { parseWeekSearchParam } from "@/lib/hub/week-calendar";
 import {
   fetchDetailerNameForProfile,
@@ -36,9 +37,10 @@ async function CalendarContent({
     );
   }
 
-  const [data, detailerNames] = await Promise.all([
+  const [data, detailerNames, catalog] = await Promise.all([
     fetchWeekCalendarData(supabase!, weekMonday, { detailerFilter }),
     canBook ? fetchBookableDetailerNames(supabase!) : Promise.resolve([]),
+    canBook ? fetchPublicCatalog(supabase!) : Promise.resolve(null),
   ]);
 
   return (
@@ -62,6 +64,8 @@ async function CalendarContent({
         canManage={access.isManager}
         canBook={canBook}
         detailerNames={detailerNames}
+        catalogAddons={catalog?.addons ?? []}
+        packageAddonBlocks={catalog?.packageAddonBlocks ?? {}}
         initialBookOpen={params.book === "1"}
         clearBookQueryParam={params.book === "1"}
       />

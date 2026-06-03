@@ -24,7 +24,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { CatalogPackageRow } from "@/lib/hub/catalog-db";
+import type { CatalogAddonRow, CatalogPackageRow } from "@/lib/hub/catalog-db";
+import type { PackageAddonBlocksMap } from "@/lib/bookings/package-addon-blocks";
+import { getBlockedAddonNamesForPackage } from "@/lib/bookings/package-addon-blocks";
+import { PackageAddonBlocksField } from "@/components/hub/package-addon-blocks-field";
 import { VEHICLE_OPTIONS } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
@@ -174,7 +177,15 @@ function PackageFormFields({ pkg }: { pkg?: CatalogPackageRow }) {
   );
 }
 
-function PackageEditForm({ pkg }: { pkg: CatalogPackageRow }) {
+function PackageEditForm({
+  pkg,
+  addons,
+  packageAddonBlocks,
+}: {
+  pkg: CatalogPackageRow;
+  addons: CatalogAddonRow[];
+  packageAddonBlocks: PackageAddonBlocksMap;
+}) {
   const [state, action, pending] = useActionState(
     updateCatalogPackage.bind(null, pkg.key),
     EMPTY,
@@ -188,6 +199,11 @@ function PackageEditForm({ pkg }: { pkg: CatalogPackageRow }) {
   return (
     <form action={action} className="border-t border-border bg-muted/20 px-3 py-3 sm:px-4">
       <PackageFormFields pkg={pkg} />
+      <PackageAddonBlocksField
+        packageKey={pkg.key}
+        addons={addons}
+        blockedNames={getBlockedAddonNamesForPackage(packageAddonBlocks, pkg.key)}
+      />
 
       <div className="mt-3 flex flex-wrap gap-2">
         <Button type="submit" size="sm" disabled={busy}>
@@ -227,10 +243,14 @@ function PackageEditForm({ pkg }: { pkg: CatalogPackageRow }) {
 
 function PackageListRow({
   pkg,
+  addons,
+  packageAddonBlocks,
   expanded,
   onToggleEdit,
 }: {
   pkg: CatalogPackageRow;
+  addons: CatalogAddonRow[];
+  packageAddonBlocks: PackageAddonBlocksMap;
   expanded: boolean;
   onToggleEdit: () => void;
 }) {
@@ -268,12 +288,26 @@ function PackageListRow({
           {expanded ? "Close" : "Edit"}
         </Button>
       </div>
-      {expanded ? <PackageEditForm pkg={pkg} /> : null}
+      {expanded ? (
+        <PackageEditForm
+          pkg={pkg}
+          addons={addons}
+          packageAddonBlocks={packageAddonBlocks}
+        />
+      ) : null}
     </Card>
   );
 }
 
-export function CatalogPackagesPanel({ packages }: { packages: CatalogPackageRow[] }) {
+export function CatalogPackagesPanel({
+  packages,
+  addons,
+  packageAddonBlocks,
+}: {
+  packages: CatalogPackageRow[];
+  addons: CatalogAddonRow[];
+  packageAddonBlocks: PackageAddonBlocksMap;
+}) {
   const [createState, createAction, createPending] = useActionState(
     createCatalogPackage,
     EMPTY,
@@ -325,6 +359,8 @@ export function CatalogPackagesPanel({ packages }: { packages: CatalogPackageRow
               <li key={pkg.key}>
                 <PackageListRow
                   pkg={pkg}
+                  addons={addons}
+                  packageAddonBlocks={packageAddonBlocks}
                   expanded={expandedKey === pkg.key}
                   onToggleEdit={() => toggleEdit(pkg.key)}
                 />
@@ -341,6 +377,8 @@ export function CatalogPackagesPanel({ packages }: { packages: CatalogPackageRow
               <li key={pkg.key}>
                 <PackageListRow
                   pkg={pkg}
+                  addons={addons}
+                  packageAddonBlocks={packageAddonBlocks}
                   expanded={expandedKey === pkg.key}
                   onToggleEdit={() => toggleEdit(pkg.key)}
                 />

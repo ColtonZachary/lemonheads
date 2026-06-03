@@ -76,6 +76,17 @@ function AddonFormFields({ addon, idPrefix }: { addon?: CatalogAddonRow; idPrefi
           ))}
         </HubNativeSelect>
       </HubFormField>
+      <HubFormField label="Category" htmlFor={`${idPrefix}category`}>
+        <HubNativeSelect
+          id={`${idPrefix}category`}
+          name="category"
+          defaultValue={addon?.category ?? "general"}
+        >
+          <option value="interior">Interior</option>
+          <option value="exterior">Exterior</option>
+          <option value="general">General</option>
+        </HubNativeSelect>
+      </HubFormField>
       <HubFormField label="Sort" htmlFor={`${idPrefix}sort_order`}>
         <HubInput
           id={`${idPrefix}sort_order`}

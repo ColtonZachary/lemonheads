@@ -81,6 +81,14 @@ import {
   type SitePackage,
 } from "@/lib/catalog/public-catalog";
 import { cn, formatCurrency } from "@/lib/utils";
+import {
+  getEmailValidationError,
+  getPhoneValidationError,
+} from "@/lib/validation/contact-fields";
+import {
+  getBlockedAddonNamesForPackage,
+  isAddonBlockedForPackage,
+} from "@/lib/bookings/package-addon-blocks";
 
 /* ─────────────────────────────────────────────────────────────────────
    TYPES + STATE
@@ -223,7 +231,7 @@ export function BookingFlow({
   coverageRules: ServiceAreaCoverageRule[];
   serviceAreaTravel: ServiceAreaTravelMap;
 }) {
-  const { packages, addons, locationTypes } = catalog;
+  const { packages, addons, locationTypes, packageAddonBlocks } = catalog;
   const packageByKey = useMemo(() => packagesByKey(packages), [packages]);
   const bookableDetailers =
     detailersProp?.length
@@ -259,18 +267,41 @@ export function BookingFlow({
   const paymentRef = useRef<BookingCardCaptureApi | null>(null);
   const skipDiscountClearRef = useRef(false);
 
+  const blockedAddonNames = useMemo(
+    () => getBlockedAddonNamesForPackage(packageAddonBlocks, state.packageKey),
+    [packageAddonBlocks, state.packageKey],
+  );
+
   const update = <K extends keyof BookingState>(
     key: K,
     value: BookingState[K],
   ) => setState((s) => ({ ...s, [key]: value }));
 
-  const toggleAddon = (name: string) =>
+  const toggleAddon = (name: string) => {
+    if (isAddonBlockedForPackage(packageAddonBlocks, state.packageKey, name)) {
+      return;
+    }
     setState((s) => {
       const next = new Set(s.addons);
       if (next.has(name)) next.delete(name);
       else next.add(name);
       return { ...s, addons: next };
     });
+  };
+
+  useEffect(() => {
+    if (!state.packageKey || !state.addons.size) return;
+    setState((s) => {
+      const next = new Set(
+        Array.from(s.addons).filter(
+          (name) =>
+            !isAddonBlockedForPackage(packageAddonBlocks, s.packageKey, name),
+        ),
+      );
+      if (next.size === s.addons.size) return s;
+      return { ...s, addons: next };
+    });
+  }, [state.packageKey, packageAddonBlocks]);
 
   const pkg =
     state.packageKey && packageByKey[state.packageKey]
@@ -605,14 +636,20 @@ export function BookingFlow({
       if (!state.firstName || !state.lastName) {
         return setError("Please enter your name.");
       }
-      if (!state.phone) return setError("Please enter a phone number.");
-      if (!state.email) return setError("Please enter an email address.");
+      const phoneErr = getPhoneValidationError(state.phone);
+      if (phoneErr) return setError(phoneErr);
+      const emailErr = getEmailValidationError(state.email);
+      if (emailErr) return setError(emailErr);
     }
     setStep(target);
   };
 
   const submit = () => {
     setError(null);
+    const phoneErr = getPhoneValidationError(state.phone);
+    if (phoneErr) return setError(phoneErr);
+    const emailErr = getEmailValidationError(state.email);
+    if (emailErr) return setError(emailErr);
     startTransition(async () => {
       let cardOnFile = false;
 
@@ -720,6 +757,7 @@ export function BookingFlow({
           update={update}
           toggleAddon={toggleAddon}
           addons={addons}
+          blockedAddonNames={blockedAddonNames}
         />
       )}
 
@@ -998,12 +1036,16 @@ function Step2Addons({
   update,
   toggleAddon,
   addons,
+  blockedAddonNames,
 }: {
   state: BookingState;
   update: <K extends keyof BookingState>(k: K, v: BookingState[K]) => void;
   toggleAddon: (name: string) => void;
   addons: PublicCatalog["addons"];
+  blockedAddonNames: string[];
 }) {
+  const blockedSet = new Set(blockedAddonNames);
+
   return (
     <>
       <FormSection
@@ -1019,31 +1061,48 @@ function Step2Addons({
         <p className="mb-6 font-mono text-xs tracking-[0.06em] text-text/35">
           Tap any to add to your booking
         </p>
+        {blockedAddonNames.length > 0 ? (
+          <p className="mb-4 font-mono text-[10px] leading-relaxed tracking-[0.06em] text-text/40">
+            Some add-ons are not available with your selected package.
+          </p>
+        ) : null}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {addons.map((a) => {
             const selected = state.addons.has(a.name);
+            const blocked = blockedSet.has(a.name);
             return (
               <button
                 key={a.name}
                 type="button"
+                disabled={blocked}
                 onClick={() => toggleAddon(a.name)}
                 className={cn(
-                  "relative cursor-pointer rounded-md border bg-card px-4 py-3.5 text-left transition-colors",
-                  selected
-                    ? "border-y bg-y/[0.08]"
-                    : "border-border-faint hover:border-y/20 hover:bg-card2",
+                  "relative rounded-md border bg-card px-4 py-3.5 text-left transition-colors",
+                  blocked
+                    ? "cursor-not-allowed border-border-faint/60 opacity-45"
+                    : "cursor-pointer",
+                  !blocked &&
+                    (selected
+                      ? "border-y bg-y/[0.08]"
+                      : "border-border-faint hover:border-y/20 hover:bg-card2"),
                 )}
               >
-                <span
-                  className={cn(
-                    "absolute right-2.5 top-2.5 flex h-[18px] w-[18px] items-center justify-center rounded-full border transition-all",
-                    selected
-                      ? "border-y bg-y text-black"
-                      : "border-white/15 text-transparent",
-                  )}
-                >
-                  {selected && <Icon name="check" className="h-2.5 w-2.5" />}
-                </span>
+                {blocked ? (
+                  <span className="absolute right-2.5 top-2.5 font-mono text-[8px] uppercase tracking-[0.08em] text-muted">
+                    N/A
+                  </span>
+                ) : (
+                  <span
+                    className={cn(
+                      "absolute right-2.5 top-2.5 flex h-[18px] w-[18px] items-center justify-center rounded-full border transition-all",
+                      selected
+                        ? "border-y bg-y text-black"
+                        : "border-white/15 text-transparent",
+                    )}
+                  >
+                    {selected && <Icon name="check" className="h-2.5 w-2.5" />}
+                  </span>
+                )}
                 <div className="pr-5 text-xs font-bold leading-tight">
                   {a.name}
                 </div>

@@ -6,6 +6,7 @@ import { BookingDetailForm } from "@/components/hub/booking-detail-form";
 import { BookingDetailProgress } from "@/components/hub/booking-detail-progress";
 import { BookingJobPhotosSection } from "@/components/hub/booking-job-photos-section";
 import { DetailJobProgressBadge } from "@/components/hub/detail-job-progress-badge";
+import { fetchPublicCatalog } from "@/lib/catalog/public-catalog";
 import { requireHubAccess } from "@/lib/auth/require-hub";
 import { fetchBookableDetailerNames } from "@/lib/bookings/bookable-detailers";
 import { listBookingJobPhotos } from "@/lib/hub/booking-job-photos";
@@ -36,7 +37,7 @@ export default async function HubBookingDetailPage({
   const booking = await fetchHubBookingDetail(supabase!, id);
   if (!booking) notFound();
 
-  const [detailerNames, jobPhotos, paidInvoice] = await Promise.all([
+  const [detailerNames, jobPhotos, paidInvoice, catalog] = await Promise.all([
     fetchBookableDetailerNames(supabase!),
     listBookingJobPhotos(supabase!, id),
     supabase!
@@ -45,6 +46,7 @@ export default async function HubBookingDetailPage({
       .eq("booking_id", id)
       .eq("status", "paid")
       .maybeSingle(),
+    fetchPublicCatalog(supabase!),
   ]);
 
   const lineItemsLocked = Boolean(booking.billed_at) || Boolean(paidInvoice.data);
@@ -130,6 +132,8 @@ export default async function HubBookingDetailPage({
         <BookingDetailForm
           booking={booking}
           detailerNames={detailerNames}
+          catalogAddons={catalog.addons}
+          packageAddonBlocks={catalog.packageAddonBlocks}
           lineItemsLocked={lineItemsLocked}
         />
       </div>

@@ -33,7 +33,10 @@ import {
 } from "@lemonheads/mobile-ui";
 
 import { BookingDatePicker } from "@/components/BookingDatePicker";
-import { useAuth } from "@/lib/auth-context";
+import {
+  getBlockedAddonNamesForPackage,
+  isAddonBlockedForPackage,
+} from "@/lib/package-addon-blocks";
 import { apiGetPublic, apiGet, apiPostPublic, apiPost } from "@/lib/api";
 import type {
   BookingAvailabilityResponse,
@@ -280,6 +283,21 @@ export function BookingFlow({ initialPackageKey }: Props) {
     [config, packageKey],
   );
 
+  const packageAddonBlocks = config?.catalog.packageAddonBlocks ?? {};
+  const blockedAddonNames = useMemo(
+    () => getBlockedAddonNamesForPackage(packageAddonBlocks, packageKey),
+    [packageAddonBlocks, packageKey],
+  );
+
+  useEffect(() => {
+    if (!packageKey || !addons.length) return;
+    setAddons((current) =>
+      current.filter(
+        (name) => !isAddonBlockedForPackage(packageAddonBlocks, packageKey, name),
+      ),
+    );
+  }, [packageKey, packageAddonBlocks]);
+
   const selectedVehicle = useMemo(
     () => config?.vehicles.find((v) => v.key === vehicleKey) ?? null,
     [config, vehicleKey],
@@ -444,6 +462,7 @@ export function BookingFlow({ initialPackageKey }: Props) {
   };
 
   const toggleAddon = (name: string) => {
+    if (isAddonBlockedForPackage(packageAddonBlocks, packageKey, name)) return;
     setAddons((prev) =>
       prev.includes(name) ? prev.filter((a) => a !== name) : [...prev, name],
     );
@@ -775,6 +794,7 @@ export function BookingFlow({ initialPackageKey }: Props) {
         {step === 2 ? (
           <StepAddons
             addons={config?.catalog.addons ?? []}
+            blockedAddonNames={blockedAddonNames}
             selected={addons}
             onToggle={toggleAddon}
             plasticCondition={plasticCondition}
@@ -1048,6 +1068,7 @@ function StepService({
 
 function StepAddons({
   addons,
+  blockedAddonNames,
   selected,
   onToggle,
   plasticCondition,
@@ -1056,6 +1077,7 @@ function StepAddons({
   onEarlyContact,
 }: {
   addons: { name: string; price: number; description: string }[];
+  blockedAddonNames: string[];
   selected: string[];
   onToggle: (name: string) => void;
   plasticCondition: "Yes" | "No";
@@ -1063,20 +1085,39 @@ function StepAddons({
   earlyContact: "Yes" | "No";
   onEarlyContact: (v: "Yes" | "No") => void;
 }) {
+  const blockedSet = new Set(blockedAddonNames);
+
   return (
     <View>
       <SectionTitle>Optional add-ons</SectionTitle>
+      {blockedAddonNames.length > 0 ? (
+        <Text variant="muted" className="mb-3">
+          Some add-ons are not available with your selected package.
+        </Text>
+      ) : null}
       {addons.length === 0 ? (
         <Text variant="muted">No add-ons available right now.</Text>
       ) : (
         addons.map((addon) => {
           const checked = selected.includes(addon.name);
+          const blocked = blockedSet.has(addon.name);
           return (
-            <Pressable key={addon.name} onPress={() => onToggle(addon.name)} className="mb-3">
-              <Card className={checked ? "border-primary" : ""}>
+            <Pressable
+              key={addon.name}
+              disabled={blocked}
+              onPress={() => onToggle(addon.name)}
+              className="mb-3"
+            >
+              <Card className={checked ? "border-primary" : blocked ? "opacity-45" : ""}>
                 <CardHeader>
                   <CardTitle>{addon.name}</CardTitle>
-                  <Text className="font-bold text-primary">+${addon.price}</Text>
+                  {blocked ? (
+                    <Text variant="muted" className="text-xs uppercase">
+                      Not available
+                    </Text>
+                  ) : (
+                    <Text className="font-bold text-primary">+${addon.price}</Text>
+                  )}
                   <CardDescription>{addon.description}</CardDescription>
                 </CardHeader>
               </Card>

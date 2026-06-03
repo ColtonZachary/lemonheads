@@ -16,6 +16,10 @@ import {
   type CatalogAddonRow,
   type CatalogPackageRow,
 } from "@/lib/hub/catalog-db";
+import {
+  fetchPackageAddonBlocksMap,
+  type PackageAddonBlocksMap,
+} from "@/lib/bookings/package-addon-blocks";
 
 /** Package shape used on the public site and booking flow (dynamic keys from DB). */
 export type SitePackage = {
@@ -32,6 +36,7 @@ export type PublicCatalog = {
   packages: SitePackage[];
   addons: AddOn[];
   locationTypes: string[];
+  packageAddonBlocks: PackageAddonBlocksMap;
 };
 
 const DEFAULT_LOCATION_TYPES = [
@@ -99,6 +104,7 @@ export function staticPublicCatalog(): PublicCatalog {
     })),
     addons: ADDONS,
     locationTypes: DEFAULT_LOCATION_TYPES,
+    packageAddonBlocks: {},
   };
 }
 
@@ -110,13 +116,17 @@ export async function fetchPublicCatalog(
 
   const includeLocations = options.includeLocations ?? true;
 
-  const [packageRows, addonRows, locationRows] = await Promise.all([
-    fetchCatalogPackages(client),
-    fetchCatalogAddons(client),
-    includeLocations
-      ? fetchBookingLocationTypes(client)
-      : Promise.resolve([] as Awaited<ReturnType<typeof fetchBookingLocationTypes>>),
-  ]);
+  const [packageRows, addonRows, locationRows, packageAddonBlocks] =
+    await Promise.all([
+      fetchCatalogPackages(client),
+      fetchCatalogAddons(client),
+      includeLocations
+        ? fetchBookingLocationTypes(client)
+        : Promise.resolve(
+            [] as Awaited<ReturnType<typeof fetchBookingLocationTypes>>,
+          ),
+      fetchPackageAddonBlocksMap(client),
+    ]);
 
   const activePackages = packageRows.filter((p) => p.active);
   const activeAddons = addonRows.filter((a) => a.active);
@@ -133,6 +143,7 @@ export async function fetchPublicCatalog(
       locationTypes: activeLocations.length
         ? activeLocations
         : DEFAULT_LOCATION_TYPES,
+      packageAddonBlocks,
     };
   }
 
@@ -144,5 +155,6 @@ export async function fetchPublicCatalog(
     locationTypes: activeLocations.length
       ? activeLocations
       : DEFAULT_LOCATION_TYPES,
+    packageAddonBlocks,
   };
 }
