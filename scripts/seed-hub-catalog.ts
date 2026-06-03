@@ -133,6 +133,22 @@ async function main() {
 
   for (let i = 0; i < ADDONS.length; i++) {
     const a = ADDONS[i];
+    const category =
+      [
+        "Shampoo",
+        "Steam Clean",
+        "Pet Hair Removal",
+        "Ozone Air Treatment",
+      ].includes(a.name)
+        ? "interior"
+        : [
+              "Clay Bar",
+              "Headlight Restoration",
+              "Engine Bay Clean",
+              "Ceramic Spray",
+            ].includes(a.name)
+          ? "exterior"
+          : "general";
     const { error } = await supabase.from("catalog_addons").upsert(
       {
         name: a.name,
@@ -140,6 +156,7 @@ async function main() {
         price_cents: Math.round(a.price * 100),
         price_suffix: a.priceSuffix ?? "",
         icon: a.icon,
+        category,
         active: true,
         sort_order: i,
       },

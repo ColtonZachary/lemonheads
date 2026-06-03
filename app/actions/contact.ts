@@ -4,11 +4,15 @@ import { z } from "zod";
 
 import { renderContactEmail } from "@/lib/email-templates";
 import { FROM_EMAIL, TO_EMAIL, getResend } from "@/lib/resend";
+import {
+  emailFieldSchema,
+  optionalPhoneFieldSchema,
+} from "@/lib/validation/contact-fields";
 
 const ContactSchema = z.object({
   name: z.string().min(2, "Please tell us your name."),
-  email: z.string().email("Please enter a valid email."),
-  phone: z.string().optional().default(""),
+  email: emailFieldSchema,
+  phone: optionalPhoneFieldSchema,
   topic: z.string().min(1, "Please pick a topic."),
   message: z.string().min(10, "Tell us a little more (10+ characters)."),
   /** Honeypot — must be empty */

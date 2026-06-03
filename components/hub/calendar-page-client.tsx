@@ -16,6 +16,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import type { HubBookingCreateDraft } from "@/lib/hub/booking-create-draft";
+import type { AddOn } from "@/lib/data";
+import type { PackageAddonBlocksMap } from "@/lib/bookings/package-addon-blocks";
 import { UNASSIGNED_DETAILER } from "@/lib/hub/week-calendar";
 import type {
   WeekCalendarBooking,
@@ -33,6 +35,8 @@ export function CalendarPageClient({
   canManage,
   canBook,
   detailerNames,
+  catalogAddons,
+  packageAddonBlocks,
   initialBookOpen,
   clearBookQueryParam,
 }: {
@@ -45,6 +49,8 @@ export function CalendarPageClient({
   canManage: boolean;
   canBook: boolean;
   detailerNames: string[];
+  catalogAddons: AddOn[];
+  packageAddonBlocks: PackageAddonBlocksMap;
   initialBookOpen?: boolean;
   /** True when URL had ?book=1 so we can strip it on close without useSearchParams */
   clearBookQueryParam?: boolean;
@@ -171,6 +177,8 @@ export function CalendarPageClient({
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 pt-2">
               <BookingCreateForm
                 detailerNames={detailerNames}
+                catalogAddons={catalogAddons}
+                packageAddonBlocks={packageAddonBlocks}
                 initialDraft={bookDraft}
                 formSeed={formSeed}
                 onSuccess={handleCreated}

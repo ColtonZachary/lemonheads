@@ -1,9 +1,11 @@
 import { z } from "zod";
 
+import { emailFieldSchema, phoneFieldSchema } from "@/lib/validation/contact-fields";
+
 export const BookingSchema = z.object({
   customerName: z.string().min(2, "Please enter your name."),
-  email: z.string().email("Please enter a valid email."),
-  phone: z.string().min(7, "Please enter a phone number."),
+  email: emailFieldSchema,
+  phone: phoneFieldSchema,
   service: z.string().min(1, "Please select a service."),
   vehicleKey: z.string().optional().default(""),
   vehicle: z.string().min(1, "Please select a vehicle type."),

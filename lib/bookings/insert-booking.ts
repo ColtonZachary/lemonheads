@@ -37,6 +37,10 @@ import {
   isDetailerBlockedForPackage,
 } from "@/lib/bookings/staff-package-blocks";
 import {
+  fetchPackageAddonBlocksMap,
+  validatePackageAddonSelection,
+} from "@/lib/bookings/package-addon-blocks";
+import {
   fetchDetailerServiceAreasMap,
   filterDetailersForServiceAreas,
   isDetailerAllowedInServiceAreas,
@@ -215,6 +219,18 @@ export async function insertBooking(
     ]);
 
   const serviceKey = data.serviceKey?.trim() ?? "";
+  if (serviceKey) {
+    const packageAddonBlocks = await fetchPackageAddonBlocksMap(client);
+    const addonValidation = validatePackageAddonSelection(
+      serviceKey,
+      data.addons ?? [],
+      packageAddonBlocks,
+    );
+    if (!addonValidation.ok) {
+      return { ok: false, error: addonValidation.message };
+    }
+  }
+
   const enforcePackageBlocks = options?.enforceDetailerPackageBlocks !== false;
   let eligibleDetailers = detailerNames;
   const requested = data.requestedDetailer?.trim() ?? "";

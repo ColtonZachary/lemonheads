@@ -26,19 +26,11 @@ export function getTwilioConfig(): TwilioConfig | null {
   return { accountSid, authToken, from };
 }
 
+import { normalizeUsPhone } from "@/lib/validation/contact-fields";
+
 /** US-focused E.164 for Twilio (10-digit or leading 1). */
 export function normalizeSmsRecipient(phone: string): string | null {
-  const trimmed = phone.trim();
-  if (trimmed.startsWith("+")) {
-    const digits = trimmed.replace(/\D/g, "");
-    if (digits.length >= 10) return `+${digits}`;
-    return null;
-  }
-
-  const digits = trimmed.replace(/\D/g, "");
-  if (digits.length === 10) return `+1${digits}`;
-  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
-  return null;
+  return normalizeUsPhone(phone);
 }
 
 export async function sendTwilioSms(

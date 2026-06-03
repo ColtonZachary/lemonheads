@@ -15,6 +15,10 @@ import {
   createHubBooking,
   type HubBookingActionState,
 } from "@/app/actions/hub-bookings";
+import {
+  getEmailValidationError,
+  getPhoneValidationError,
+} from "@/lib/validation/contact-fields";
 import { CustomerBookingLookup } from "@/components/hub/customer-booking-lookup";
 import {
   HubFieldRow,
@@ -28,9 +32,12 @@ import { HubDatePicker } from "@/components/hub/hub-date-picker";
 import { HubTimeSelect } from "@/components/hub/hub-time-select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { HubAddonCheckboxes } from "@/components/hub/hub-addon-checkboxes";
 import { cn } from "@/lib/utils";
 import { BOOKING_LOCATION_TYPES } from "@/lib/bookings/constants";
-import { ADDONS, PACKAGES, VEHICLE_OPTIONS } from "@/lib/data";
+import type { AddOn } from "@/lib/data";
+import type { PackageAddonBlocksMap } from "@/lib/bookings/package-addon-blocks";
+import { PACKAGES, VEHICLE_OPTIONS } from "@/lib/data";
 import { EMPTY_BOOKING_CREATE_DRAFT } from "@/lib/hub/booking-create-draft";
 
 const EMPTY: HubBookingActionState = { ok: false, message: "" };
@@ -107,9 +114,11 @@ function validateWizardStep(
   switch (stepIndex) {
     case 0:
       if (!customer.name.trim()) return "Enter the customer name.";
-      if (!customer.phone.trim()) return "Enter a phone number.";
-      if (!customer.email.trim() || !customer.email.includes("@")) {
-        return "Enter a valid email address.";
+      {
+        const phoneErr = getPhoneValidationError(customer.phone);
+        if (phoneErr) return phoneErr;
+        const emailErr = getEmailValidationError(customer.email);
+        if (emailErr) return emailErr;
       }
       return null;
     case 1:
@@ -145,6 +154,8 @@ function stepIndexForServerError(message: string): number {
 
 export function BookingCreateForm({
   detailerNames,
+  catalogAddons,
+  packageAddonBlocks,
   initialDraft,
   formSeed = "new",
   onSuccess,
@@ -152,6 +163,8 @@ export function BookingCreateForm({
   compact,
 }: {
   detailerNames: string[];
+  catalogAddons: AddOn[];
+  packageAddonBlocks: PackageAddonBlocksMap;
   initialDraft?: Partial<typeof EMPTY_BOOKING_CREATE_DRAFT>;
   formSeed?: string | number;
   onSuccess?: (bookingId: string) => void;
@@ -180,6 +193,7 @@ export function BookingCreateForm({
   const [city, setCity] = useState(draft.city);
   const [zip, setZip] = useState(draft.zip);
   const [vehicleInfo, setVehicleInfo] = useState(draft.vehicle_info);
+  const [packageKey, setPackageKey] = useState(draft.package_key);
 
   const formKey = useMemo(() => {
     if (state.draft) {
@@ -212,6 +226,7 @@ export function BookingCreateForm({
     setCity(draft.city);
     setZip(draft.zip);
     setVehicleInfo(draft.vehicle_info);
+    setPackageKey(draft.package_key);
   }, [
     formSeed,
     draft.appointment_date,
@@ -224,6 +239,7 @@ export function BookingCreateForm({
     draft.city,
     draft.zip,
     draft.vehicle_info,
+    draft.package_key,
   ]);
 
   useEffect(() => {
@@ -375,7 +391,8 @@ export function BookingCreateForm({
             id="package_key"
             name="package_key"
             required={inputRequired}
-            defaultValue={draft.package_key || undefined}
+            value={packageKey || ""}
+            onChange={(e) => setPackageKey(e.target.value)}
           >
             <option value="" disabled>
               Select package…
@@ -418,28 +435,14 @@ export function BookingCreateForm({
           />
         </HubFormField>
       </HubFieldRow>
-      <div className={addonGridClass}>
-        {ADDONS.map((a) => (
-          <label
-            key={a.name}
-            className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-card/30 px-3 py-2.5 text-sm hover:border-primary/30"
-          >
-            <input
-              type="checkbox"
-              name="addons"
-              value={a.name}
-              defaultChecked={draft.addons.includes(a.name)}
-              className="mt-0.5 size-4 shrink-0 rounded border border-input accent-primary"
-            />
-            <span>
-              {a.name}
-              <span className="ml-1 font-mono text-[10px] text-primary">
-                +${a.price}
-              </span>
-            </span>
-          </label>
-        ))}
-      </div>
+      <HubAddonCheckboxes
+        key={`addons-${packageKey}`}
+        packageKey={packageKey}
+        addons={catalogAddons}
+        packageAddonBlocks={packageAddonBlocks}
+        selectedNames={draft.addons}
+        className={addonGridClass}
+      />
     </HubFormSection>
   );
 

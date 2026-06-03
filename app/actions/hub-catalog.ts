@@ -5,6 +5,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { isAddonIcon } from "@/lib/hub/catalog-icons";
 import { vehicleKeysForCatalog } from "@/lib/hub/catalog-db";
 import { PUBLIC_CATALOG_CACHE_TAG } from "@/lib/catalog/cached-public-catalog";
+import { syncPackageAddonBlocks } from "@/lib/bookings/package-addon-blocks";
 import { requireManagerSupabase } from "@/lib/hub/require-manager-supabase";
 import { VEHICLE_OPTIONS } from "@/lib/data";
 
@@ -52,6 +53,38 @@ function packageKeyFromInput(raw: string): string | null {
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9-]/g, "");
   return key.length > 0 ? key.slice(0, 48) : null;
+}
+
+function parseAddonCategory(raw: string): "interior" | "exterior" | "general" {
+  if (raw === "interior" || raw === "exterior" || raw === "general") return raw;
+  return "general";
+}
+
+async function syncPackageAddonBlocksFromForm(
+  ctx: Awaited<ReturnType<typeof requireManagerSupabase>>,
+  packageKey: string,
+  formData: FormData,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  if ("error" in ctx) return { ok: false, message: ctx.error };
+
+  const { data: addonRows, error } = await ctx.supabase
+    .from("catalog_addons")
+    .select("name");
+
+  if (error) return { ok: false, message: error.message };
+
+  const allowedNames = new Set((addonRows ?? []).map((row) => row.name as string));
+  const blockedNames = formData.getAll("blocked_addon_names").map(String);
+
+  const result = await syncPackageAddonBlocks(
+    ctx.supabase,
+    packageKey,
+    blockedNames,
+    allowedNames,
+  );
+
+  if (!result.ok) return { ok: false, message: result.error };
+  return { ok: true };
 }
 
 /* ── Packages ── */
@@ -164,6 +197,9 @@ export async function updateCatalogPackage(
 
   if (priceError) return { ok: false, message: priceError.message };
 
+  const blocksResult = await syncPackageAddonBlocksFromForm(ctx, packageKey, formData);
+  if (!blocksResult.ok) return { ok: false, message: blocksResult.message };
+
   revalidateCatalog();
   return { ok: true, message: "Package updated." };
 }
@@ -209,6 +245,7 @@ export async function createCatalogAddon(
   const description = String(formData.get("description") ?? "").trim();
   const price_suffix = String(formData.get("price_suffix") ?? "").trim();
   const icon = String(formData.get("icon") ?? "spray");
+  const category = parseAddonCategory(String(formData.get("category") ?? "general"));
   const sort_order = parseSortOrder(String(formData.get("sort_order") ?? "0"));
   const price_cents = parseDollarsToCents(String(formData.get("price") ?? ""));
 
@@ -222,6 +259,7 @@ export async function createCatalogAddon(
     price_cents,
     price_suffix,
     icon,
+    category,
     active: true,
     sort_order,
   });
@@ -248,6 +286,7 @@ export async function updateCatalogAddon(
   const description = String(formData.get("description") ?? "").trim();
   const price_suffix = String(formData.get("price_suffix") ?? "").trim();
   const icon = String(formData.get("icon") ?? "spray");
+  const category = parseAddonCategory(String(formData.get("category") ?? "general"));
   const active = String(formData.get("active") ?? "") === "on";
   const sort_order = parseSortOrder(String(formData.get("sort_order") ?? "0"));
   const price_cents = parseDollarsToCents(String(formData.get("price") ?? ""));
@@ -264,6 +303,7 @@ export async function updateCatalogAddon(
       price_cents,
       price_suffix,
       icon,
+      category,
       active,
       sort_order,
     })

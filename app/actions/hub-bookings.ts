@@ -53,6 +53,14 @@ import {
 import { generateBookingReferenceId } from "@/lib/hub/booking-reference";
 import { BookingSchema, type BookingInput } from "@/lib/booking-types";
 import {
+  getEmailValidationError,
+  getPhoneValidationError,
+} from "@/lib/validation/contact-fields";
+import {
+  fetchPackageAddonBlocksMap,
+  validatePackageAddonSelection,
+} from "@/lib/bookings/package-addon-blocks";
+import {
   parseHubBookingCreateDraft,
   type HubBookingCreateDraft,
 } from "@/lib/hub/booking-create-draft";
@@ -169,6 +177,10 @@ export async function updateHubBooking(
   if (!customerName || !email || !phone) {
     return { ok: false, message: "Customer name, email, and phone are required." };
   }
+  const emailErr = getEmailValidationError(email);
+  if (emailErr) return { ok: false, message: emailErr };
+  const phoneErr = getPhoneValidationError(phone);
+  if (phoneErr) return { ok: false, message: phoneErr };
 
   const packageKey = String(formData.get("package_key") ?? "") as PackageKey;
   const vehicleKey = String(formData.get("vehicle_key") ?? "") as VehicleKey;
@@ -191,6 +203,15 @@ export async function updateHubBooking(
   }
 
   const addonNames = formData.getAll("addons").map(String);
+  const packageAddonBlocks = await fetchPackageAddonBlocksMap(supabase);
+  const addonValidation = validatePackageAddonSelection(
+    packageKey,
+    addonNames,
+    packageAddonBlocks,
+  );
+  if (!addonValidation.ok) {
+    return { ok: false, message: addonValidation.message };
+  }
   const vehicleInfo = String(formData.get("vehicle_info") ?? "").trim();
   const customerNotes = String(formData.get("customer_notes") ?? "").trim();
   const plasticShine = String(formData.get("plastic_shine") ?? "No") === "Yes";
@@ -611,6 +632,16 @@ export async function createHubBooking(
   const location = String(formData.get("location") ?? "");
   const status = String(formData.get("status") ?? "confirmed");
   const addonNames = formData.getAll("addons").map(String);
+
+  const packageAddonBlocks = await fetchPackageAddonBlocksMap(supabase);
+  const addonValidation = validatePackageAddonSelection(
+    packageKey,
+    addonNames,
+    packageAddonBlocks,
+  );
+  if (!addonValidation.ok) {
+    return createBookingFailed(addonValidation.message, formData);
+  }
 
   if (!BOOKING_LOCATION_TYPES.includes(location as (typeof BOOKING_LOCATION_TYPES)[number])) {
     return createBookingFailed("Select a location type.", formData);

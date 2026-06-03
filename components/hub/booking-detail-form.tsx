@@ -44,7 +44,10 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { BOOKING_LOCATION_TYPES } from "@/lib/bookings/constants";
 import { vehicleKeyFromTypeLabel } from "@/lib/bookings/vehicle-key-from-label";
-import { ADDONS, PACKAGES, VEHICLE_OPTIONS } from "@/lib/data";
+import { HubAddonCheckboxes } from "@/components/hub/hub-addon-checkboxes";
+import type { AddOn } from "@/lib/data";
+import type { PackageAddonBlocksMap } from "@/lib/bookings/package-addon-blocks";
+import { PACKAGES, VEHICLE_OPTIONS } from "@/lib/data";
 import { formatCentralDateTime } from "@/lib/hub/format";
 import { centralScheduleLabels } from "@/lib/hub/schedule-labels";
 import { cn } from "@/lib/utils";
@@ -221,10 +224,14 @@ function BookingEditDialog({
 export function BookingDetailForm({
   booking,
   detailerNames,
+  catalogAddons,
+  packageAddonBlocks,
   lineItemsLocked,
 }: {
   booking: HubBookingDetail;
   detailerNames: string[];
+  catalogAddons: AddOn[];
+  packageAddonBlocks: PackageAddonBlocksMap;
   lineItemsLocked?: boolean;
 }) {
   const router = useRouter();
@@ -234,6 +241,7 @@ export function BookingDetailForm({
     null,
   );
   const packageKey = useMemo(() => resolvePackageKey(booking), [booking]);
+  const [editPackageKey, setEditPackageKey] = useState(packageKey);
   const vehicleKey = useMemo(
     () => vehicleKeyFromTypeLabel(booking.vehicle_type) ?? "",
     [booking.vehicle_type],
@@ -270,6 +278,12 @@ export function BookingDetailForm({
       router.refresh();
     }
   }, [updateState.ok, router]);
+
+  useEffect(() => {
+    if (editSection === "service") {
+      setEditPackageKey(packageKey);
+    }
+  }, [editSection, packageKey]);
 
   const isDeleted = Boolean(booking.deleted_at);
   const isCancelled = booking.status === "cancelled";
@@ -516,7 +530,8 @@ export function BookingDetailForm({
               id="dlg_package_key"
               name="package_key"
               required
-              defaultValue={packageKey || undefined}
+              value={editPackageKey || ""}
+              onChange={(e) => setEditPackageKey(e.target.value)}
             >
               <option value="" disabled>
                 Select package…
@@ -557,28 +572,14 @@ export function BookingDetailForm({
             />
           </HubFormField>
         </HubFieldRow>
-        <div className="mt-4 grid grid-cols-1 gap-2">
-          {ADDONS.map((a) => (
-            <label
-              key={a.name}
-              className="flex cursor-pointer items-start gap-3 rounded-md border border-border px-3 py-2 text-sm"
-            >
-              <input
-                type="checkbox"
-                name="addons"
-                value={a.name}
-                defaultChecked={booking.addons.includes(a.name)}
-                className="mt-0.5 size-4 accent-primary"
-              />
-              <span>
-                {a.name}
-                <span className="ml-1 font-mono text-[10px] text-primary">
-                  +${a.price}
-                </span>
-              </span>
-            </label>
-          ))}
-        </div>
+        <HubAddonCheckboxes
+          key={`dlg-addons-${editPackageKey}`}
+          packageKey={editPackageKey}
+          addons={catalogAddons}
+          packageAddonBlocks={packageAddonBlocks}
+          selectedNames={booking.addons}
+          className="mt-4 grid grid-cols-1 gap-2"
+        />
         <label className="mt-3 flex items-center gap-3 text-sm">
           <input
             type="checkbox"

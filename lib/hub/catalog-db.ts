@@ -21,6 +21,7 @@ export type CatalogAddonRow = {
   price_cents: number;
   price_suffix: string;
   icon: string;
+  category: "interior" | "exterior" | "general";
   active: boolean;
   sort_order: number;
 };
@@ -74,7 +75,22 @@ export async function fetchCatalogAddons(
     return [];
   }
 
-  return (data ?? []) as CatalogAddonRow[];
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    name: row.name as string,
+    description: row.description as string,
+    price_cents: row.price_cents as number,
+    price_suffix: row.price_suffix as string,
+    icon: row.icon as string,
+    category:
+      row.category === "interior" ||
+      row.category === "exterior" ||
+      row.category === "general"
+        ? row.category
+        : "general",
+    active: row.active as boolean,
+    sort_order: row.sort_order as number,
+  }));
 }
 
 export async function fetchBookingLocationTypes(
