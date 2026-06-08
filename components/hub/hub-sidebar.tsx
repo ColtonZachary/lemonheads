@@ -19,6 +19,7 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { HubGlobalSearch } from "@/components/hub/hub-global-search";
 import {
   Sidebar,
   SidebarContent,
@@ -112,6 +113,9 @@ export function HubSidebar({ access }: { access: HubAccess }) {
             {access.isManager ? "Operations" : "My hub"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
+            <div className="px-2 pb-3 group-data-[collapsible=icon]:hidden">
+              <HubGlobalSearch isManager={access.isManager} variant="sidebar" />
+            </div>
             <NavItems items={mainLinks} />
           </SidebarGroupContent>
         </SidebarGroup>
