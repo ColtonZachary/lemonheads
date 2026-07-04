@@ -6,6 +6,7 @@ import {
   renderAuthMagicLinkEmail,
 } from "@/lib/email-templates";
 import { FROM_EMAIL, getResend } from "@/lib/resend";
+import { SITE } from "@/lib/site";
 
 export type AuthEmailResult =
   | { ok: true; userId: string }
@@ -78,7 +79,7 @@ export async function sendHubInviteAuthEmail(
 
   const delivered = await deliverAuthEmail({
     to: params.email,
-    subject: "You're invited to Lemonhead's hub",
+    subject: `You're invited to ${SITE.name} hub`,
     html: renderAuthInviteEmail({
       link: data.properties.action_link,
       fullName: params.fullName,

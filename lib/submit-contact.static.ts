@@ -4,6 +4,7 @@ import {
   emailFieldSchema,
   optionalPhoneFieldSchema,
 } from "@/lib/validation/contact-fields";
+import { SITE } from "@/lib/site";
 
 export type ContactState =
   | { status: "idle" }
@@ -37,7 +38,7 @@ export async function submitContact(
   }
 
   const d = parsed.data;
-  const mailto = `mailto:info@lemonheadsdetail.com?subject=${encodeURIComponent(
+  const mailto = `mailto:${SITE.email.info}?subject=${encodeURIComponent(
     `Contact: ${d.topic}`,
   )}&body=${encodeURIComponent(
     `Name: ${d.name}\nEmail: ${d.email}\nPhone: ${d.phone || "—"}\n\n${d.message}`,

@@ -11,6 +11,7 @@ import {
 } from "@/lib/hub/loyalty-db";
 import { linkCustomerAuthUser } from "@/lib/loyalty/link-customer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { SITE } from "@/lib/site";
 
 export const metadata = {
   title: "Rewards",
@@ -62,7 +63,7 @@ export default async function RewardsPage() {
   return (
     <main className="mx-auto max-w-2xl px-[5%] py-16 md:py-24">
       <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-y/60">
-        Lemon Heads Rewards
+        {SITE.shortName} Rewards
       </p>
       <h1 className="mt-2 font-display text-5xl tracking-[0.04em] text-y md:text-6xl">
         REWARDS

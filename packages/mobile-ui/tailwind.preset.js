@@ -1,4 +1,4 @@
-/** Lemonheads + shadcn semantic tokens for NativeWind (matches website globals.css). */
+/** Site + shadcn semantic tokens for NativeWind (matches website globals.css). */
 module.exports = {
   theme: {
     extend: {

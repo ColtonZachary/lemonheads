@@ -1,9 +1,11 @@
 /**
- * Content + pricing data for Lemonhead's Mobile Detail.
+ * Content + pricing data for the detailing site.
  *
  * Add a package → add it here AND make sure its `key` matches the
  * keys already wired through the booking flow.
  */
+
+import { SITE } from "@/lib/site";
 
 export type VehicleKey = "coupe" | "sedan" | "suv2" | "suv3" | "truck" | "van";
 
@@ -230,17 +232,17 @@ export const LOCATIONS: Location[] = [
   {
     city: "Oklahoma City",
     state: "Oklahoma",
-    url: "https://www.lemonheadsdetail.com/okcmobiledetailing",
+    url: `${SITE.url}/book`,
   },
   {
     city: "Tulsa",
     state: "Oklahoma",
-    url: "https://www.lemonheadsdetail.com/tulsamobiledetailing",
+    url: `${SITE.url}/book`,
   },
   {
     city: "Enid",
     state: "Oklahoma",
-    url: "https://www.lemonheadsdetail.com/enid-oklahoma-car-mobile-detailing-services",
+    url: `${SITE.url}/book`,
   },
 ];
 

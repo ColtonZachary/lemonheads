@@ -11,11 +11,12 @@ import { fetchServiceAreaTravelMap } from "@/lib/bookings/location-scheduling";
 import { fetchSchedulingRules } from "@/lib/bookings/scheduling-rules";
 import { fetchPublicCatalog } from "@/lib/catalog/public-catalog";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Book a Detail",
   description:
-    "Book a Lemonhead's mobile detail in under 2 minutes. Pick your package, vehicle, time, and we'll come to you.",
+    `Book a ${SITE.name} mobile detail in under 2 minutes. Pick your package, vehicle, time, and we'll come to you.`,
 };
 
 export default async function BookPage() {

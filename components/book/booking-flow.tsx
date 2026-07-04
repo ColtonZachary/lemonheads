@@ -2341,7 +2341,7 @@ function Step6Confirm({
 
         <div className="my-6 flex flex-col gap-4 sm:my-8 sm:gap-5">
           <Step4Bullet num="1" label="Submit this booking request" />
-          <Step4Bullet num="2" label="A Lemonhead's team member confirms by phone or text" />
+          <Step4Bullet num="2" label="A team member confirms by phone or text" />
           <Step4Bullet num="3" label="We arrive at your address and start the detail" />
           <Step4Bullet num="4" label="Pay through the app or a secure digital invoice" />
         </div>

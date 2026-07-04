@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { renderContactEmail } from "@/lib/email-templates";
 import { FROM_EMAIL, TO_EMAIL, getResend } from "@/lib/resend";
+import { SITE } from "@/lib/site";
 import {
   emailFieldSchema,
   optionalPhoneFieldSchema,
@@ -81,7 +82,7 @@ export async function submitContact(
     return {
       status: "error",
       message:
-        "We couldn't send your message. Please email info@lemonheadsdetail.com directly.",
+        `We couldn't send your message. Please email ${SITE.email.info} directly.`,
     };
   }
 }

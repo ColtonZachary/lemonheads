@@ -8,7 +8,7 @@ import { SITE } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Contact Us",
   description:
-    "Get in touch with Lemonhead's Mobile Detail. Call, text, or send us a message — we reply within one business day.",
+    `Get in touch with ${SITE.name}. Call, text, or send us a message — we reply within one business day.`,
 };
 
 export default function ContactPage() {

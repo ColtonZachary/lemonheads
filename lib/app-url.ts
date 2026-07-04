@@ -20,5 +20,5 @@ export function getHubLoginUrl(): string {
   const base = getAppBaseUrl();
   if (base) return `${base}/login`;
   if (process.env.NODE_ENV === "development") return "/login";
-  return "https://lemonheads.vercel.app/login";
+  return "https://yourdomain.com/login";
 }

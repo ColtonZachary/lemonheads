@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { SITE } from "@/lib/site";
+import { SITE, smsBrandLabel } from "@/lib/site";
 import { normalizeSmsRecipient, sendTwilioSms } from "@/lib/twilio";
 
 export type CustomerBookingSmsData = {
@@ -28,7 +28,7 @@ function detailerLabel(name: string): string {
 
 function renderCreatedSms(d: CustomerBookingSmsData): string {
   return (
-    `Hi ${firstName(d.customerName)}! Lemonhead's booked you for ${d.service} ` +
+    `Hi ${firstName(d.customerName)}! ${SITE.name} booked you for ${d.service} ` +
     `on ${d.date} at ${d.time}. Detailer: ${detailerLabel(d.detailerName)}. ` +
     `Ref ${d.referenceId}. Questions? ${SITE.phone.main.display}`
   );
@@ -36,7 +36,7 @@ function renderCreatedSms(d: CustomerBookingSmsData): string {
 
 function renderConfirmedSms(d: CustomerBookingSmsData): string {
   return (
-    `Lemonhead's: Your ${d.service} on ${d.date} at ${d.time} is confirmed. ` +
+    `${smsBrandLabel()} Your ${d.service} on ${d.date} at ${d.time} is confirmed. ` +
     `Detailer: ${detailerLabel(d.detailerName)}. Ref ${d.referenceId}. ` +
     `${SITE.phone.main.display}`
   );
@@ -44,7 +44,7 @@ function renderConfirmedSms(d: CustomerBookingSmsData): string {
 
 function renderRescheduledSms(d: CustomerBookingSmsData): string {
   return (
-    `Lemonhead's: Your appointment moved to ${d.date} at ${d.time}. ` +
+    `${smsBrandLabel()} Your appointment moved to ${d.date} at ${d.time}. ` +
     `Service: ${d.service}. Detailer: ${detailerLabel(d.detailerName)}. ` +
     `Ref ${d.referenceId}. ${SITE.phone.main.display}`
   );
@@ -52,7 +52,7 @@ function renderRescheduledSms(d: CustomerBookingSmsData): string {
 
 function renderCancelledSms(d: CustomerBookingSmsData): string {
   return (
-    `Lemonhead's: Your ${d.service} on ${d.date} at ${d.time} was cancelled. ` +
+    `${smsBrandLabel()} Your ${d.service} on ${d.date} at ${d.time} was cancelled. ` +
     `Ref ${d.referenceId}. To reschedule call ${SITE.phone.main.display}`
   );
 }
@@ -197,21 +197,21 @@ export async function notifyCustomerBookingCancelled(
 
 function renderDetailerEnRouteSms(d: CustomerBookingSmsData): string {
   return (
-    `Lemonhead's: ${detailerLabel(d.detailerName)} is on the way for your ${d.service} ` +
+    `${smsBrandLabel()} ${detailerLabel(d.detailerName)} is on the way for your ${d.service} ` +
     `today (${d.time}). Ref ${d.referenceId}. ${SITE.phone.main.display}`
   );
 }
 
 function renderDetailerArrivedSms(d: CustomerBookingSmsData): string {
   return (
-    `Lemonhead's: ${detailerLabel(d.detailerName)} has arrived for your ${d.service}. ` +
+    `${smsBrandLabel()} ${detailerLabel(d.detailerName)} has arrived for your ${d.service}. ` +
     `Ref ${d.referenceId}. ${SITE.phone.main.display}`
   );
 }
 
 function renderDetailerFinishedSms(d: CustomerBookingSmsData): string {
   return (
-    `Lemonhead's: Your ${d.service} is complete! Thank you, ${firstName(d.customerName)}. ` +
+    `${smsBrandLabel()} Your ${d.service} is complete! Thank you, ${firstName(d.customerName)}. ` +
     `Ref ${d.referenceId}. ${SITE.phone.main.display}`
   );
 }

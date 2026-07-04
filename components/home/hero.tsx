@@ -61,27 +61,29 @@ export function Hero() {
             </Button>
           </div>
 
-          <div className="mt-6 flex flex-col items-start gap-3">
-            <div className="font-mono text-[15px] font-bold uppercase tracking-[0.2em] text-y [text-shadow:0_0_18px_rgba(240,201,58,0.5)]">
-              Download the App
-            </div>
-            <a
-              href={SITE.externalLinks.appStore}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group inline-flex w-fit items-center gap-4 rounded-[10px] border-[1.5px] border-y/50 bg-y/10 px-7 py-4 text-text shadow-[0_0_24px_rgba(240,201,58,0.12)] transition-all hover:-translate-y-0.5 hover:border-y/75 hover:bg-y/[0.18] hover:shadow-[0_0_40px_rgba(240,201,58,0.25)]"
-            >
-              <Icon name="apple" className="h-10 w-10 flex-shrink-0 text-y" />
-              <div>
-                <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-text/60">
-                  Download on the
-                </div>
-                <div className="mt-1 text-[22px] font-bold leading-tight">
-                  App Store
-                </div>
+          {SITE.externalLinks.appStore ? (
+            <div className="mt-6 flex flex-col items-start gap-3">
+              <div className="font-mono text-[15px] font-bold uppercase tracking-[0.2em] text-y [text-shadow:0_0_18px_rgba(240,201,58,0.5)]">
+                Download the App
               </div>
-            </a>
-          </div>
+              <a
+                href={SITE.externalLinks.appStore}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group inline-flex w-fit items-center gap-4 rounded-[10px] border-[1.5px] border-y/50 bg-y/10 px-7 py-4 text-text shadow-[0_0_24px_rgba(240,201,58,0.12)] transition-all hover:-translate-y-0.5 hover:border-y/75 hover:bg-y/[0.18] hover:shadow-[0_0_40px_rgba(240,201,58,0.25)]"
+              >
+                <Icon name="apple" className="h-10 w-10 flex-shrink-0 text-y" />
+                <div>
+                  <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-text/60">
+                    Download on the
+                  </div>
+                  <div className="mt-1 text-[22px] font-bold leading-tight">
+                    App Store
+                  </div>
+                </div>
+              </a>
+            </div>
+          ) : null}
 
           <dl className="relative mt-16 flex flex-wrap gap-12 border-t border-white/[0.06] pt-12 before:absolute before:-top-px before:left-0 before:h-px before:w-[60px] before:bg-y">
             <Stat num="3K+" label="Happy Customers" />
@@ -94,7 +96,7 @@ export function Hero() {
           <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[4px] border border-y/25 max-lg:aspect-[4/3] max-lg:max-h-[360px]">
             <Image
               src={assetPath("/bike.webp")}
-              alt="Lemonhead's Mobile Detail — detailing a Harley-Davidson CVO"
+              alt="Professional mobile car detailing"
               fill
               priority
               sizes="(max-width: 1024px) 90vw, 42vw"

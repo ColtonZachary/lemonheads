@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ────────────────────────────────────────────────────────────
-   LEMONHEADS BRAND TOKENS
+   SITE BRAND TOKENS
    Tailwind v4 reads these as `--color-*`, `--font-*`, etc.
    so you can write `bg-bk`, `text-y`, `font-display`, etc.
 ─────────────────────────────────────────────────────────────*/
@@ -201,7 +201,7 @@ input[type="number"] {
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 /* ---break---*/
-/* Lemonheads + shadcn semantic tokens (site + hub) */
+/* Site + shadcn semantic tokens (site + hub) */
 :root,
 .dark {
   --background: #0e0e0e;

@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 
 import { WebsiteFeedbackForm } from "@/components/feedback/website-feedback-form";
 import { SectionLabel } from "@/components/ui/section";
+import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Website Feedback",
   description:
-    "Tell Lemonhead's Mobile Detail how we can improve this website — booking flow, navigation, and overall experience.",
+    `Tell ${SITE.name} how we can improve this website — booking flow, navigation, and overall experience.`,
 };
 
 export default function FeedbackPage() {

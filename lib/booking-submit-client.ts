@@ -1,4 +1,5 @@
 import { BookingSchema, type BookingInput, type BookingState } from "@/lib/booking-types";
+import { SITE } from "@/lib/site";
 
 /** Client-side booking submit for static hosting (GitHub Pages). */
 export async function submitBookingClient(
@@ -12,7 +13,7 @@ export async function submitBookingClient(
     };
   }
 
-  const bookingId = `LH-${Date.now().toString(36).toUpperCase()}`;
+  const bookingId = `BK-${Date.now().toString(36).toUpperCase()}`;
   const d = parsed.data;
   const lines = [
     `Booking ID: ${bookingId}`,
@@ -30,7 +31,7 @@ export async function submitBookingClient(
     `Notes: ${d.notes || "—"}`,
   ];
 
-  const mailto = `mailto:info@lemonheadsdetail.com?subject=${encodeURIComponent(
+  const mailto = `mailto:${SITE.email.bookings}?subject=${encodeURIComponent(
     `Booking request ${bookingId}`,
   )}&body=${encodeURIComponent(lines.join("\n"))}`;
 

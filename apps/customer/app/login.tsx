@@ -5,6 +5,7 @@ import { KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
 import { Button, Input, Label, Text } from "@lemonheads/mobile-ui";
 
 import { useAuth } from "@/lib/auth-context";
+import { BRAND } from "@/lib/brand";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function LoginScreen() {
       className="flex-1 justify-center bg-background px-6"
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <Text variant="title">Lemonhead's</Text>
+      <Text variant="title">{BRAND.name}</Text>
       <Text variant="subtitle">Rewards & bookings</Text>
       <Text variant="muted" className="mb-6 mt-4 leading-5">
         Use the same email and password as rewards on the website. You must have booked at

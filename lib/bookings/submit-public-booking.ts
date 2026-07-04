@@ -14,6 +14,7 @@ import { insertBooking } from "@/lib/bookings/insert-booking";
 import { notifyCustomerBookingCreated } from "@/lib/notifications/customer-sms";
 import { notifyDetailerJobAssigned } from "@/lib/notifications/employee-push";
 import { FROM_EMAIL, TO_EMAIL, getResend } from "@/lib/resend";
+import { SITE } from "@/lib/site";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export async function submitPublicBooking(
@@ -124,7 +125,7 @@ export async function submitPublicBooking(
     await resend.emails.send({
       from: FROM_EMAIL,
       to: data.email,
-      subject: `You're booked with Lemonhead's — ${data.date} at ${data.time}`,
+      subject: `You're booked with ${SITE.name} — ${data.date} at ${data.time}`,
       html: renderBookingConfirmationToCustomer(emailPayload),
     });
 

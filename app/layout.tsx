@@ -4,6 +4,7 @@ import "./globals.css";
 
 import { Grain } from "@/components/site/grain";
 import { AuthHashHandler } from "@/components/auth/auth-hash-handler";
+import { SITE } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
@@ -30,37 +31,34 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://lemonheadsdetail.com"),
+  metadataBase: new URL(SITE.url),
   title: {
-    default: "Lemonhead's Mobile Detail — We Come to You",
-    template: "%s · Lemonhead's Mobile Detail",
+    default: `${SITE.name} — We Come to You`,
+    template: `%s · ${SITE.name}`,
   },
   description:
-    "Premium mobile car detailing in Oklahoma City, Tulsa, and Enid. Book online — we come to your home or office. Hand wash, interior detailing, paint correction, ceramic coatings.",
-  applicationName: "Lemonhead's Mobile Detail",
+    "Premium mobile car detailing. Book online — we come to your home or office. Hand wash, interior detailing, paint correction, ceramic coatings.",
+  applicationName: SITE.name,
   keywords: [
     "mobile detailing",
     "car detailing",
-    "Oklahoma City detailing",
-    "Tulsa detailing",
-    "Enid detailing",
     "ceramic coating",
     "paint correction",
-    "Lemonheads",
+    SITE.shortName,
   ],
-  authors: [{ name: "Lemonhead's Mobile Detail" }],
+  authors: [{ name: SITE.name }],
   openGraph: {
-    title: "Lemonhead's Mobile Detail — We Come to You",
+    title: `${SITE.name} — We Come to You`,
     description:
-      "Premium mobile car detailing across Oklahoma. Book online — we come to you.",
-    url: "https://lemonheadsdetail.com",
-    siteName: "Lemonhead's Mobile Detail",
+      "Premium mobile car detailing. Book online — we come to you.",
+    url: SITE.url,
+    siteName: SITE.name,
     locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Lemonhead's Mobile Detail",
+    title: SITE.name,
     description: "Premium mobile detailing — booked online, delivered to you.",
   },
 };

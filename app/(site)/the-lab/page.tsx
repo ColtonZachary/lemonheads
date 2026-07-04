@@ -8,9 +8,9 @@ import { LAB_SERVICES } from "@/lib/data";
 import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "The LAB — Edmond Detail Shop",
+  title: "The LAB — Detail Shop",
   description:
-    "The LAB is Lemonhead's Edmond headquarters. Ceramic coatings, vinyl wraps, paint correction, and paint protection film.",
+    `The LAB is our headquarters shop. Ceramic coatings, vinyl wraps, paint correction, and paint protection film.`,
 };
 
 export default function TheLabPage() {
@@ -33,15 +33,14 @@ export default function TheLabPage() {
           <div className="bg-card p-10">
             <SectionLabel>What Is The LAB</SectionLabel>
             <h2 className="mt-4 mb-4 font-display text-[36px] leading-none tracking-[0.04em]">
-              LEMONHEAD&apos;S
+              OUR
               <br />
               HOME BASE
             </h2>
             <p className="text-[13px] leading-[1.9] text-text/50">
-              The LAB is our Edmond headquarters — the shop behind the mobile
+              The LAB is our headquarters — the shop behind the mobile
               operation. Drop your vehicle off and we&apos;ll handle the detail
-              while you get on with your day. Same Lemonhead&apos;s quality,
-              stationary setting.
+              while you get on with your day. Same quality, stationary setting.
             </p>
           </div>
           <div className="bg-card p-10">
@@ -106,13 +105,19 @@ export default function TheLabPage() {
             </p>
           </div>
           <Button asChild>
-            <a
-              href={`${SITE.externalLinks.theLab}/book-online-1`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Book at thelabok.com <Icon name="arrowRight" className="h-3.5 w-3.5" />
-            </a>
+            {SITE.externalLinks.theLab ? (
+              <a
+                href={`${SITE.externalLinks.theLab}/book-online-1`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Book a consultation <Icon name="arrowRight" className="h-3.5 w-3.5" />
+              </a>
+            ) : (
+              <Link href="/contact">
+                Contact us <Icon name="arrowRight" className="h-3.5 w-3.5" />
+              </Link>
+            )}
           </Button>
         </div>
       </div>
