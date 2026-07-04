@@ -50,9 +50,9 @@ export const FALLBACK_GALLERY: GalleryItem[] = [
 
 const DEFAULT_GALLERY_SPAN = "lg:col-span-4 lg:h-[260px] h-[200px]";
 
-/** Hero bike lives on the homepage only — never in the work gallery. */
-function isGalleryBikePath(storagePath: string): boolean {
-  return /(^|\/)bike\.(webp|jpg|jpeg|png)$/i.test(storagePath);
+/** Hero image lives on the homepage only — never in the work gallery. */
+function isGalleryHeroPath(storagePath: string): boolean {
+  return /(^|\/)hero\.(webp|jpg|jpeg|png)$/i.test(storagePath);
 }
 
 export function memberSlug(name: string): string {
@@ -91,7 +91,7 @@ export async function getGalleryItems(options?: {
   }
 
   const rows = (data as SiteImageRow[]).filter(
-    (row) => !isGalleryBikePath(row.storage_path),
+    (row) => !isGalleryHeroPath(row.storage_path),
   );
 
   if (!rows.length) return withPublicAssetPaths(FALLBACK_GALLERY);

@@ -11,7 +11,6 @@ import { cn } from "@/lib/utils";
 const PRIMARY_LINKS = [
   { href: "/#packages", label: "Packages" },
   { href: "/#addons", label: "Add-Ons" },
-  { href: "/the-lab", label: "The LAB" },
 ];
 
 const MORE_LINKS = [

@@ -95,8 +95,8 @@ export function Hero() {
         <div className="relative w-full max-w-[480px] flex-shrink-0 lg:w-[42%] lg:max-w-[520px]">
           <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[4px] border border-y/25 max-lg:aspect-[4/3] max-lg:max-h-[360px]">
             <Image
-              src={assetPath("/bike.webp")}
-              alt="Professional mobile car detailing"
+              src={assetPath("/hero.png")}
+              alt="Professional mobile detailing on a luxury vehicle"
               fill
               priority
               sizes="(max-width: 1024px) 90vw, 42vw"
