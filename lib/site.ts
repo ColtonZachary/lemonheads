@@ -43,7 +43,6 @@ export const SITE = {
     blog: "",
     privacy: "",
     giftCards: "",
-    theLab: "",
   },
 } as const;
 
