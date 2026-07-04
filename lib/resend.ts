@@ -1,5 +1,7 @@
 import { Resend } from "resend";
 
+import { SITE } from "@/lib/site";
+
 /**
  * Singleton Resend client. Returns null when no API key is configured so
  * local dev / preview builds don't crash — instead the action falls back
@@ -31,8 +33,7 @@ export function getResend(): Resend | null {
  * Override per environment with RESEND_FROM_EMAIL.
  */
 export const FROM_EMAIL =
-  process.env.RESEND_FROM_EMAIL ?? "Lemonhead's <onboarding@resend.dev>";
+  process.env.RESEND_FROM_EMAIL ?? `${SITE.name} <onboarding@resend.dev>`;
 
 /** Where booking + contact submissions are delivered. */
-export const TO_EMAIL =
-  process.env.RESEND_TO_EMAIL ?? "info@lemonheadsdetail.com";
+export const TO_EMAIL = process.env.RESEND_TO_EMAIL ?? SITE.email.bookings;

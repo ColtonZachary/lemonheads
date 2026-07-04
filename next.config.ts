@@ -5,7 +5,7 @@ const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
   ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
   : null;
 
-/** Set to `/lemonheads` for GitHub Pages project site (ColtonZachary/lemonheads). */
+/** Set to a subpath when deploying as a GitHub Pages project site (e.g. `/your-repo`). */
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 const isStaticExport = process.env.NEXT_OUTPUT === "export";

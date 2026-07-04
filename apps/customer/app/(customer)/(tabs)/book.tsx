@@ -4,7 +4,7 @@ import { RefreshControl, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CustomerBookingsList } from "@/components/CustomerBookingsList";
-import { LemonheadsLogo } from "@/components/LemonheadsLogo";
+import { BrandLogo } from "@/components/BrandLogo";
 import { Button, ScreenScroll, Text } from "@lemonheads/mobile-ui";
 
 import { useAuth } from "@/lib/auth-context";
@@ -35,7 +35,7 @@ export default function BookScreen() {
       }
     >
       <View className="items-center">
-        <LemonheadsLogo />
+        <BrandLogo />
         <Button
           className="mt-10 w-full max-w-xs"
           onPress={() => router.push("/(customer)/book-flow")}

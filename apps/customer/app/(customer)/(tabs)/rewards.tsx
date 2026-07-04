@@ -12,6 +12,7 @@ import {
 } from "@lemonheads/mobile-ui";
 
 import { useAuth } from "@/lib/auth-context";
+import { BRAND } from "@/lib/brand";
 
 export default function RewardsScreen() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function RewardsScreen() {
     return (
       <ScreenCenter>
         <Text variant="title" className="text-center">
-          Lemonhead's Rewards
+          {BRAND.name} Rewards
         </Text>
         <Text variant="muted" className="mb-5 mt-2 text-center leading-5">
           Earn points on every detail. Sign in with the email from your booking to see your

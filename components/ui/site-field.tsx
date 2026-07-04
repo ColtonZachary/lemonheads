@@ -2,7 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-/** Marketing / public site form controls (legacy Lemonheads styling). */
+/** Marketing / public site form controls. */
 export function SiteLabel({
   className,
   ...props

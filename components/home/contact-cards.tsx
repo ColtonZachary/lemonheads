@@ -51,7 +51,7 @@ export function ContactCards() {
       label: "Gift Cards",
       value: "Purchase E-Gift Card",
       detail: "Perfect for any occasion",
-      href: SITE.externalLinks.giftCards,
+      href: SITE.externalLinks.giftCards || undefined,
       external: true,
       highlight: true,
     },

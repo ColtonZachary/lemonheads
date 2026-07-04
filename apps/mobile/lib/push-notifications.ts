@@ -77,7 +77,7 @@ export async function registerForPushNotificationsAsync(): Promise<PushRegistrat
     return {
       ok: false,
       reason:
-        "Notification permission denied. Enable notifications for Lemonheads Employee in Settings.",
+        "Notification permission denied. Enable notifications for Detail Employee in Settings.",
     };
   }
 

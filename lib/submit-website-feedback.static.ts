@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { SITE } from "@/lib/site";
+
 export type WebsiteFeedbackSubmitState =
   | { status: "idle" }
   | {
@@ -47,7 +49,7 @@ export async function submitWebsiteFeedback(
   const body = encodeURIComponent(
     `Name: ${d.name}\nPage: ${d.page || "/"}\nSite rating: ${d.rating}/5\nEmail: ${d.email || "—"}\n\n${d.feedback}`,
   );
-  const mailto = `mailto:info@lemonheadsdetail.com?subject=${subject}&body=${body}`;
+  const mailto = `mailto:${SITE.email.info}?subject=${subject}&body=${body}`;
 
   if (typeof window !== "undefined") {
     window.open(mailto, "_blank", "noopener,noreferrer");

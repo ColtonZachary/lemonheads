@@ -4,11 +4,12 @@ import Link from "next/link";
 import { TeamGrid } from "@/components/team/team-grid";
 import { SectionLabel } from "@/components/ui/section";
 import { getTeamMembers } from "@/lib/media";
+import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Meet the Team",
   description:
-    "The detailers, managers, and wrap specialists behind every Lemonhead's mobile detail.",
+    `The detailers, managers, and specialists behind every ${SITE.name} mobile detail.`,
 };
 
 export default async function TeamPage() {

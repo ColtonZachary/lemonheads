@@ -3,6 +3,8 @@
  * need react-email as a dependency. They render fine in Gmail / iOS Mail.
  */
 
+import { SITE } from "@/lib/site";
+
 const SHELL = (title: string, body: string) => `
 <!doctype html>
 <html lang="en">
@@ -18,14 +20,14 @@ const SHELL = (title: string, body: string) => `
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#111318;border:1px solid rgba(255,255,255,0.07);border-radius:8px;overflow:hidden;">
             <tr>
               <td style="background:#080808;padding:20px 28px;border-bottom:1px solid rgba(240,201,58,0.15);">
-                <div style="font-family:'Bebas Neue','Impact',sans-serif;font-size:22px;letter-spacing:0.1em;color:#F0C93A;">LEMONHEADS</div>
-                <div style="font-family:Menlo,Consolas,monospace;font-size:10px;letter-spacing:0.18em;color:rgba(237,234,224,0.5);text-transform:uppercase;margin-top:2px;">Mobile Detail · Notification</div>
+                <div style="font-family:'Bebas Neue','Impact',sans-serif;font-size:22px;letter-spacing:0.1em;color:#F0C93A;">${escapeHtml(SITE.shortName)}</div>
+                <div style="font-family:Menlo,Consolas,monospace;font-size:10px;letter-spacing:0.18em;color:rgba(237,234,224,0.5);text-transform:uppercase;margin-top:2px;">${escapeHtml(SITE.tagline)} · Notification</div>
               </td>
             </tr>
             <tr><td style="padding:32px 28px;">${body}</td></tr>
             <tr>
               <td style="padding:18px 28px;background:#040404;border-top:1px solid rgba(255,255,255,0.06);font-family:Menlo,Consolas,monospace;font-size:10px;letter-spacing:0.08em;color:rgba(102,102,102,0.7);">
-                © ${new Date().getFullYear()} Lemonhead&rsquo;s Mobile Detail
+                © ${new Date().getFullYear()} ${escapeHtml(SITE.name)}
               </td>
             </tr>
           </table>
@@ -110,7 +112,7 @@ export function renderBookingEmail(d: BookingEmailData) {
 export function renderBookingConfirmationToCustomer(d: BookingEmailData) {
   const body = `
     <h1 style="font-family:'Bebas Neue','Impact',sans-serif;font-size:30px;letter-spacing:0.06em;color:#F0C93A;margin:0 0 6px;">YOU&rsquo;RE BOOKED!</h1>
-    <p style="margin:0 0 18px;color:rgba(237,234,224,0.7);font-size:14px;">Thanks, ${escapeHtml(d.customerName.split(" ")[0])}. We received your booking request and a Lemonhead&rsquo;s team member will reach out shortly to confirm.</p>
+    <p style="margin:0 0 18px;color:rgba(237,234,224,0.7);font-size:14px;">Thanks, ${escapeHtml(d.customerName.split(" ")[0])}. We received your booking request and a team member will reach out shortly to confirm.</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
       ${row("Service", d.service)}
       ${row("Vehicle", `${d.vehicle}${d.vehicleInfo ? " — " + d.vehicleInfo : ""}`)}
@@ -123,9 +125,9 @@ export function renderBookingConfirmationToCustomer(d: BookingEmailData) {
         d.cardOnFile ? "Yes — saved securely via Stripe" : "No",
       )}
     </table>
-    <p style="margin-top:24px;font-size:13px;color:rgba(237,234,224,0.55);line-height:1.7;">Questions? Reply to this email or call us at <a href="tel:+18335366648" style="color:#F0C93A;text-decoration:none;">833-536-6648</a>.</p>
+    <p style="margin-top:24px;font-size:13px;color:rgba(237,234,224,0.55);line-height:1.7;">Questions? Reply to this email or call us at <a href="tel:${escapeHtml(SITE.phone.main.tel)}" style="color:#F0C93A;text-decoration:none;">${escapeHtml(SITE.phone.main.display)}</a>.</p>
   `;
-  return SHELL("Your Lemonhead's booking", body);
+  return SHELL(`Your ${SITE.name} booking`, body);
 }
 
 export interface ContactEmailData {
@@ -156,8 +158,8 @@ export function renderContactEmail(d: ContactEmailData) {
 
 function authShell(title: string, body: string) {
   return SHELL(title, body).replace(
-    "Mobile Detail · Notification",
-    "Mobile Detail · Account",
+    `${SITE.tagline} · Notification`,
+    `${SITE.tagline} · Account`,
   );
 }
 
@@ -187,11 +189,11 @@ export function renderAuthInviteEmail(input: {
 
   const body = `
     <h1 style="font-family:'Bebas Neue','Impact',sans-serif;font-size:30px;letter-spacing:0.06em;color:#F0C93A;margin:0 0 6px;">YOU&rsquo;RE INVITED</h1>
-    <p style="margin:0 0 18px;color:rgba(237,234,224,0.7);font-size:14px;">Hi ${escapeHtml(input.fullName.split(" ")[0])}, you&rsquo;ve been invited to Lemonhead&rsquo;s as a <strong style="color:#edeae0;">${escapeHtml(roleLabel)}</strong>. Use the button below to set your password and sign in.</p>
+    <p style="margin:0 0 18px;color:rgba(237,234,224,0.7);font-size:14px;">Hi ${escapeHtml(input.fullName.split(" ")[0])}, you&rsquo;ve been invited to ${escapeHtml(SITE.name)} as a <strong style="color:#edeae0;">${escapeHtml(roleLabel)}</strong>. Use the button below to set your password and sign in.</p>
     ${authButton("Accept invitation", input.link)}
     <p style="margin:18px 0 0;font-size:12px;color:rgba(237,234,224,0.45);line-height:1.7;">This link expires in 24 hours. If you didn&rsquo;t expect this email, you can ignore it.</p>
   `;
-  return authShell("Lemonhead's hub invitation", body);
+  return authShell(`${SITE.name} hub invitation`, body);
 }
 
 export function renderAuthMagicLinkEmail(input: { link: string; intro: string }) {
@@ -201,5 +203,5 @@ export function renderAuthMagicLinkEmail(input: { link: string; intro: string })
     ${authButton("Continue", input.link)}
     <p style="margin:18px 0 0;font-size:12px;color:rgba(237,234,224,0.45);line-height:1.7;">This link expires in 1 hour. If you didn&rsquo;t request it, you can ignore this email.</p>
   `;
-  return authShell("Your Lemonhead's sign-in link", body);
+  return authShell(`Your ${SITE.name} sign-in link`, body);
 }

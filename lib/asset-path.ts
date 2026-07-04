@@ -1,5 +1,5 @@
 /**
- * Prefix public asset paths with NEXT_PUBLIC_BASE_PATH (e.g. /lemonheads on GitHub Pages).
+ * Prefix public asset paths with NEXT_PUBLIC_BASE_PATH (e.g. /your-repo on GitHub Pages).
  * Full URLs (Supabase, etc.) are returned unchanged.
  */
 export function assetPath(path: string): string {

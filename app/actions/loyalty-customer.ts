@@ -9,6 +9,7 @@ import { sendMagicLinkAuthEmail } from "@/lib/auth/send-auth-email";
 import { linkCustomerAuthUser } from "@/lib/loyalty/link-customer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { SITE } from "@/lib/site";
 
 export type LoyaltyCustomerActionState = {
   ok: boolean;
@@ -77,7 +78,7 @@ export async function sendRewardsMagicLink(
   const result = await sendMagicLinkAuthEmail(admin, {
     email,
     redirectTo,
-    subject: "Your Lemonhead's rewards sign-in link",
+    subject: `Your ${SITE.name} rewards sign-in link`,
     intro:
       "Tap the button below to sign in to your rewards account. Use the same email you use when booking.",
   });

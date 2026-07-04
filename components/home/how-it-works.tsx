@@ -5,7 +5,7 @@ const STEPS: { num: string; title: string; body: string; icon: IconName }[] = [
   {
     num: "01",
     title: "Book Online",
-    body: "Schedule through our website or the Lemonheads app in minutes. Pick your date, time, and package.",
+    body: "Schedule through our website or mobile app in minutes. Pick your date, time, and package.",
     icon: "phone",
   },
   {

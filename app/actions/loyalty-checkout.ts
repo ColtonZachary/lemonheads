@@ -8,6 +8,7 @@ import { computeCheckoutPricing } from "@/lib/bookings/checkout-pricing";
 import { linkCustomerAuthUser } from "@/lib/loyalty/link-customer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { SITE } from "@/lib/site";
 import { revalidatePath } from "next/cache";
 
 export type CheckoutSignInResult =
@@ -252,7 +253,7 @@ export async function sendCheckoutMagicLink(input: {
   const result = await sendMagicLinkAuthEmail(admin, {
     email,
     redirectTo,
-    subject: "Your Lemonhead's sign-in link",
+    subject: `Your ${SITE.name} sign-in link`,
     intro:
       "Tap the button below to sign in and apply rewards to your booking. Use the same email as your past bookings.",
   });

@@ -15,7 +15,7 @@ const FOOTER_LINKS = [
   { href: SITE.externalLinks.blog, label: "Blog", external: true },
   { href: SITE.externalLinks.privacy, label: "Privacy", external: true },
   { href: "/feedback", label: "Site Feedback" },
-];
+].filter((link) => !link.external || link.href);
 
 const footerLinkClass =
   "font-mono text-[10px] uppercase tracking-[0.15em] text-text/55 transition-colors hover:text-y";
@@ -26,6 +26,10 @@ const socialClass =
 export function SiteFooter() {
   const hubLoginHref = getHubLoginUrl();
   const hubLoginExternal = hubLoginHref.startsWith("http");
+  const socialLinks = [
+    { href: SITE.social.instagram, label: "Instagram", icon: "instagram" as const },
+    { href: SITE.social.facebook, label: "Facebook", icon: "facebook" as const },
+  ].filter((link) => link.href);
 
   return (
     <footer className="flex flex-col gap-9 border-t border-border-faint bg-bk px-[5%] pb-9 pt-12">
@@ -64,26 +68,22 @@ export function SiteFooter() {
           </li>
         </ul>
 
-        <div className="flex gap-2.5">
-          <a
-            href={SITE.social.instagram}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Instagram"
-            className={socialClass}
-          >
-            <Icon name="instagram" className="h-3.5 w-3.5" />
-          </a>
-          <a
-            href={SITE.social.facebook}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Facebook"
-            className={socialClass}
-          >
-            <Icon name="facebook" className="h-3.5 w-3.5" />
-          </a>
-        </div>
+        {socialLinks.length > 0 ? (
+          <div className="flex gap-2.5">
+            {socialLinks.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={link.label}
+                className={socialClass}
+              >
+                <Icon name={link.icon} className="h-3.5 w-3.5" />
+              </a>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-faint pt-7">

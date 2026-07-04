@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "Lemonheads Employee",
-    "slug": "lemonheads-employee",
+    "name": "Detail Co Employee",
+    "slug": "detail-co-employee",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "lemonheads",
+    "scheme": "detail-co-employee",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.lemonheads.employee",
+      "bundleIdentifier": "com.detailco.employee",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
@@ -17,7 +17,7 @@
       }
     },
     "android": {
-      "package": "com.lemonheads.employee",
+      "package": "com.detailco.employee",
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -46,8 +46,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Lemonheads to attach before/after job photos.",
-          "cameraPermission": "Allow Lemonheads to take before/after job photos."
+          "photosPermission": "Allow the app to attach before/after job photos.",
+          "cameraPermission": "Allow the app to take before/after job photos."
         }
       ],
       [

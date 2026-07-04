@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "Lemonheads",
-    "slug": "lemonheads-customer",
+    "name": "Detail Co Customer",
+    "slug": "detail-co-customer",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "lemonheads-customer",
+    "scheme": "detail-co-customer",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.lemonheads.customer",
+      "bundleIdentifier": "com.detailco.customer",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
@@ -17,7 +17,7 @@
       }
     },
     "android": {
-      "package": "com.lemonheads.customer",
+      "package": "com.detailco.customer",
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
